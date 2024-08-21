@@ -40,7 +40,7 @@ do
 done
 git checkout "${branch_name}"
 
-echo "${dependency_name}_branch_name=${dependency_branch_name}" >> "$GITHUB_ENV"
+# echo "${dependency_name}_branch_name=${dependency_branch_name}" >> "$GITHUB_ENV"
 
 if [ "$dependency_branch_name" != "main" ]; then
   echo "Cloning ${dependency_name} branch: ${dependency_branch_name}"
