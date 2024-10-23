@@ -5,6 +5,11 @@
 name: build
 on:
   workflow_call:
+    inputs:
+      dependencies:
+        description: "String of comma-separated dependencies to check for upstream branches"
+        required: true
+        type: string
 
 jobs:
   build:
@@ -40,14 +45,14 @@ jobs:
       - name: check for dependency branches and install if needed
         run: |
           git clone https://github.com/ihmeuw/vivarium_build_utils.git ../vivarium_build_utils
-          pwd
-          echo "----------------------------------------"
           echo "Contents of install_dependency_branch.sh"
           echo "----------------------------------------"
           cat ../vivarium_build_utils/install_dependency_branch.sh
           echo "" 
           echo "----------------------------------------"
-          sh ../vivarium_build_utils/install_dependency_branch.sh layered_config_tree ${branch_name} github
+          echo "Upstream packages: ${inputs.dependencies}"
+          echo "----------------------------------------"
+          sh ../vivarium_build_utils/install_dependency_branch.sh layered_config_tree ${inputs.dependencies} github
       - name: print environment values
         run: |
           cat $GITHUB_ENV
