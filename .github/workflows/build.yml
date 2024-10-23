@@ -54,7 +54,7 @@ jobs:
           echo "----------------------------------------"
           for package in $(echo ${{ inputs.dependencies }} | sed "s/,/ /g"); do
             echo "Checking for upstream branch '${branch_name}' in project '${package}'"
-            sh ../vivarium_build_utils/install_dependency_branch.sh ${{ inputs.dependencies }} ${branch_name} github
+            sh ../vivarium_build_utils/install_dependency_branch.sh ${package} ${branch_name} github
           done
       - name: print environment values
         run: |

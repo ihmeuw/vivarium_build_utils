@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -e
 # Define variables
 dependency_name=$1
 branch_name=$2
