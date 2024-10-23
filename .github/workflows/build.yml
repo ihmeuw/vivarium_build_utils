@@ -39,13 +39,13 @@ jobs:
           git checkout ${branch_name}
       - name: check for dependency branches and install if needed
         run: |
-          git clone https://github.com/ihmeuw/vivarium_build_utils.git ../
+          git clone https://github.com/ihmeuw/vivarium_build_utils.git ../vivarium_build_utils
           pwd
           echo "----------------------------------------"
           echo "Contents of install_dependency_branch.sh"
           echo "----------------------------------------"
           cat ../vivarium_build_utils/install_dependency_branch.sh
-          echo ""
+          echo "" 
           echo "----------------------------------------"
           sh ../vivarium_build_utils/install_dependency_branch.sh layered_config_tree ${branch_name} github
       - name: print environment values
