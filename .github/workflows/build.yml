@@ -52,7 +52,7 @@ jobs:
           cat ../vivarium_build_utils/install_dependency_branch.sh
           echo "" 
           echo "----------------------------------------"
-          for package in ${inputs.dependencies//,/ }; do
+          for package in $(echo ${{ inputs.dependencies }} | tr ',' '\n'); do
             echo "Checking for upstream branch '${branch_name}' in project '${package}'"
             sh ../vivarium_build_utils/install_dependency_branch.sh ${{ inputs.dependencies }} ${branch_name} github
           done
