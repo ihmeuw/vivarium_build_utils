@@ -45,14 +45,14 @@ jobs:
       - name: check for dependency branches and install if needed
         run: |
           git clone https://github.com/ihmeuw/vivarium_build_utils.git ../vivarium_build_utils
+          echo "Upstream packages: ${{ inputs.dependencies }}"
+          echo "----------------------------------------"
           echo "Contents of install_dependency_branch.sh"
           echo "----------------------------------------"
           cat ../vivarium_build_utils/install_dependency_branch.sh
           echo "" 
           echo "----------------------------------------"
-          echo "Upstream packages: ${inputs.dependencies}"
-          echo "----------------------------------------"
-          sh ../vivarium_build_utils/install_dependency_branch.sh layered_config_tree ${inputs.dependencies} github
+          sh ../vivarium_build_utils/install_dependency_branch.sh ${{ inputs.dependencies }} ${branch_name} github
       - name: print environment values
         run: |
           cat $GITHUB_ENV
