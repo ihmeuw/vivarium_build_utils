@@ -2,7 +2,7 @@
 #   - invoked on push, pull_request, manual trigger, or schedule
 #   - test under at least 3 versions of python
 # -----------------------------------------------------------------------------
-name: build
+name: build_utils
 on:
   workflow_call:
     inputs:
@@ -12,7 +12,7 @@ on:
         type: string
 
 jobs:
-  build:
+  reusable_job:
     runs-on: ubuntu-latest
     strategy:
       matrix:
