@@ -10,6 +10,10 @@ on:
         description: "String of comma-separated dependencies to check for upstream branches"
         required: true
         type: string
+      use_mypy:
+        description: "Boolean to determine if mypy should be run"
+        required: True
+        type: boolean
 
 jobs:
   build:
@@ -62,7 +66,9 @@ jobs:
           pip install black==22.3.0 isort
           isort . --check --verbose --only-modified --diff
           black . --check --diff
-          mypy .
+          if "${{ inputs.use_mypy }}"; then
+            mypy .
+          fi
       - name: Test
         run: |
           if "${{ github.event_name == 'schedule' }}"; then
