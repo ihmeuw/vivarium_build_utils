@@ -45,7 +45,6 @@ jobs:
       - name: Check for dependency branches and install if needed
         run: |
           git clone https://github.com/ihmeuw/vivarium_build_utils.git ../vivarium_build_utils
-          echo "Upstream packages: ${{ inputs.dependencies }}"
           echo "----------------------------------------"
           echo "Contents of install_dependency_branch.sh"
           echo "----------------------------------------"
@@ -53,7 +52,6 @@ jobs:
           echo "" 
           echo "----------------------------------------"
           for package in $(echo ${{ inputs.dependencies }} | sed "s/,/ /g"); do
-            echo "Checking for upstream branch '${branch_name}' in project '${package}'"
             sh ../vivarium_build_utils/install_dependency_branch.sh ${package} ${branch_name} github
           done
       - name: print environment values
