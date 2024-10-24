@@ -41,11 +41,11 @@ do
 done
 git checkout "${branch_name}"
 
-if [ "$workflow" == "github" ]; then
+if [[ "$workflow" == "github" ]]; then
   echo "${dependency_name}_branch_name=${dependency_branch_name}" >> "$GITHUB_ENV"
 fi
 
-if [ "$dependency_branch_name" != "main" ]; then
+if [[ "$dependency_branch_name" != "main" ]]; then
   echo "Cloning ${dependency_name} branch: ${dependency_branch_name}"
   cd ..
   git clone --branch="${dependency_branch_name}" https://github.com/ihmeuw/"${dependency_name}".git
