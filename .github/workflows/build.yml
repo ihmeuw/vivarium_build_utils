@@ -12,7 +12,7 @@ on:
         type: string
 
 jobs:
-  reusable_job:
+  build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
