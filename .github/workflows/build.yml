@@ -65,8 +65,10 @@ jobs:
         run: |
           pip install black==22.3.0 isort
           isort . --check --verbose --only-modified --diff
+          echo "----------------------------------------"
           black . --check --diff
-          if "${{ inputs.use_mypy }}"; then
+          echo "----------------------------------------"
+          if "${{ inputs.use_mypy }}" == "true"; then
             mypy .
           fi
       - name: Test
