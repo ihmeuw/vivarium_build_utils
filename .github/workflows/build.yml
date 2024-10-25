@@ -49,9 +49,9 @@ jobs:
       - name: Install dependencies
         run: |
           if [[ -n "${{ inputs.install_type }}" ]] && [[ "${{ inputs.install_type }}" != "dev" ]]; then
-            echo "install_requires=${{ inputs.install_type }}" >> $GITHUB_ENV
+            install_requires="${{ inputs.install_type }}""
           else
-            echo "install_requires=dev" >> $GITHUB_ENV
+            install_requires="dev"
           fi
           echo "Install requirement is $install_requires"
           pip install .[${install_requires}]
