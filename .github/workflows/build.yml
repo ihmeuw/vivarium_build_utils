@@ -53,7 +53,7 @@ jobs:
           else
             echo "install_requires=dev" >> $GITHUB_ENV
           fi
-          pip install .[$install_requires]
+          pip install .[${install_requires}]
           git checkout ${branch_name}
       - name: Check for dependency branches and install if needed
         run: |
