@@ -1,0 +1,62 @@
+########################################
+### Workflow to install dependencies ###
+########################################
+
+name: build_utils
+on:
+  workflow_call:
+    inputs:
+      dependencies:
+        description: "String of comma-separated dependencies to check for upstream branches"
+        required: true
+        type: string
+      install_type:
+        description: "String of install type. Typically dev or test"
+        required: false
+        default: "dev"
+        type: string
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -le {0}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: get upstream branch name
+        run: |
+          if "${{ github.event_name == 'pull_request' }}" ; then
+            echo "branch_name=${GITHUB_HEAD_REF}" >> $GITHUB_ENV
+          else
+            echo "branch_name=${GITHUB_REF_NAME}" >> $GITHUB_ENV
+          fi
+      - name: Update pip
+        run: |
+          python -m pip install --upgrade pip
+      - name: Install dependencies
+        run: |
+          echo "Install requirement is ${{ inputs.install_type }}"
+          pip install .[${{ inputs.install_type }}]
+          git checkout ${branch_name}
+      - name: Check for dependency branches and install if needed
+        run: |
+          git clone https://github.com/ihmeuw/vivarium_build_utils.git ../vivarium_build_utils
+          echo "----------------------------------------"
+          echo "Contents of install_dependency_branch.sh"
+          echo "----------------------------------------"
+          cat ../vivarium_build_utils/install_dependency_branch.sh
+          echo "" 
+          echo "----------------------------------------"
+          for package in $(echo ${{ inputs.dependencies }} | sed "s/,/ /g"); do
+            sh ../vivarium_build_utils/install_dependency_branch.sh ${package} ${branch_name} github
+          done
+      - name: print environment values
+        run: |
+          cat $GITHUB_ENV
