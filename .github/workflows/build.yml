@@ -28,9 +28,9 @@ on:
 jobs:
   build_template:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.9", "3.10", "3.11"]
+    # strategy:
+    #   matrix:
+    #     python-version: ["3.9", "3.10", "3.11"]
     defaults:
       run:
         shell: bash -le {0}
