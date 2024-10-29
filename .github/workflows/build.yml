@@ -10,21 +10,23 @@ on:
         description: "String of comma-separated dependencies to check for upstream branches"
         required: true
         type: string
-      use_mypy:
+      skip_mypy:
         description: "Boolean to determine if mypy should be run"
-        required: True
+        required: false
+        default: true
         type: boolean
       install_type:
-        description: "String of install type. Typicall dev or test"
+        description: "String of install type. Typically dev or test"
         required: false
+        default: "dev"
         type: string
 
 jobs:
-  build:
+  build_template:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.9", "3.10", "3.11"]
+    # strategy:
+    #   matrix:
+    #     python-version: ["3.9", "3.10", "3.11"]
     defaults:
       run:
         shell: bash -le {0}
@@ -48,13 +50,8 @@ jobs:
           python -m pip install --upgrade pip
       - name: Install dependencies
         run: |
-          if [[ -n "${{ inputs.install_type }}" ]] && [[ "${{ inputs.install_type }}" != "dev" ]]; then
-            install_requires="${{ inputs.install_type }}"
-          else
-            install_requires="dev"
-          fi
-          echo "Install requirement is ${install_requires}"
-          pip install .[${install_requires}]
+          echo "Install requirement is ${{ inputs.install_type }}"
+          pip install .[${{ inputs.install_type }}]
           git checkout ${branch_name}
       - name: Check for dependency branches and install if needed
         run: |
@@ -78,7 +75,7 @@ jobs:
           echo "----------------------------------------"
           black . --check --diff
           echo "----------------------------------------"
-          if "${{ inputs.use_mypy }}" == "true"; then
+          if "${{ inputs.skip_mypy }}" == "false"; then
             mypy .
           fi
       - name: Test
