@@ -17,7 +17,7 @@ on:
         type: string
 
 jobs:
-  Install dependencies:
+  install:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -30,7 +30,7 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - name: get upstream branch name
+      - name: Get upstream branch name
         run: |
           if "${{ github.event_name == 'pull_request' }}" ; then
             echo "branch_name=${GITHUB_HEAD_REF}" >> $GITHUB_ENV
