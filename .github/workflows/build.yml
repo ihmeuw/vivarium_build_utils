@@ -6,6 +6,10 @@ name: build_utils
 on:
   workflow_call:
     inputs:
+      python_version:
+        description: "Python version to test"
+        required: true
+        type: string
       dependencies:
         description: "String of comma-separated dependencies to check for upstream branches"
         required: true
@@ -24,9 +28,9 @@ on:
 jobs:
   build_template:
     runs-on: ubuntu-latest
-    # strategy:
-    #   matrix:
-    #     python-version: ["3.9", "3.10", "3.11"]
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11"]
     defaults:
       run:
         shell: bash -le {0}
