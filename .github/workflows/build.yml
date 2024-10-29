@@ -27,12 +27,12 @@ jobs:
     defaults:
       run:
         shell: bash -le {0}
+  install dependencies:
+      uses: ihmeuw/vivarium_build_utils/.github/workflows/install.yml@albrja/mic-5469/modularize-workflows
+      with: 
+        dependencies: ${{ inputs.dependencies }}
+        install_type: ${{ inputs.install_type }}
     steps:
-      - name: Install dependencies
-        uses: ihmeuw/vivarium_build_utils/.github/workflows/install.yml@albrja/mic-5469/modularize-workflows
-        with: 
-          dependencies: ${{ inputs.dependencies }}
-          install_type: ${{ inputs.install_type }}
       # - uses: actions/checkout@v3
       #   with:
       #     fetch-depth: 0
