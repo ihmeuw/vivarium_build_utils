@@ -11,28 +11,28 @@ on:
         required: true
         type: string
       black_version:
-        description: "Black version to use"
+        description: "Black version to use. Default is '22.3.0'"
         required: false
         default: "22.3.0"
         type: string
       skip_mypy:
-        description: "Boolean to determine if mypy should be run"
+        description: "Boolean to determine if mypy should be skipped. Default is false"
         required: false
         default: false
         type: boolean
       install_type:
-        description: "String of install type. Typicall dev or test"
+        description: "String of install type. Default is '[dev]'"
         required: false
         default: "[dev]"
         type: string
       skip_docs:
-        description: "Boolean to determine if docs should be built"
+        description: "Boolean to determine if docs should be skipped. Default is false"
         required: false
         default: false
         type: boolean
     secrets:
       NOTIFY_EMAIL:
-        description: "Email to send notifications to"
+        description: "Email to send notifications to on cron job failure"
         required: false
       NOTIFY_PASSWORD:
         description: "Password for email to send notifications to"
@@ -109,10 +109,6 @@ jobs:
           if "${{ inputs.skip_docs == false }}"; then
             make doctest -C docs/
           fi
-      - name: Set notify variables
-        run: |
-          echo "Notification email is ${{ secrets.NOTIFY_EMAIL }}"
-          echo "Notification password is ${{ secrets.NOTIFY_PASSWORD }}"
       - name: Send mail
         # Notify when cron job fails
         if: (github.event_name == 'schedule' && failure())
