@@ -30,17 +30,6 @@ on:
         required: false
         default: false
         type: boolean
-      # secrets:
-      #   notify_email:
-      #     description: "Email to send notifications to"
-      #     required: false
-      #     default: "DEFAULT"
-      #     type: string
-      #   notify_password:
-      #     description: "Password for email to send notifications to"
-      #     required: false
-      #     default: "DEFAULT"
-      #     type: string
 
 jobs:
   template_build:
@@ -113,20 +102,10 @@ jobs:
           if "${{ inputs.skip_docs == false }}"; then
             make doctest -C docs/
           fi
-      # - name: Set notify variables
-      #   run: |
-      #     if "${{ inputs.notify_email != 'DEFAULT' }}"; then
-      #       echo "notify_email=${{ secrets.NOTIFY_EMAIL }}" >> $GITHUB_ENV
-      #     else
-      #       echo "notify_email=${{ inputs.notify_email }}" >> $GITHUB_ENV
-      #     fi
-      #     if "${{ inputs.notify_password != 'DEFAULT' }}"; then
-      #       echo "notify_password=${{ secrets.NOTIFY_PASSWORD }}" >> $GITHUB_ENV
-      #     else 
-      #       echo "notify_password=${{ inputs.notify_password }}" >> $GITHUB_ENV
-      #     fi
-      #     echo "Notification email is ${{ env.notify_email }}"
-      #     echo "Notification password is ${{ env.notify_password }}"
+      - name: Set notify variables
+        run: |
+          echo "Notification email is ${{ secrets.NOTIFY_EMAIL }}"
+          echo "Notification password is ${{ secrets.NOTIFY_PASSWORD }}"
       - name: Send mail
         # Notify when cron job fails
         if: (github.event_name == 'schedule' && failure())
