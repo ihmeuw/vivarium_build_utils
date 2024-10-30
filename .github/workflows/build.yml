@@ -30,6 +30,13 @@ on:
         required: false
         default: false
         type: boolean
+    secrets:
+      NOTIFY_EMAIL:
+        description: "Email to send notifications to"
+        required: false
+      NOTIFY_PASSWORD:
+        description: "Password for email to send notifications to"
+        required: false
 
 jobs:
   template_build:
