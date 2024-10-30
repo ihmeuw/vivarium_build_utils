@@ -85,7 +85,7 @@ jobs:
           black . --check --diff
           echo "----------------------------------------"
           echo "Input value for skip_mypy is ${{ inputs.skip_mypy }}"
-          if "${{ inputs.skip_mypy }}" == "false"; then
+          if ${{ inputs.skip_mypy }} == false; then
             echo "Running mypy"
             mypy .
           fi
