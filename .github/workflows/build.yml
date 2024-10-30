@@ -10,6 +10,11 @@ on:
         description: "String of comma-separated dependencies to check for upstream branches"
         required: true
         type: string
+      black_version:
+        description: "Black version to use"
+        required: false
+        default: "22.3.0"
+        type: string
       skip_mypy:
         description: "Boolean to determine if mypy should be run"
         required: false
@@ -18,20 +23,23 @@ on:
       install_type:
         description: "String of install type. Typicall dev or test"
         required: false
-        default: "dev"
+        default: "[dev]"
         type: string
       skip_docs:
         description: "Boolean to determine if docs should be built"
         required: false
         default: false
         type: boolean
-    secrets:
-      NOTIFY_EMAIL:
+      notify_email:
         description: "Email to send notifications to"
-        required: true
-      NOTIFY_PASSWORD:
+        required: false
+        default: "DEFAULT"
+        type: string
+      notify_password:
         description: "Password for email to send notifications to"
-        required: true
+        required: false
+        default: "DEFAULT"
+        type: string
 
 jobs:
   build_template:
@@ -60,7 +68,7 @@ jobs:
       - name: Install dependencies
         run: |
           echo "Install requirement is ${{ inputs.install_type }}"
-          pip install .[${{ inputs.install_type }}]
+          pip install .${{ inputs.install_type }}
           git checkout ${branch_name}
       - name: Check for dependency branches and install if needed
         run: |
@@ -79,13 +87,13 @@ jobs:
           cat $GITHUB_ENV
       - name: Lint
         run: |
-          pip install black==22.3.0 isort
+          pip install black==${{ inputs.black_version }} isort
           isort . --check --verbose --only-modified --diff
           echo "----------------------------------------"
           black . --check --diff
           echo "----------------------------------------"
           if "${{ inputs.skip_mypy == false }}"; then
-            mypy .  
+            mypy .
           fi
       - name: Test
         run: |
@@ -104,6 +112,20 @@ jobs:
           if "${{ inputs.skip_docs == false }}"; then
             make doctest -C docs/
           fi
+      - name: Set notify variables
+        run: |
+          if "${{ inputs.notify_email != 'DEFAULT' }}"; then
+            echo "notify_email=${{ secrets.NOTIFY_EMAIL }}" >> $GITHUB_ENV
+          else
+            echo "notify_email=${{ inputs.notify_email }}" >> $GITHUB_ENV
+          fi
+          if "${{ inputs.notify_password != 'DEFAULT' }}"; then
+            echo "notify_password=${{ secrets.NOTIFY_PASSWORD }}" >> $GITHUB_ENV
+          else 
+            echo "notify_password=${{ inputs.notify_password }}" >> $GITHUB_ENV
+          fi
+          echo "Notification email is ${{ env.notify_email }}"
+          echo "Notification password is ${{ env.notify_password }}"
       - name: Send mail
         # Notify when cron job fails
         if: (github.event_name == 'schedule' && failure())
@@ -113,8 +135,8 @@ jobs:
           server_address: smtp.gmail.com
           server_port: 465
           # user credentials
-          username: ${{ secrets.NOTIFY_EMAIL }}
-          password: ${{ secrets.NOTIFY_PASSWORD }}
+          username: ${{ env.notify_email }}
+          password: ${{ env.notify_password }}
           # email subject
           subject: ${{ github.job }} job of ${{ github.repository }} has ${{ job.status }}
           # email body as text
