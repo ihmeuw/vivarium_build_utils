@@ -43,7 +43,7 @@ on:
       #     type: string
 
 jobs:
-  build_template:
+  template_build:
     runs-on: ubuntu-latest
     defaults:
       run:
