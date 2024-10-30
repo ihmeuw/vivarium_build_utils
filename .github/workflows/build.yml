@@ -84,10 +84,8 @@ jobs:
           echo "----------------------------------------"
           black . --check --diff
           echo "----------------------------------------"
-          echo "Input value for skip_mypy is ${{ inputs.skip_mypy }}"
-          if "${{ inputs.skip_mypy  == false }}"; then
-            echo "Running mypy"
-            mypy .
+          if "${{ inputs.skip_mypy == false }}"; then
+            mypy .  
           fi
       - name: Test
         run: |
@@ -98,12 +96,12 @@ jobs:
           fi
       - name: Doc build
         run: |
-          if "${{ inputs.skip_docs }}" == "false"; then
+          if "${{ inputs.skip_docs == false }}"; then
             make html -C docs/ SPHINXOPTS="-W --keep-going -n"
           fi
       - name: Doctest
         run: |
-          if "${{ inputs.skip_docs }}" == "false"; then
+          if "${{ inputs.skip_docs == false }}"; then
             make doctest -C docs/
           fi
       - name: Send mail
