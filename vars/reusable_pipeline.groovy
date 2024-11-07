@@ -120,7 +120,7 @@ def call(Map config = [:]){
 
                 // Display environment variables from Jenkins.
                 echo """Environment:
-                REPO_NAME:      '${repo_name}'
+                REPO_NAME:      '${env.REPO_NAME}'
                 ACTIVATE:       '${ACTIVATE}'
                 BUILD_NUMBER:   '${BUILD_NUMBER}'
                 BRANCH:         '${BRANCH}'
