@@ -15,7 +15,7 @@ def call(Map config = [:]){
     Example: vivarium(job_name: JOB_NAME)
     JOB_NAME is a reserved Jenkins var
     */
-    pipeline_name="test_poc_reusable_workflow"
+    pipeline_name=${config.pipeline_name}
     conda_env_name="${pipeline_name}-${BUILD_NUMBER}"
     conda_env_path="/tmp/${conda_env_name}"
     // defaults for conda and pip are a local directory /svc-simsci for improved speed.
@@ -120,7 +120,6 @@ def call(Map config = [:]){
 
                 // Display environment variables from Jenkins.
                 echo """Environment:
-                REPO_NAME:      '${env.REPO_NAME}'
                 ACTIVATE:       '${ACTIVATE}'
                 BUILD_NUMBER:   '${BUILD_NUMBER}'
                 BRANCH:         '${BRANCH}'
