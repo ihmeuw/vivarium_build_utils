@@ -8,5 +8,5 @@ def call(Map config = [:]) {
     "Patrick Nast": "pnast",
     "Rajan Mudambi": "rmudambi",
   ]
-  return mapping.get("${config.github_author}", "channel")
+  return mapping.get(${config.github_author}, "channel")
 }
