@@ -200,7 +200,7 @@ def call(Map config = [:]){
                     script: "git log -1 --pretty=format:'%an'",
                     returnStdout: true
                 ).trim()
-                slackID = github_slack_mapper(developerID)
+                slackID = github_slack_mapper(github_author: developerID)
                 slackMessage = """
                     Job: *${env.JOB_NAME}*
                     Build number: #${env.BUILD_NUMBER}
