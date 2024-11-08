@@ -1,81 +1,60 @@
-def githubUsernameToSlackName(github_author) {
-  // Add team members as necessary
-  def mapping = [
-    "Jim Albright": "albrja",
-    "Steve Bachmeier": "sbachmei",
-    "Hussain Jafari": "hjafari",
-    "Patrick Nast": "pnast",
-    "Rajan Mudambi": "rmudambi",
-  ]
-  return mapping.get(github_author, "channel")
-}
-
 def call(Map config = [:]){
     /* This is the funtion called from the repo
-    Example: vivarium(job_name: JOB_NAME)
+    Example: fhs_standard_pipeline(job_name: JOB_NAME)
     JOB_NAME is a reserved Jenkins var
     */
-    // pipeline_name=${config.pipeline_name}
-    pipeline_name="test_poc_resuable_workflow"
-    conda_env_name="${pipeline_name}-${BUILD_NUMBER}"
-    conda_env_path="/tmp/${conda_env_name}"
-    // defaults for conda and pip are a local directory /svc-simsci for improved speed.
-    // In the past, we used /ihme/code/* on the NFS (which is slower)
-    shared_path="/svc-simsci"
 
     pipeline {
-    // This agent runs as svc-simsci on node simsci-slurm-sbuild-p01.
-    // It has access to standard IHME filesystems and singularity
-    agent { label "svc-simsci" }
+        // This agent runs as svc-simsci on node simsci-slurm-sbuild-p01.
+        // It has access to standard IHME filesystems and singularity
+        agent { label "svc-simsci" }
 
-    options {
-        // Keep 100 old builds.
-        buildDiscarder logRotator(numToKeepStr: "100")
+        options {
+            // Keep 100 old builds.
+            buildDiscarder logRotator(numToKeepStr: "100")
+            
+            // Wait 60 seconds before starting the build.
+            // If another commit enters the build queue in this time, the first build will be discarded.
+            quietPeriod(60)
 
-        // Wait 60 seconds before starting the build.
-        // If another commit enters the build queue in this time, the first build will be discarded.
-        quietPeriod(60)
-
-        // Fail immediately if any part of a parallel stage fails
-        parallelsAlwaysFailFast()
-    }
-
-    parameters {
-        booleanParam(
-        name: "DEPLOY_OVERRIDE",
-        defaultValue: false,
-        description: "Whether to deploy despite building a non-default branch. Builds of the default branch are always deployed."
-        )
-        booleanParam(
-        name: "IS_CRON",
-        defaultValue: true,
-        description: "Indicates a recurring build. Used to skip deployment steps."
-        )
-        string(
-        name: "SLACK_TO",
-        defaultValue: "simsci-ci-status",
-        description: "The Slack channel to send messages to."
-        )
-        booleanParam(
-        name: "DEBUG",
-        defaultValue: false,
-        description: "Used as needed for debugging purposes."
-        )
-    }
-
-    stages {
-        stage("Initialization") {
-        steps {
-            script {
-            // Use the name of the branch in the build name
-            currentBuild.displayName = "#${BUILD_NUMBER} ${GIT_BRANCH}"
-            }
+            // Fail immediately if any part of a parallel stage fails
+            parallelsAlwaysFailFast()
         }
+
+        parameters {
+            booleanParam(
+            name: "DEPLOY_OVERRIDE",
+            defaultValue: false,
+            description: "Whether to deploy despite building a non-default branch. Builds of the default branch are always deployed."
+            )
+            booleanParam(
+            name: "IS_CRON",
+            defaultValue: true,
+            description: "Indicates a recurring build. Used to skip deployment steps."
+            )
+            string(
+            name: "SLACK_TO",
+            defaultValue: "simsci-ci-status",
+            description: "The Slack channel to send messages to."
+            )
+            booleanParam(
+            name: "DEBUG",
+            defaultValue: false,
+            description: "Used as needed for debugging purposes."
+            )
+        }
+
+        stages {
+            stage("Initialization") {
+            steps {
+                script {
+                // Use the name of the branch in the build name
+                currentBuild.displayName = "#${BUILD_NUMBER} ${GIT_BRANCH}"
+                }
+            }
         }
 
         stage("Python version matrix") {
-        // we don't want to go to deployment if any of the matrix branches fail
-        failFast true
         matrix {
             // customWorkspace setting must be ran within a node
             agent {
@@ -92,6 +71,12 @@ def call(Map config = [:]){
             }
 
         environment {
+            // pipeline_name=${config.pipeline_name}
+            conda_env_name="${env.JOB_NAME}-${BUILD_NUMBER}-${PYTHON_VERSION}"
+            conda_env_path="/tmp/${conda_env_name}"
+            // defaults for conda and pip are a local directory /svc-simsci for improved speed.
+            // In the past, we used /ihme/code/* on the NFS (which is slower)
+            shared_path="/svc-simsci"
             // Get the branch being built and strip everything but the text after the last "/"
             BRANCH = sh(script: "echo ${GIT_BRANCH} | rev | cut -d '/' -f1 | rev", returnStdout: true).trim()
             TIMESTAMP = sh(script: 'date', returnStdout: true)
@@ -103,7 +88,7 @@ def call(Map config = [:]){
             // different branches happen concurrently.
             PYTHON_DEPLOY_VERSION = "3.11"
             CONDA_ENV_NAME = "${conda_env_name}"
-            CONDA_ENV_PATH = "${conda_env_path}_${PYTHON_VERSION}"
+            CONDA_ENV_PATH = "${conda_env_path}"
             // Set the Pip cache.
             XDG_CACHE_HOME = "${shared_path}/pip-cache"
             // Jenkins commands run in separate processes, so need to activate the environment every
@@ -112,6 +97,7 @@ def call(Map config = [:]){
         }
 
         stages {
+
             stage("Debug Info") {
               steps {
                 echo "Jenkins pipeline run timestamp: ${TIMESTAMP}"
@@ -157,12 +143,6 @@ def call(Map config = [:]){
               }
             }
 
-            // stage("Dependencies") {
-            //   steps {
-            //     sh "${ACTIVATE} && make dependencies \"ARGS=${GIT_BRANCH}\""
-            //   }
-            // }
-
             // Quality Checks
             stage("Format") {
               steps {
@@ -170,14 +150,6 @@ def call(Map config = [:]){
               }
             }
 
-            // stage("Lint") {
-            //   steps {
-            //     sh "${ACTIVATE} && make lint"
-            //   }
-            // }
-
-            // Tests
-            // removable, if passwords can be exported to env. securely without bash indirection
             stage("Run Integration Tests") {
               steps {
                 sh "${ACTIVATE} && make integration"
@@ -192,7 +164,6 @@ def call(Map config = [:]){
                 ])
               }
             }
-
             // Build
             stage('Build and Deploy') {
               when {
@@ -211,8 +182,9 @@ def call(Map config = [:]){
                 }
               } // stages within build and deploy
             } // build and deploy stage
-         } // stages bracket within Python matrix
-            post {
+          } // stages within python version matrix
+
+        post {
             always {
                 sh "${ACTIVATE} && make clean"
                 sh "rm -rf ${CONDA_ENV_PATH}"
@@ -228,7 +200,7 @@ def call(Map config = [:]){
                     script: "git log -1 --pretty=format:'%an'",
                     returnStdout: true
                 ).trim()
-                slackID = githubUsernameToSlackName(developerID)
+                slackID = github_slack_mapper(github_author: developerID)
                 slackMessage = """
                     Job: *${env.JOB_NAME}*
                     Build number: #${env.BUILD_NUMBER}
@@ -262,8 +234,8 @@ def call(Map config = [:]){
                 }
               }
             }
-          } // Python matrix bracket
-        } // Python matrix stage bracket
-      } // stages bracket
-  } // pipeline bracket
+          }
+        }
+      }
+    }
 }
