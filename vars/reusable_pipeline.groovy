@@ -201,6 +201,7 @@ def call(Map config = [:]){
                     returnStdout: true
                 ).trim()
                 slackID = github_slack_mapper(github_author: developerID)
+                echo "The Slack ID is ${slackID} and developer is ${developerID}"
                 slackMessage = """
                     Job: *${env.JOB_NAME}*
                     Build number: #${env.BUILD_NUMBER}
