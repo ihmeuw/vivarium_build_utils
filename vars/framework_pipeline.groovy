@@ -1,9 +1,8 @@
 def call(Map config = [:]){
-        /* This is the funtion called from the repo
-        Example: fhs_standard_pipeline(job_name: JOB_NAME)
-        JOB_NAME is a reserved Jenkins var
-        */
-
+    /* This is the funtion called from the repo
+    Example: fhs_standard_pipeline(job_name: JOB_NAME)
+    JOB_NAME is a reserved Jenkins var
+    */
 
     pipeline {
         // This agent runs as svc-simsci on node simsci-slurm-sbuild-p01.
@@ -73,7 +72,7 @@ def call(Map config = [:]){
 
         environment {
             // pipeline_name=${config.pipeline_name}
-            conda_env_name="${env.JOB_NAME}-${BUILD_NUMBER}"
+            conda_env_name="${env.JOB_NAME}-${BUILD_NUMBER}-${PYTHON_VERSION}"
             conda_env_path="/tmp/${conda_env_name}"
             // defaults for conda and pip are a local directory /svc-simsci for improved speed.
             // In the past, we used /ihme/code/* on the NFS (which is slower)
@@ -89,7 +88,7 @@ def call(Map config = [:]){
             // different branches happen concurrently.
             PYTHON_DEPLOY_VERSION = "3.11"
             CONDA_ENV_NAME = "${conda_env_name}"
-            CONDA_ENV_PATH = "${conda_env_path}_${PYTHON_VERSION}"
+            CONDA_ENV_PATH = "${conda_env_path}"
             // Set the Pip cache.
             XDG_CACHE_HOME = "${shared_path}/pip-cache"
             // Jenkins commands run in separate processes, so need to activate the environment every
