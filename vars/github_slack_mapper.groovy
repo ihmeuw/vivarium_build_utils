@@ -1,4 +1,6 @@
-def githubUsernameToSlackName(github_author) {
+def call(Map config = [:]) {
+  
+  def github_author = "{$config.github_author}"
   // Add team members as necessary
   def mapping = [
     "Jim Albright": "albrja",
