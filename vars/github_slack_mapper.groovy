@@ -1,6 +1,5 @@
 def call(Map config = [:]) {
-  
-  def github_author = "{$config.github_author}"
+
   // Add team members as necessary
   def mapping = [
     "Jim Albright": "albrja",
@@ -9,5 +8,5 @@ def call(Map config = [:]) {
     "Patrick Nast": "pnast",
     "Rajan Mudambi": "rmudambi",
   ]
-  return mapping.get(github_author, "channel")
+  return mapping.get("${config.github_author}", "channel")
 }
