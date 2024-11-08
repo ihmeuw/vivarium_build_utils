@@ -56,8 +56,6 @@ def call(Map config = [:]){
         }
 
         stage("Python version matrix") {
-        // we don't want to go to deployment if any of the matrix branches fail
-        failFast true
         matrix {
             // customWorkspace setting must be ran within a node
             agent {
@@ -74,6 +72,12 @@ def call(Map config = [:]){
             }
 
         environment {
+            // pipeline_name=${config.pipeline_name}
+            conda_env_name="${env.JOB_NAME}-${BUILD_NUMBER}"
+            conda_env_path="/tmp/${conda_env_name}"
+            // defaults for conda and pip are a local directory /svc-simsci for improved speed.
+            // In the past, we used /ihme/code/* on the NFS (which is slower)
+            shared_path="/svc-simsci"
             // Get the branch being built and strip everything but the text after the last "/"
             BRANCH = sh(script: "echo ${GIT_BRANCH} | rev | cut -d '/' -f1 | rev", returnStdout: true).trim()
             TIMESTAMP = sh(script: 'date', returnStdout: true)
@@ -197,7 +201,7 @@ def call(Map config = [:]){
                     script: "git log -1 --pretty=format:'%an'",
                     returnStdout: true
                 ).trim()
-                slackID = githubUsernameToSlackName(developerID)
+                slackID = github_slack_mapper(developerID)
                 slackMessage = """
                     Job: *${env.JOB_NAME}*
                     Build number: #${env.BUILD_NUMBER}
