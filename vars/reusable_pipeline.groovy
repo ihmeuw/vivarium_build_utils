@@ -185,8 +185,6 @@ def call(Map config = [:]){
 
           post {
             always {
-              sh "${ACTIVATE} && make clean"
-              sh "rm -rf ${CONDA_ENV_PATH}"
               // Generate a message to send to Slack.
               script {
                 // Run git command to get the author of the last commit
@@ -211,10 +209,6 @@ def call(Map config = [:]){
                   Build details: <${env.BUILD_URL}/console|See in web console>
                   """.stripIndent()
               }
-
-              // TODO update to fully clean jenkins workspace
-              // Delete the workspace directory.
-              deleteDir()
             }
             failure {
               echo "This build triggered by ${developerID} failed on ${GIT_BRANCH}. Sending a failure message to Slack."
@@ -236,9 +230,27 @@ def call(Map config = [:]){
                 }
               }
             }
+            cleanup {  // cleanup for python matrix workspaces
+              sh "${ACTIVATE} && make clean"
+              sh "rm -rf ${CONDA_ENV_PATH}"
+              cleanWs()
+              // manually remove @tmp dirs
+              dir("${WORKSPACE}@tmp"){
+                deleteDir()
+              }
+            }
           }  // End of post stage
         }  // End of python version matrix
       }  // End of python version matrix stage
     }  // End of stages
+    post {
+      cleanup { // cleanup for outer workspace
+        cleanWs()
+        // manually remove @tmp dirs
+        dir("${WORKSPACE}@tmp"){
+          deleteDir()
+        }
+      }
+    }
   }  // End of pipeline
 }
