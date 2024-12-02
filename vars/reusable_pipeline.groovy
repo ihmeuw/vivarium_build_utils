@@ -1,76 +1,76 @@
 def call(Map config = [:]){
-    /* This is the funtion called from the repo
-    Example: fhs_standard_pipeline(job_name: JOB_NAME)
-    JOB_NAME is a reserved Jenkins var
-    */
+  /* This is the funtion called from the repo
+  Example: fhs_standard_pipeline(job_name: JOB_NAME)
+  JOB_NAME is a reserved Jenkins var
+  */
 
-    pipeline {
-        // This agent runs as svc-simsci on node simsci-slurm-sbuild-p01.
-        // It has access to standard IHME filesystems and singularity
-        agent { label "svc-simsci" }
+  pipeline {
+    // This agent runs as svc-simsci on node simsci-slurm-sbuild-p01.
+    // It has access to standard IHME filesystems and singularity
+    agent { label "svc-simsci" }
 
-        options {
-            // Keep 100 old builds.
-            buildDiscarder logRotator(numToKeepStr: "100")
-            
-            // Wait 60 seconds before starting the build.
-            // If another commit enters the build queue in this time, the first build will be discarded.
-            quietPeriod(60)
+    options {
+      // Keep 100 old builds.
+      buildDiscarder logRotator(numToKeepStr: "100")
+      
+      // Wait 60 seconds before starting the build.
+      // If another commit enters the build queue in this time, the first build will be discarded.
+      quietPeriod(60)
 
-            // Fail immediately if any part of a parallel stage fails
-            parallelsAlwaysFailFast()
+      // Fail immediately if any part of a parallel stage fails
+      parallelsAlwaysFailFast()
+    }
+
+    parameters {
+      booleanParam(
+        name: "DEPLOY_OVERRIDE",
+        defaultValue: false,
+        description: "Whether to deploy despite building a non-default branch. Builds of the default branch are always deployed."
+      )
+      booleanParam(
+        name: "IS_CRON",
+        defaultValue: true,
+        description: "Indicates a recurring build. Used to skip deployment steps."
+      )
+      string(
+        name: "SLACK_TO",
+        defaultValue: "simsci-ci-status",
+        description: "The Slack channel to send messages to."
+      )
+      booleanParam(
+      name: "DEBUG",
+      defaultValue: false,
+      description: "Used as needed for debugging purposes."
+      )
+    }
+
+    stages {
+      stage("Initialization") {
+        steps {
+          script {
+            // Use the name of the branch in the build name
+            currentBuild.displayName = "#${BUILD_NUMBER} ${GIT_BRANCH}"
+          }
         }
+      }
 
-        parameters {
-            booleanParam(
-            name: "DEPLOY_OVERRIDE",
-            defaultValue: false,
-            description: "Whether to deploy despite building a non-default branch. Builds of the default branch are always deployed."
-            )
-            booleanParam(
-            name: "IS_CRON",
-            defaultValue: true,
-            description: "Indicates a recurring build. Used to skip deployment steps."
-            )
-            string(
-            name: "SLACK_TO",
-            defaultValue: "simsci-ci-status",
-            description: "The Slack channel to send messages to."
-            )
-            booleanParam(
-            name: "DEBUG",
-            defaultValue: false,
-            description: "Used as needed for debugging purposes."
-            )
-        }
-
-        stages {
-            stage("Initialization") {
-            steps {
-                script {
-                // Use the name of the branch in the build name
-                currentBuild.displayName = "#${BUILD_NUMBER} ${GIT_BRANCH}"
-                }
-            }
-        }
-
-        stage("Python version matrix") {
+      stage("Python version matrix") {
         matrix {
-            // customWorkspace setting must be ran within a node
-            agent {
+          // customWorkspace setting must be ran within a node
+          agent {
             node {
-                label "svc-simsci"
+              label "svc-simsci"
             }
+          }
+          axes {
+            axis {
+              // parallelize by python minor version
+              name 'PYTHON_VERSION'
+              values "3.9", "3.10", "3.11"
             }
-            axes {
-                axis {
-                    // parallelize by python minor version
-                    name 'PYTHON_VERSION'
-                    values "3.9", "3.10", "3.11"
-                }
-            }
+          }
 
-        environment {
+          environment {
             // pipeline_name=${config.pipeline_name}
             conda_env_name="${env.JOB_NAME}-${BUILD_NUMBER}-${PYTHON_VERSION}"
             conda_env_path="/tmp/${conda_env_name}"
@@ -94,9 +94,9 @@ def call(Map config = [:]){
             // Jenkins commands run in separate processes, so need to activate the environment every
             // time we run pip, poetry, etc.
             ACTIVATE = "source ${CONDA_BIN_PATH}/activate ${CONDA_ENV_PATH} &> /dev/null"
-        }
+          }
 
-        stages {
+          stages {
 
             stage("Debug Info") {
               steps {
@@ -143,7 +143,6 @@ def call(Map config = [:]){
               }
             }
 
-            // Quality Checks
             stage("Format") {
               steps {
                 sh "${ACTIVATE} && make format"
@@ -164,7 +163,7 @@ def call(Map config = [:]){
                 ])
               }
             }
-            // Build
+
             stage('Build and Deploy') {
               when {
                 expression { "${PYTHON_DEPLOY_VERSION}" == "${PYTHON_VERSION}" }
@@ -180,63 +179,65 @@ def call(Map config = [:]){
                     sh "${ACTIVATE} && make build-package"
                   }
                 }
-              } // stages within build and deploy
-            } // build and deploy stage
+              }
+            }
           } // stages within python version matrix
 
-        post {
+          post {
             always {
-                sh "${ACTIVATE} && make clean"
-                sh "rm -rf ${CONDA_ENV_PATH}"
-                // Generate a message to send to Slack.
-                script {
+              sh "${ACTIVATE} && make clean"
+              sh "rm -rf ${CONDA_ENV_PATH}"
+              // Generate a message to send to Slack.
+              script {
                 if (env.BRANCH == "main") {
                     channelName = "simsci-ci-status"
                 } else {
                     channelName = "simsci-ci-status-test"
                 }
                 // Run git command to get the author of the last commit
+                // TODO: ping @channel if branch == main
                 developerID = sh(
-                    script: "git log -1 --pretty=format:'%an'",
-                    returnStdout: true
+                  script: "git log -1 --pretty=format:'%an'",
+                  returnStdout: true
                 ).trim()
                 slackID = github_slack_mapper(github_author: developerID)
                 echo "The Slack ID is ${slackID} and developer is ${developerID}"
                 slackMessage = """
-                    Job: *${env.JOB_NAME}*
-                    Build number: #${env.BUILD_NUMBER}
-                    Build status: *${currentBuild.result}*
-                    Author: @${slackID}
-                    Build details: <${env.BUILD_URL}/console|See in web console>
-                """.stripIndent()
+                  Job: *${env.JOB_NAME}*
+                  Build number: #${env.BUILD_NUMBER}
+                  Build status: *${currentBuild.result}*
+                  Author: @${slackID}
+                  Build details: <${env.BUILD_URL}/console|See in web console>
+                  """.stripIndent()
               }
 
-                // Delete the workspace directory.
-                deleteDir()
-           }
-           failure {
-                echo "This build triggered by ${developerID} failed on ${GIT_BRANCH}. Sending a failure message to Slack."
-                slackSend channel: "#${channelName}",
+              // TODO update to fully clean jenkins workspace
+              // Delete the workspace directory.
+              deleteDir()
+            }
+            failure {
+              echo "This build triggered by ${developerID} failed on ${GIT_BRANCH}. Sending a failure message to Slack."
+              slackSend channel: "#${channelName}",
+                        message: slackMessage,
+                        teamDomain: "ihme",
+                        tokenCredentialId: "slack"
+            }
+            success {
+              script {
+                if (params.DEBUG) {
+                  echo 'Debug is enabled. Sending a success message to Slack.'
+                  slackSend channel: "#${channelName}",
                             message: slackMessage,
                             teamDomain: "ihme",
                             tokenCredentialId: "slack"
-           }
-           success {
-             script {
-               if (params.DEBUG) {
-                 echo 'Debug is enabled. Sending a success message to Slack.'
-                 slackSend channel: "#${channelName}",
-                           message: slackMessage,
-                           teamDomain: "ihme",
-                              tokenCredentialId: "slack"
-                  } else {
-                    echo 'Debug is not enabled. No success message will be sent to Slack.'
-                   }
+                } else {
+                  echo 'Debug is not enabled. No success message will be sent to Slack.'
                 }
               }
             }
-          }
-        }
-      }
-    }
+          }  // End of post stage
+        }  // End of python version matrix
+      }  // End of python version matrix stage
+    }  // End of stages
+  }  // End of pipeline
 }
