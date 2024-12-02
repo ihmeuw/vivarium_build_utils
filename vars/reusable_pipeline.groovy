@@ -66,7 +66,7 @@ def call(Map config = [:]){
             axis {
               // parallelize by python minor version
               name 'PYTHON_VERSION'
-              values "3.9", "3.10", "3.11"
+              values "3.10", "3.11"
             }
           }
 
