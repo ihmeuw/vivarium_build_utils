@@ -192,15 +192,15 @@ def call(Map config = [:]){
                   script: "git log -1 --pretty=format:'%an'",
                   returnStdout: true
                 ).trim()
-                echo "Most recent developer: ${developerID}"
+                echo "Most recent developerID: ${developerID}"
                 if (env.BRANCH == "main") {
                   channelName = "simsci-ci-status"
-                  slackID = github_slack_mapper(github_author: developerID)
+                  slackID = "channel"
                 } else {
                   channelName = "simsci-ci-status-test"
-                  slackID = "channel"
+                  slackID = github_slack_mapper(github_author: developerID)
                 }
-                echo "Slack ID: ${slackID}"
+                echo "slackID to tag in slack message: ${slackID}"
                 slackMessage = """
                   Job: *${env.JOB_NAME}*
                   Build number: #${env.BUILD_NUMBER}
