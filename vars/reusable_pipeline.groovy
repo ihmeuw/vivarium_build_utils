@@ -189,19 +189,20 @@ def call(Map config = [:]){
               sh "rm -rf ${CONDA_ENV_PATH}"
               // Generate a message to send to Slack.
               script {
-                if (env.BRANCH == "main") {
-                    channelName = "simsci-ci-status"
-                } else {
-                    channelName = "simsci-ci-status-test"
-                }
                 // Run git command to get the author of the last commit
-                // TODO: ping @channel if branch == main
                 developerID = sh(
                   script: "git log -1 --pretty=format:'%an'",
                   returnStdout: true
                 ).trim()
-                slackID = github_slack_mapper(github_author: developerID)
-                echo "The Slack ID is ${slackID} and developer is ${developerID}"
+                echo "Most recent developer: ${developerID}"
+                if (env.BRANCH == "main") {
+                  channelName = "simsci-ci-status"
+                  slackID = github_slack_mapper(github_author: developerID)
+                } else {
+                  channelName = "simsci-ci-status-test"
+                  slackID = "channel"
+                }
+                echo "Slack ID: ${slackID}"
                 slackMessage = """
                   Job: *${env.JOB_NAME}*
                   Build number: #${env.BUILD_NUMBER}
