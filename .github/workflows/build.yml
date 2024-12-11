@@ -7,7 +7,7 @@ on:
   workflow_call:
     inputs:
       python_version:
-        description: "Pyton version to use for builds"
+        description: "Python version to use for builds"
         required: true
         type: "string"
       dependencies:
