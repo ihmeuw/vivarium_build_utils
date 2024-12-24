@@ -3,7 +3,8 @@ def call(Map config = [:]){
   Example: fhs_standard_pipeline(job_name: JOB_NAME)
   JOB_NAME is a reserved Jenkins var
   */
-
+  scheduled_branches = config.scheduled_branches ?: 'main' 
+  CRON_SETTINGS = scheduled_branches.split(',').collect{it.trim()}.contains(BRANCH_NAME) ? 'H H(20-23) * * *' : ''
   pipeline {
     // This agent runs as svc-simsci on node simsci-ci-coordinator-01.
     // It has access to standard IHME filesystems and singularity
@@ -42,6 +43,9 @@ def call(Map config = [:]){
       defaultValue: false,
       description: "Used as needed for debugging purposes."
       )
+    }
+    triggers {
+      cron(CRON_SETTINGS)
     }
 
     stages {
