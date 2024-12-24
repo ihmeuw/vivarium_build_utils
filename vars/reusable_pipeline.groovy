@@ -5,9 +5,9 @@ def call(Map config = [:]){
   */
 
   pipeline {
-    // This agent runs as svc-simsci on node simsci-slurm-sbuild-p01.
+    // This agent runs as svc-simsci on node simsci-ci-coordinator-01.
     // It has access to standard IHME filesystems and singularity
-    agent { label "svc-simsci" }
+    agent { label "coordinator" }
 
     options {
       // Keep 100 old builds.
@@ -59,7 +59,7 @@ def call(Map config = [:]){
           // customWorkspace setting must be ran within a node
           agent {
             node {
-              label "svc-simsci"
+              label "matrix-tasks"
             }
           }
           axes {
