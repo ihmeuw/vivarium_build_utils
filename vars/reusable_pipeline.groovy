@@ -3,6 +3,7 @@ def call(Map config = [:]){
   Example: fhs_standard_pipeline(job_name: JOB_NAME)
   JOB_NAME is a reserved Jenkins var
   */
+  test_types = config.test_types ?: []
   scheduled_branches = config.scheduled_branches ?: '' 
   CRON_SETTINGS = scheduled_branches.split(',').collect{it.trim()}.contains(BRANCH_NAME) ? 'H H(20-23) * * *' : ''
   pipeline {
@@ -166,7 +167,7 @@ def call(Map config = [:]){
             stage("Run Tests") {
               steps {
                 script {
-                    def parallelStages = config.tests.collectEntries {
+                    def parallelStages = test_types.collectEntries {
                         ["${it.capitalize()} Tests" : {
                             stage("Running ${it} tests") {
                                 echo "Executing ${it} test suite..."
