@@ -147,24 +147,43 @@ def call(Map config = [:]){
               }
             }
 
-            stage("Format") {
-              steps {
-                sh "${ACTIVATE} && make format"
+            stage("Quality Checks") {
+              parallel {
+                stage("Format") {
+                  steps {
+                    sh "${ACTIVATE} && make format"
+                  }
+                }
+
+                stage("Lint") {
+                  steps {
+                    sh "${ACTIVATE} && make lint"
+                  }
+                }
               }
             }
 
-            stage("Run Integration Tests") {
+            stage("Run Tests") {
               steps {
-                sh "${ACTIVATE} && make integration"
-                publishHTML([
-                  allowMissing: true,
-                  alwaysLinkToLastBuild: false,
-                  keepAll: true,
-                  reportDir: "output/htmlcov_integration",
-                  reportFiles: "index.html",
-                  reportName: "Coverage Report - Integration tests",
-                  reportTitles: ''
-                ])
+                script {
+                    def parallelStages = config.tests.collectEntries {
+                        ["${it.capitalize()} Tests" : {
+                            stage("Running ${it} tests") {
+                                echo "Executing ${it} test suite..."
+                                sh "${ACTIVATE} && make ${it}"
+                                publishHTML([
+                                  allowMissing: true,
+                                  alwaysLinkToLastBuild: false,
+                                  keepAll: true,
+                                  reportDir: "output/htmlcov_${it}",
+                                  reportFiles: "index.html",
+                                  reportName: "Coverage Report - it.capitalize() tests",
+                                  reportTitles: ''
+                                ])
+                            }
+                        }]
+                    }
+                }
               }
             }
 
