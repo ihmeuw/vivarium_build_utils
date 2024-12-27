@@ -166,7 +166,7 @@ def call(Map config = [:]){
                       if (test_type == 'e2e') {
                         return "End-to-End"
                       } else {
-                        return test.capitalize()
+                        return test_type.capitalize()
                       }
                     }
                     def parallelStages = test_types.collectEntries {
