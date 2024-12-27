@@ -4,6 +4,11 @@ def call(Map config = [:]){
   JOB_NAME is a reserved Jenkins var
   */
   test_types = config.test_types ?: []
+  // raise an error if test_types is not a subset of  ['e2e', 'unit', 'integration']
+  if (!test_types.every { ['e2e', 'unit', 'integration'].contains(it) }) {
+    throw new IllegalArgumentException("test_types must be a subset of ['e2e', 'unit', 'integration']")
+  }
+
   scheduled_branches = config.scheduled_branches ?: []
   CRON_SETTINGS = scheduled_branches.contains(BRANCH_NAME) ? 'H H(20-23) * * *' : ''
   pipeline {
@@ -157,10 +162,16 @@ def call(Map config = [:]){
             stage("Run Tests") {
               steps {
                 script {
+                    def full_name(test_type) {
+                      if (test_type == 'e2e') {
+                        return "End-to-End"
+                      } else {
+                        return test.capitalize()
+                      }
+                    }
                     def parallelStages = test_types.collectEntries {
-                        ["${it.capitalize()} Tests" : {
-                            stage("Running ${it} tests") {
-                                echo "Executing ${it} test suite..."
+                        ["${full_name(it)} Tests" : {
+                            stage("Running ${full_name(it)} Tests") {
                                 sh "${ACTIVATE} && make ${it}"
                                 publishHTML([
                                   allowMissing: true,
@@ -168,7 +179,7 @@ def call(Map config = [:]){
                                   keepAll: true,
                                   reportDir: "output/htmlcov_${it}",
                                   reportFiles: "index.html",
-                                  reportName: "Coverage Report - it.capitalize() tests",
+                                  reportName: "Coverage Report - ${full_name(it)} tests",
                                   reportTitles: ''
                                 ])
                             }
