@@ -4,8 +4,8 @@ def call(Map config = [:]){
   JOB_NAME is a reserved Jenkins var
   */
   test_types = config.test_types ?: []
-  scheduled_branches = config.scheduled_branches ?: '' 
-  CRON_SETTINGS = scheduled_branches.split(',').collect{it.trim()}.contains(BRANCH_NAME) ? 'H H(20-23) * * *' : ''
+  scheduled_branches = config.scheduled_branches ?: []
+  CRON_SETTINGS = scheduled_branches.contains(BRANCH_NAME) ? 'H H(20-23) * * *' : ''
   pipeline {
     // This agent runs as svc-simsci on node simsci-ci-coordinator-01.
     // It has access to standard IHME filesystems and singularity
