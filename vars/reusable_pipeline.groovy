@@ -171,7 +171,7 @@ def call(Map config = [:]){
                     }
                     def parallelStages = test_types.collectEntries {
                         ["${full_name(it)} Tests" : {
-                            stage("Running ${full_name(it)} Tests") {
+                            stage("Run ${full_name(it)} Tests") {
                                 sh "${ACTIVATE} && make ${it}"
                                 publishHTML([
                                   allowMissing: true,
