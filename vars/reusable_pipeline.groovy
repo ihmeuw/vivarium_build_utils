@@ -8,13 +8,6 @@ def call(Map config = [:]){
   if (!test_types.every { ['e2e', 'unit', 'integration'].contains(it) }) {
     throw new IllegalArgumentException("test_types must be a subset of ['e2e', 'unit', 'integration']")
   }
-  def full_name(test_type) {
-    if (test_type == 'e2e') {
-      return "End-to-End"
-    } else {
-      return test_type.capitalize()
-    }
-  }
 
   scheduled_branches = config.scheduled_branches ?: []
   CRON_SETTINGS = scheduled_branches.contains(BRANCH_NAME) ? 'H H(20-23) * * *' : ''
@@ -169,6 +162,13 @@ def call(Map config = [:]){
             stage("Run Tests") {
               steps {
                 script {
+                    def full_name = { test_type ->
+                      if (test_type == 'e2e') {
+                          return "End-to-End"
+                      } else {
+                          return test_type.capitalize()
+                      }
+                    }
                     def parallelStages = test_types.collectEntries {
                         ["${full_name(it)} Tests" : {
                             stage("Running ${full_name(it)} Tests") {
