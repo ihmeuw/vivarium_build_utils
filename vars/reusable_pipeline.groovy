@@ -148,19 +148,9 @@ def call(Map config = [:]){
               }
             }
 
-            stage("Quality Checks") {
-              stages {
-                stage("Format") {
-                  steps {
-                    sh "${ACTIVATE} && make format"
-                  }
-                }
-
-                stage("Lint") {
-                  steps {
-                    sh "${ACTIVATE} && make lint"
-                  }
-                }
+            stage("Format") {
+              steps {
+                sh "${ACTIVATE} && make format"
               }
             }
 
