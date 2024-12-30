@@ -3,6 +3,7 @@ def call(Map config = [:]){
   Example: fhs_standard_pipeline(job_name: JOB_NAME)
   JOB_NAME is a reserved Jenkins var
   */
+  python_versions = config.python_versions ?: ["3.10", "3.11"]
   test_types = config.test_types ?: []
   // raise an error if test_types is not a subset of  ['e2e', 'unit', 'integration']
   if (!test_types.every { ['e2e', 'unit', 'integration'].contains(it) }) {
@@ -76,7 +77,7 @@ def call(Map config = [:]){
             axis {
               // parallelize by python minor version
               name 'PYTHON_VERSION'
-              values "3.10", "3.11"
+              values python_versions
             }
           }
 
