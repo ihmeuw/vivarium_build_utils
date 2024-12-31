@@ -83,6 +83,8 @@ def call(Map config = [:]){
                     ACTIVATE: "source /svc-simsci/miniconda3/bin/activate /tmp/${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion} &> /dev/null",
                     ACTIVATE_BASE: "source /svc-simsci/miniconda3/bin/activate &> /dev/null"
                   ]
+                  echo "Running pipeline for Python ${pythonVersion}"
+                  echo envVars
                   
                   
                   withEnv(envVars.collect { k, v -> "${k}=${v}" }) {
