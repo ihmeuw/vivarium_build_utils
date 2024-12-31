@@ -88,7 +88,6 @@ def call(Map config = [:]){
                   
                   withEnv(envVars.collect { k, v -> "${k}=${v}" }) {
                     try {
-                      checkout scm
 
                       stage("Debug Info") {
                         steps {
