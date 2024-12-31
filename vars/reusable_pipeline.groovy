@@ -72,6 +72,7 @@ def call(Map config = [:]){
             python_versions.each { pythonVersion ->
               parallelStages["Python ${pythonVersion}"] = {
                 node('matrix-tasks') {
+                  echo "Defining environment variables for Python ${pythonVersion}"
                   def envVars = [
                     conda_env_name: "${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
                     conda_env_path: "/tmp/${conda_env_name}",
