@@ -74,10 +74,8 @@ def call(Map config = [:]){
                 node('matrix-tasks') {
                   def envVars = [
                     conda_env_name: "${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
-                    conda_env_path: "/tmp/${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
+                    conda_env_path: "/tmp/${conda_env_name}",
                     shared_path: "/svc-simsci",
-                    BRANCH: sh(script: "echo ${GIT_BRANCH} | rev | cut -d '/' -f1 | rev", returnStdout: true).trim(),
-                    TIMESTAMP: sh(script: 'date', returnStdout: true),
                     CONDARC: "/svc-simsci/miniconda3/.condarc",
                     CONDA_BIN_PATH: "/svc-simsci/miniconda3/bin",
                     PYTHON_VERSION: pythonVersion,
@@ -86,11 +84,14 @@ def call(Map config = [:]){
                     ACTIVATE_BASE: "source /svc-simsci/miniconda3/bin/activate &> /dev/null"
                   ]
                   
+                  
                   withEnv(envVars.collect { k, v -> "${k}=${v}" }) {
                     try {
 
                       stage("Debug Info") {
                         steps {
+                          env.BRANCH = sh(script: "echo ${GIT_BRANCH} | rev | cut -d '/' -f1 | rev", returnStdout: true).trim()
+                          env.TIMESTAMP = sh(script: 'date', returnStdout: true)
                           echo "Jenkins pipeline run timestamp: ${TIMESTAMP}"
                           // Display parameters used.
                           echo """Parameters:
