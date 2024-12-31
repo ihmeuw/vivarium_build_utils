@@ -3,8 +3,8 @@ def call(Map config = [:]){
   Example: fhs_standard_pipeline(job_name: JOB_NAME)
   JOB_NAME is a reserved Jenkins var
   */
-  scheduled_branches = config.scheduled_branches ?: '' 
-  CRON_SETTINGS = scheduled_branches.split(',').collect{it.trim()}.contains(BRANCH_NAME) ? 'H H(20-23) * * *' : ''
+  scheduled_branches = config.scheduled_branches ?: [] 
+  CRON_SETTINGS = scheduled_branches.contains(BRANCH_NAME) ? 'H H(20-23) * * *' : ''
 
   // Define Python versions - can be parameterized through config
   python_versions = config.python_versions ?: ["3.10", "3.11"]
