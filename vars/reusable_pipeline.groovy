@@ -5,6 +5,7 @@ def call(Map config = [:]){
   */
   scheduled_branches = config.scheduled_branches ?: '' 
   CRON_SETTINGS = scheduled_branches.split(',').collect{it.trim()}.contains(BRANCH_NAME) ? 'H H(20-23) * * *' : ''
+
   // Define Python versions - can be parameterized through config
   def pythonVersions = config.pythonVersions ?: ["3.10", "3.11"]
   def PYTHON_DEPLOY_VERSION = "3.11"
@@ -48,6 +49,7 @@ def call(Map config = [:]){
       description: "Used as needed for debugging purposes."
       )
     }
+
     triggers {
       cron(CRON_SETTINGS)
     }
@@ -179,68 +181,68 @@ def call(Map config = [:]){
                 }
               }
             }
+
             parallel parallelStages
           }
         }
       }
+    }
 
-      post {
-        always {
-          // Generate a message to send to Slack.
-          script {
-            // Run git command to get the author of the last commit
-            developerID = sh(
-              script: "git log -1 --pretty=format:'%an'",
-              returnStdout: true
-            ).trim()
-            echo "Most recent developerID: ${developerID}"
-            if (env.BRANCH == "main") {
-              channelName = "simsci-ci-status"
-              slackID = "channel"
-            } else {
-              channelName = "simsci-ci-status-test"
-              slackID = github_slack_mapper(github_author: developerID)
-            }
-            echo "slackID to tag in slack message: ${slackID}"
-            slackMessage = """
-              Job: *${env.JOB_NAME}*
-              Build number: #${env.BUILD_NUMBER}
-              Build status: *${currentBuild.result}*
-              Author: @${slackID}
-              Build details: <${env.BUILD_URL}/console|See in web console>
-              """.stripIndent()
-          }
-        }
-        failure {
-          echo "This build triggered by ${developerID} failed on ${GIT_BRANCH}. Sending a failure message to Slack."
-          slackSend channel: "#${channelName}",
-                    message: slackMessage,
-                    teamDomain: "ihme",
-                    tokenCredentialId: "slack"
-        }
-        success {
-          script {
-            if (params.DEBUG) {
-              echo 'Debug is enabled. Sending a success message to Slack.'
-              slackSend channel: "#${channelName}",
-                        message: slackMessage,
-                        teamDomain: "ihme",
-                        tokenCredentialId: "slack"
-            } else {
-              echo 'Debug is not enabled. No success message will be sent to Slack.'
-            }
-          }
-        }
-      }  // End of post stage
-    }  // End of python version matrix
     post {
-      cleanup { // cleanup for outer workspace
-        cleanWs()
-        // manually remove @tmp dirs
-        dir("${WORKSPACE}@tmp"){
-          deleteDir()
+      always {
+        // Generate a message to send to Slack.
+        script {
+          // Run git command to get the author of the last commit
+          developerID = sh(
+            script: "git log -1 --pretty=format:'%an'",
+            returnStdout: true
+          ).trim()
+          echo "Most recent developerID: ${developerID}"
+          if (env.BRANCH == "main") {
+            channelName = "simsci-ci-status"
+            slackID = "channel"
+          } else {
+            channelName = "simsci-ci-status-test"
+            slackID = github_slack_mapper(github_author: developerID)
+          }
+          echo "slackID to tag in slack message: ${slackID}"
+          slackMessage = """
+            Job: *${env.JOB_NAME}*
+            Build number: #${env.BUILD_NUMBER}
+            Build status: *${currentBuild.result}*
+            Author: @${slackID}
+            Build details: <${env.BUILD_URL}/console|See in web console>
+            """.stripIndent()
         }
       }
+      failure {
+        echo "This build triggered by ${developerID} failed on ${GIT_BRANCH}. Sending a failure message to Slack."
+        slackSend channel: "#${channelName}",
+                  message: slackMessage,
+                  teamDomain: "ihme",
+                  tokenCredentialId: "slack"
+      }
+      success {
+        script {
+          if (params.DEBUG) {
+            echo 'Debug is enabled. Sending a success message to Slack.'
+            slackSend channel: "#${channelName}",
+                      message: slackMessage,
+                      teamDomain: "ihme",
+                      tokenCredentialId: "slack"
+          } else {
+            echo 'Debug is not enabled. No success message will be sent to Slack.'
+          }
+        }
+      }
+    }  // End of post stage
+
+    cleanup { // cleanup for outer workspace
+    cleanWs()
+    // manually remove @tmp dirs
+    dir("${WORKSPACE}@tmp"){
+      deleteDir()
+    }
     }
   }  // End of pipeline
 }
