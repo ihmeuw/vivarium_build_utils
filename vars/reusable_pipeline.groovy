@@ -7,8 +7,8 @@ def call(Map config = [:]){
   CRON_SETTINGS = scheduled_branches.split(',').collect{it.trim()}.contains(BRANCH_NAME) ? 'H H(20-23) * * *' : ''
 
   // Define Python versions - can be parameterized through config
-  def pythonVersions = config.pythonVersions ?: ["3.10", "3.11"]
-  def PYTHON_DEPLOY_VERSION = "3.11"
+  python_versions = config.python_versions ?: ["3.10", "3.11"]
+  PYTHON_DEPLOY_VERSION = "3.11"
 
   pipeline {
     // This agent runs as svc-simsci on node simsci-ci-coordinator-01.
@@ -69,7 +69,7 @@ def call(Map config = [:]){
           script {
             def parallelStages = [:]
             
-            pythonVersions.each { pythonVersion ->
+            python_versions.each { pythonVersion ->
               parallelStages["Python ${pythonVersion}"] = {
                 node('matrix-tasks') {
                   def envVars = [
