@@ -87,7 +87,7 @@ def call(Map config = [:]){
                   
                   withEnv(envVars.collect { k, v -> "${k}=${v}" }) {
                     try {
-
+                      checkout scm
                       stage("Debug Info") {
                         steps {
                           env.BRANCH = sh(script: "echo ${GIT_BRANCH} | rev | cut -d '/' -f1 | rev", returnStdout: true).trim()
