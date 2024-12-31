@@ -78,7 +78,7 @@ def call(Map config = [:]){
                     shared_path: "/svc-simsci",
                     CONDARC: "/svc-simsci/miniconda3/.condarc",
                     CONDA_BIN_PATH: "/svc-simsci/miniconda3/bin",
-                    PYTHON_VERSION: pythonVersion,
+                    PYTHON_VERSION: "${pythonVersion}",
                     XDG_CACHE_HOME: "/svc-simsci/pip-cache",
                     ACTIVATE: "source /svc-simsci/miniconda3/bin/activate /tmp/${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion} &> /dev/null",
                     ACTIVATE_BASE: "source /svc-simsci/miniconda3/bin/activate &> /dev/null"
