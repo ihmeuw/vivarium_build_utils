@@ -235,14 +235,13 @@ def call(Map config = [:]){
           }
         }
       }
-    }  // End of post stage
-
-    cleanup { // cleanup for outer workspace
-    cleanWs()
-    // manually remove @tmp dirs
-    dir("${WORKSPACE}@tmp"){
-      deleteDir()
-    }
-    }
+      cleanup { // cleanup for outer workspace
+        cleanWs()
+        // manually remove @tmp dirs
+        dir("${WORKSPACE}@tmp"){
+          deleteDir()
+        }
+      }
+    }  // End of post
   }  // End of pipeline
 }
