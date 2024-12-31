@@ -75,7 +75,7 @@ def call(Map config = [:]){
                   echo "Defining environment variables for Python ${pythonVersion}"
                   def envVars = [
                     conda_env_name: "${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
-                    conda_env_path: "/tmp/${conda_env_name}",
+                    conda_env_path: "/tmp/${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
                     shared_path: "/svc-simsci",
                     CONDARC: "/svc-simsci/miniconda3/.condarc",
                     CONDA_BIN_PATH: "/svc-simsci/miniconda3/bin",
