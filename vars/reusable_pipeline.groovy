@@ -73,23 +73,32 @@ def call(Map config = [:]){
               parallelStages["Python ${pythonVersion}"] = {
                 node('matrix-tasks') {
                   echo "Defining environment variables for Python ${pythonVersion}"
-                  def envVars = [
-                    conda_env_name: "${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
-                    conda_env_path: "/tmp/${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
-                    shared_path: "/svc-simsci",
-                    CONDARC: "/svc-simsci/miniconda3/.condarc",
-                    CONDA_BIN_PATH: "/svc-simsci/miniconda3/bin",
-                    PYTHON_VERSION: "${pythonVersion}",
-                    XDG_CACHE_HOME: "/svc-simsci/pip-cache",
-                    ACTIVATE: "source /svc-simsci/miniconda3/bin/activate /tmp/${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion} &> /dev/null",
-                    ACTIVATE_BASE: "source /svc-simsci/miniconda3/bin/activate &> /dev/null"
-                  ]
-                  echo "Running pipeline for Python ${pythonVersion}"
-                  echo envVars
+                  // def envVars = [
+                  //   conda_env_name: "${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
+                  //   conda_env_path: "/tmp/${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
+                  //   shared_path: "/svc-simsci",
+                  //   CONDARC: "/svc-simsci/miniconda3/.condarc",
+                  //   CONDA_BIN_PATH: "/svc-simsci/miniconda3/bin",
+                  //   PYTHON_VERSION: "${pythonVersion}",
+                  //   XDG_CACHE_HOME: "/svc-simsci/pip-cache",
+                  //   ACTIVATE: "source /svc-simsci/miniconda3/bin/activate /tmp/${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion} &> /dev/null",
+                  //   ACTIVATE_BASE: "source /svc-simsci/miniconda3/bin/activate &> /dev/null"
+                  // ]
+                  // echo "Running pipeline for Python ${pythonVersion}"
+                  // echo envVars
                   
                   
-                  withEnv(envVars.collect { k, v -> "${k}=${v}" }) {
+                  withEnv(["conda_env_name=${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
+                    "conda_env_path=/tmp/${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
+                    "shared_path=/svc-simsci",
+                    "CONDARC=/svc-simsci/miniconda3/.condarc",
+                    "CONDA_BIN_PATH=/svc-simsci/miniconda3/bin",
+                    "PYTHON_VERSION=${pythonVersion}",
+                    "XDG_CACHE_HOME=/svc-simsci/pip-cache",
+                    "ACTIVATE=source /svc-simsci/miniconda3/bin/activate /tmp/${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion} &> /dev/null",
+                    "ACTIVATE_BASE=source /svc-simsci/miniconda3/bin/activate &> /dev/null"]) {
                     try {
+                      echo "Running pipeline for Python ${pythonVersion}"
                       checkout scm
                       stage("Debug Info") {
                         steps {
