@@ -67,10 +67,10 @@ def call(Map config = [:]){
       stage("Python Versions") {
         steps {
           script {
-            def parallelStages = [:]
+            def parallelPythonVersions = [:]
             
             python_versions.each { pythonVersion ->
-              parallelStages["Python ${pythonVersion}"] = {
+              parallelPythonVersions["Python ${pythonVersion}"] = {
                 node('matrix-tasks') {
                   def envVars = [
                     CONDA_ENV_NAME: "${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
@@ -136,7 +136,7 @@ def call(Map config = [:]){
                                 return test_type.capitalize()
                             }
                           }
-                          def parallelStages = test_types.collectEntries {
+                          def parallelTests = test_types.collectEntries {
                               ["${full_name(it)} Tests" : {
                                   stage("Run ${full_name(it)} Tests") {
                                       sh "${ACTIVATE} && make ${it}"
@@ -152,7 +152,7 @@ def call(Map config = [:]){
                                   }
                               }]
                           }
-                          parallel parallelStages
+                          parallel parallelTests
                       }
                     }
 
@@ -180,7 +180,7 @@ def call(Map config = [:]){
               }
             }
 
-            parallel parallelStages
+            parallel parallelPythonVersions
           }
         }
       }
