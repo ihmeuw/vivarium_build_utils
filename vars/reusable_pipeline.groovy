@@ -73,9 +73,9 @@ def call(Map config = [:]){
               parallelStages["Python ${pythonVersion}"] = {
                 node('matrix-tasks') {
                   def envVars = [
-                    conda_env_name: "${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
-                    conda_env_path: "/tmp/${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
-                    shared_path: "/svc-simsci",
+                    CONDA_ENV_NAME: "${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
+                    CONDA_ENV_PATH: "/tmp/${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
+                    SHARED_PATH: "/svc-simsci",
                     BRANCH: sh(script: "echo ${GIT_BRANCH} | rev | cut -d '/' -f1 | rev", returnStdout: true).trim(),
                     TIMESTAMP: sh(script: 'date', returnStdout: true),
                     CONDARC: "/svc-simsci/miniconda3/.condarc",
