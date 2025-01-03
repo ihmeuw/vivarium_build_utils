@@ -72,94 +72,71 @@ def call(Map config = [:]){
             python_versions.each { pythonVersion ->
               parallelStages["Python ${pythonVersion}"] = {
                 node('matrix-tasks') {
-                  echo "Defining environment variables for Python ${pythonVersion}"
-                  // def envVars = [
-                  //   conda_env_name: "${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
-                  //   conda_env_path: "/tmp/${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
-                  //   shared_path: "/svc-simsci",
-                  //   CONDARC: "/svc-simsci/miniconda3/.condarc",
-                  //   CONDA_BIN_PATH: "/svc-simsci/miniconda3/bin",
-                  //   PYTHON_VERSION: "${pythonVersion}",
-                  //   XDG_CACHE_HOME: "/svc-simsci/pip-cache",
-                  //   ACTIVATE: "source /svc-simsci/miniconda3/bin/activate /tmp/${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion} &> /dev/null",
-                  //   ACTIVATE_BASE: "source /svc-simsci/miniconda3/bin/activate &> /dev/null"
-                  // ]
-                  // echo "Running pipeline for Python ${pythonVersion}"
-                  // echo envVars
+                  def envVars = [
+                    conda_env_name: "${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
+                    conda_env_path: "/tmp/${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
+                    shared_path: "/svc-simsci",
+                    BRANCH: sh(script: "echo ${GIT_BRANCH} | rev | cut -d '/' -f1 | rev", returnStdout: true).trim(),
+                    TIMESTAMP: sh(script: 'date', returnStdout: true),
+                    CONDARC: "/svc-simsci/miniconda3/.condarc",
+                    CONDA_BIN_PATH: "/svc-simsci/miniconda3/bin",
+                    PYTHON_VERSION: pythonVersion,
+                    XDG_CACHE_HOME: "/svc-simsci/pip-cache",
+                    ACTIVATE: "source /svc-simsci/miniconda3/bin/activate /tmp/${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion} &> /dev/null",
+                    ACTIVATE_BASE: "source /svc-simsci/miniconda3/bin/activate &> /dev/null"
+                  ]
                   
-                  
-                  // withEnv(["conda_env_name=${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
-                  //   "conda_env_path=/tmp/${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
-                  //   "shared_path=/svc-simsci",
-                  //   "CONDARC=/svc-simsci/miniconda3/.condarc",
-                  //   "CONDA_BIN_PATH=/svc-simsci/miniconda3/bin",
-                  //   "PYTHON_VERSION=${pythonVersion}",
-                  //   "XDG_CACHE_HOME=/svc-simsci/pip-cache",
-                  //   "ACTIVATE=source /svc-simsci/miniconda3/bin/activate /tmp/${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion} &> /dev/null",
-                  //   "ACTIVATE_BASE=source /svc-simsci/miniconda3/bin/activate &> /dev/null"]) {
+                  withEnv(envVars.collect { k, v -> "${k}=${v}" }) {
                     try {
-                      echo "Running pipeline for Python ${pythonVersion}"
                       stage("Debug Info") {
-                        steps {
-                          env.BRANCH = sh(script: "echo ${GIT_BRANCH} | rev | cut -d '/' -f1 | rev", returnStdout: true).trim()
-                          env.TIMESTAMP = sh(script: 'date', returnStdout: true)
-                          echo "Jenkins pipeline run timestamp: ${TIMESTAMP}"
-                          // Display parameters used.
-                          echo """Parameters:
-                          DEPLOY_OVERRIDE: ${params.DEPLOY_OVERRIDE}"""
+                        echo "Jenkins pipeline run timestamp: ${TIMESTAMP}"
+                        // Display parameters used.
+                        echo """Parameters:
+                        DEPLOY_OVERRIDE: ${params.DEPLOY_OVERRIDE}"""
 
-                          // Display environment variables from Jenkins.
-                          echo """Environment:
-                          ACTIVATE:       '${ACTIVATE}'
-                          BUILD_NUMBER:   '${BUILD_NUMBER}'
-                          BRANCH:         '${BRANCH}'
-                          CONDARC:        '${CONDARC}'
-                          CONDA_BIN_PATH: '${CONDA_BIN_PATH}'
-                          CONDA_ENV_NAME: '${CONDA_ENV_NAME}'
-                          CONDA_ENV_PATH: '${CONDA_ENV_PATH}'
-                          GIT_BRANCH:     '${GIT_BRANCH}'
-                          JOB_NAME:       '${JOB_NAME}'
-                          WORKSPACE:      '${WORKSPACE}'
-                          XDG_CACHE_HOME: '${XDG_CACHE_HOME}'"""
-                        }
+                        // Display environment variables from Jenkins.
+                        echo """Environment:
+                        ACTIVATE:       '${ACTIVATE}'
+                        BUILD_NUMBER:   '${BUILD_NUMBER}'
+                        BRANCH:         '${BRANCH}'
+                        CONDARC:        '${CONDARC}'
+                        CONDA_BIN_PATH: '${CONDA_BIN_PATH}'
+                        CONDA_ENV_NAME: '${CONDA_ENV_NAME}'
+                        CONDA_ENV_PATH: '${CONDA_ENV_PATH}'
+                        GIT_BRANCH:     '${GIT_BRANCH}'
+                        JOB_NAME:       '${JOB_NAME}'
+                        WORKSPACE:      '${WORKSPACE}'
+                        XDG_CACHE_HOME: '${XDG_CACHE_HOME}'"""
                       }
 
                       stage("Build Environment") {
-                        steps {
-                          // The env should have been cleaned out after the last build, but delete it again
-                          // here just to be safe.
-                          sh "rm -rf ${CONDA_ENV_PATH}"
-                          sh "${ACTIVATE_BASE} && make build-env PYTHON_VERSION=${PYTHON_VERSION}"
-                          // open permissions for test users to create file in workspace
-                          sh "chmod 777 ${WORKSPACE}"
-                        }
+                        // The env should have been cleaned out after the last build, but delete it again
+                        // here just to be safe.
+                        sh "rm -rf ${CONDA_ENV_PATH}"
+                        sh "${ACTIVATE_BASE} && make build-env PYTHON_VERSION=${PYTHON_VERSION}"
+                        // open permissions for test users to create file in workspace
+                        sh "chmod 777 ${WORKSPACE}"
                       }
 
                       stage("Install Package") {
-                        steps {
-                          sh "${ACTIVATE} && make install"
-                        }
+                        sh "${ACTIVATE} && make install"
                       }
 
                       stage("Format") {
-                        steps {
-                          sh "${ACTIVATE} && make format"
-                        }
+                        sh "${ACTIVATE} && make format"
                       }
 
                       stage("Run Integration Tests") {
-                        steps {
-                          sh "${ACTIVATE} && make integration"
-                          publishHTML([
-                            allowMissing: true,
-                            alwaysLinkToLastBuild: false,
-                            keepAll: true,
-                            reportDir: "output/htmlcov_integration",
-                            reportFiles: "index.html",
-                            reportName: "Coverage Report - Integration tests",
-                            reportTitles: ''
-                          ])
-                        }
+                        sh "${ACTIVATE} && make integration"
+                        publishHTML([
+                          allowMissing: true,
+                          alwaysLinkToLastBuild: false,
+                          keepAll: true,
+                          reportDir: "output/htmlcov_integration",
+                          reportFiles: "index.html",
+                          reportName: "Coverage Report - Integration tests",
+                          reportTitles: ''
+                        ])
                       }
 
                       stage('Build and Deploy') {
@@ -168,19 +145,15 @@ def call(Map config = [:]){
                         }
                         stages {
                           stage("Build Docs") {
-                            steps {
-                              sh "${ACTIVATE} && make build-doc"
-                            }
+                            sh "${ACTIVATE} && make build-doc"
                           }
                           stage("Build Package") {
-                            steps {
-                              sh "${ACTIVATE} && make build-package"
-                            }
+                            sh "${ACTIVATE} && make build-package"
                           }
                         }
                       }
                     } finally {
-                      // Cleanup
+                  // Cleanup
                       sh "${ACTIVATE} && make clean"
                       sh "rm -rf ${conda_env_path}"
                       cleanWs()
@@ -188,7 +161,7 @@ def call(Map config = [:]){
                         deleteDir()
                       }
                     }
-                  // }
+                  }
                 }
               }
             }
