@@ -14,6 +14,7 @@ def call(Map config = [:]){
   // raise an error if test_types is not a subset of  ['e2e', 'unit', 'integration']
   if (!test_types.every { ['e2e', 'unit', 'integration'].contains(it) }) {
     throw new IllegalArgumentException("test_types must be a subset of ['e2e', 'unit', 'integration']")
+  }
 
   pipeline {
     // This agent runs as svc-simsci on node simsci-ci-coordinator-01.
