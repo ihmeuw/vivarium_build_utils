@@ -72,7 +72,6 @@ def call(Map config = [:]){
             python_versions.each { pythonVersion ->
               parallelStages["Python ${pythonVersion}"] = {
                 node('matrix-tasks') {
-                  checkout scm
                   echo "Defining environment variables for Python ${pythonVersion}"
                   // def envVars = [
                   //   conda_env_name: "${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
@@ -89,15 +88,15 @@ def call(Map config = [:]){
                   // echo envVars
                   
                   
-                  withEnv(["conda_env_name=${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
-                    "conda_env_path=/tmp/${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
-                    "shared_path=/svc-simsci",
-                    "CONDARC=/svc-simsci/miniconda3/.condarc",
-                    "CONDA_BIN_PATH=/svc-simsci/miniconda3/bin",
-                    "PYTHON_VERSION=${pythonVersion}",
-                    "XDG_CACHE_HOME=/svc-simsci/pip-cache",
-                    "ACTIVATE=source /svc-simsci/miniconda3/bin/activate /tmp/${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion} &> /dev/null",
-                    "ACTIVATE_BASE=source /svc-simsci/miniconda3/bin/activate &> /dev/null"]) {
+                  // withEnv(["conda_env_name=${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
+                  //   "conda_env_path=/tmp/${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
+                  //   "shared_path=/svc-simsci",
+                  //   "CONDARC=/svc-simsci/miniconda3/.condarc",
+                  //   "CONDA_BIN_PATH=/svc-simsci/miniconda3/bin",
+                  //   "PYTHON_VERSION=${pythonVersion}",
+                  //   "XDG_CACHE_HOME=/svc-simsci/pip-cache",
+                  //   "ACTIVATE=source /svc-simsci/miniconda3/bin/activate /tmp/${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion} &> /dev/null",
+                  //   "ACTIVATE_BASE=source /svc-simsci/miniconda3/bin/activate &> /dev/null"]) {
                     try {
                       echo "Running pipeline for Python ${pythonVersion}"
                       stage("Debug Info") {
@@ -189,7 +188,7 @@ def call(Map config = [:]){
                         deleteDir()
                       }
                     }
-                  }
+                  // }
                 }
               }
             }
