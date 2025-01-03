@@ -127,18 +127,34 @@ def call(Map config = [:]){
                         sh "${ACTIVATE} && make format"
                       }
 
-                      stage("Run Integration Tests") {
-                        sh "${ACTIVATE} && make integration"
-                        publishHTML([
-                          allowMissing: true,
-                          alwaysLinkToLastBuild: false,
-                          keepAll: true,
-                          reportDir: "output/htmlcov_integration",
-                          reportFiles: "index.html",
-                          reportName: "Coverage Report - Integration tests",
-                          reportTitles: ''
-                        ])
+                    stage("Run Tests") {
+                      script {
+                          def full_name = { test_type ->
+                            if (test_type == 'e2e') {
+                                return "End-to-End"
+                            } else {
+                                return test_type.capitalize()
+                            }
+                          }
+                          def parallelStages = test_types.collectEntries {
+                              ["${full_name(it)} Tests" : {
+                                  stage("Run ${full_name(it)} Tests") {
+                                      sh "${ACTIVATE} && make ${it}"
+                                      publishHTML([
+                                        allowMissing: true,
+                                        alwaysLinkToLastBuild: false,
+                                        keepAll: true,
+                                        reportDir: "output/htmlcov_${it}",
+                                        reportFiles: "index.html",
+                                        reportName: "Coverage Report - ${full_name(it)} tests",
+                                        reportTitles: ''
+                                      ])
+                                  }
+                              }]
+                          }
+                          parallel parallelStages
                       }
+                    }
 
                     if (PYTHON_VERSION == PYTHON_DEPLOY_VERSION) {
                         stage("Build and Deploy") {
