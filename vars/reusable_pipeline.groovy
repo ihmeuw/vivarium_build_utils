@@ -3,6 +3,9 @@ def call(Map config = [:]){
   Example: fhs_standard_pipeline(job_name: JOB_NAME)
   JOB_NAME is a reserved Jenkins var
   */
+  requires_slurm = config.requires_slurm ?: false
+  task_node = requires_slurm ? 'slurm' : 'matrix-tasks'
+
   scheduled_branches = config.scheduled_branches ?: [] 
   CRON_SETTINGS = scheduled_branches.contains(BRANCH_NAME) ? 'H H(20-23) * * *' : ''
 
@@ -77,7 +80,7 @@ def call(Map config = [:]){
             
             python_versions.each { pythonVersion ->
               parallelPythonVersions["Python ${pythonVersion}"] = {
-                node('matrix-tasks') {
+                node(task_node) {
                   def envVars = [
                     CONDA_ENV_NAME: "${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
                     CONDA_ENV_PATH: "/tmp/${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
