@@ -98,7 +98,7 @@ def call(Map config = [:]){
                   withEnv(envVars.collect { k, v -> "${k}=${v}" }) {
                     try {
                       checkout scm
-                      stage("Debug Info") {
+                      stage("Debug Info - Python ${pythonVersion}") {
                         echo "Jenkins pipeline run timestamp: ${TIMESTAMP}"
                         // Display parameters used.
                         echo """Parameters:
@@ -119,7 +119,7 @@ def call(Map config = [:]){
                         XDG_CACHE_HOME: '${XDG_CACHE_HOME}'"""
                       }
 
-                      stage("Build Environment") {
+                      stage("Build Environment - Python ${pythonVersion}") {
                         // The env should have been cleaned out after the last build, but delete it again
                         // here just to be safe.
                         sh "rm -rf ${CONDA_ENV_PATH}"
@@ -128,15 +128,15 @@ def call(Map config = [:]){
                         sh "chmod 777 ${WORKSPACE}"
                       }
 
-                      stage("Install Package") {
+                      stage("Install Package - Python ${pythonVersion}") {
                         sh "${ACTIVATE} && make install"
                       }
 
-                      stage("Format") {
+                      stage("Format - Python ${pythonVersion}") {
                         sh "${ACTIVATE} && make format"
                       }
 
-                    stage("Run Tests") {
+                    stage("Run Tests - Python ${pythonVersion}") {
                       script {
                           def full_name = { test_type ->
                             if (test_type == 'e2e') {
@@ -147,7 +147,7 @@ def call(Map config = [:]){
                           }
                           def parallelTests = test_types.collectEntries {
                               ["${full_name(it)} Tests" : {
-                                  stage("Run ${full_name(it)} Tests") {
+                                  stage("Run ${full_name(it)} Tests - Python ${pythonVersion}") {
                                       sh "${ACTIVATE} && make ${it}"
                                       publishHTML([
                                         allowMissing: true,
@@ -166,11 +166,11 @@ def call(Map config = [:]){
                     }
 
                     if (PYTHON_VERSION == PYTHON_DEPLOY_VERSION) {
-                        stage("Build and Deploy") {
-                          stage("Build Docs") {
+                        stage("Build and Deploy - Python ${pythonVersion}") {
+                          stage("Build Docs - Python ${pythonVersion}") {
                             sh "${ACTIVATE} && make build-doc"
                           }
-                          stage("Build Package") {
+                          stage("Build Package - Python ${pythonVersion}") {
                             sh "${ACTIVATE} && make build-package"
                           }
                         }
