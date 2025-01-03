@@ -72,6 +72,7 @@ def call(Map config = [:]){
             python_versions.each { pythonVersion ->
               parallelStages["Python ${pythonVersion}"] = {
                 node('matrix-tasks') {
+                  checkout scm
                   echo "Defining environment variables for Python ${pythonVersion}"
                   // def envVars = [
                   //   conda_env_name: "${env.JOB_NAME}-${BUILD_NUMBER}-${pythonVersion}",
@@ -99,7 +100,6 @@ def call(Map config = [:]){
                     "ACTIVATE_BASE=source /svc-simsci/miniconda3/bin/activate &> /dev/null"]) {
                     try {
                       echo "Running pipeline for Python ${pythonVersion}"
-                      checkout scm
                       stage("Debug Info") {
                         steps {
                           env.BRANCH = sh(script: "echo ${GIT_BRANCH} | rev | cut -d '/' -f1 | rev", returnStdout: true).trim()
@@ -181,7 +181,7 @@ def call(Map config = [:]){
                         }
                       }
                     } finally {
-                  // Cleanup
+                      // Cleanup
                       sh "${ACTIVATE} && make clean"
                       sh "rm -rf ${conda_env_path}"
                       cleanWs()
