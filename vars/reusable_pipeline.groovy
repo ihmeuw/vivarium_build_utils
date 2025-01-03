@@ -10,6 +10,11 @@ def call(Map config = [:]){
   python_versions = config.python_versions ?: ["3.10", "3.11"]
   PYTHON_DEPLOY_VERSION = "3.11"
 
+  test_types = config.test_types ?: []
+  // raise an error if test_types is not a subset of  ['e2e', 'unit', 'integration']
+  if (!test_types.every { ['e2e', 'unit', 'integration'].contains(it) }) {
+    throw new IllegalArgumentException("test_types must be a subset of ['e2e', 'unit', 'integration']")
+
   pipeline {
     // This agent runs as svc-simsci on node simsci-ci-coordinator-01.
     // It has access to standard IHME filesystems and singularity
