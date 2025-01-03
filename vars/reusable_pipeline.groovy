@@ -146,6 +146,9 @@ def call(Map config = [:]){
                           }
                           stage("Build Package") {
                             sh "${ACTIVATE} && make build-package"
+                          }
+                        }
+                      }
                     } finally {
                   // Cleanup
                       sh "${ACTIVATE} && make clean"
