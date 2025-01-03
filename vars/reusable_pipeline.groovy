@@ -88,7 +88,6 @@ def call(Map config = [:]){
                   
                   withEnv(envVars.collect { k, v -> "${k}=${v}" }) {
                     try {
-                      checkout scm
                       stage("Debug Info") {
                         echo "Jenkins pipeline run timestamp: ${TIMESTAMP}"
                         // Display parameters used.
@@ -140,19 +139,13 @@ def call(Map config = [:]){
                         ])
                       }
 
-                      stage('Build and Deploy') {
-                        when {
-                          expression { "${PYTHON_DEPLOY_VERSION}" == "${PYTHON_VERSION}" }
-                        }
-                        stages {
+                    if (PYTHON_VERSION == PYTHON_DEPLOY_VERSION) {
+                        stage("Build and Deploy") {
                           stage("Build Docs") {
                             sh "${ACTIVATE} && make build-doc"
                           }
                           stage("Build Package") {
                             sh "${ACTIVATE} && make build-package"
-                          }
-                        }
-                      }
                     } finally {
                   // Cleanup
                       sh "${ACTIVATE} && make clean"
