@@ -2,9 +2,15 @@ def call(Map config = [:]){
   /* This is the funtion called from the repo
   Example: fhs_standard_pipeline(job_name: JOB_NAME)
   JOB_NAME is a reserved Jenkins var
+  -------------
+  Configuration options:
+  scheduled_branches: The branch names for which to run scheduled nightly builds.
+  python_versions: The versions of python to test against.
+  test_types: The tests to run. Must be subset (inclusive) of ['unit', 'integration', 'e2e']
+  requires_slurm: Whether the child tasks require the slurm scheduler.
+  skip_build: Skips the package and doc building steps.
   */
-  requires_slurm = config.requires_slurm ?: false
-  task_node = requires_slurm ? 'slurm' : 'matrix-tasks'
+  task_node = config.requires_slurm ? 'slurm' : 'matrix-tasks'
 
   scheduled_branches = config.scheduled_branches ?: [] 
   CRON_SETTINGS = scheduled_branches.contains(BRANCH_NAME) ? 'H H(20-23) * * *' : ''
@@ -165,8 +171,8 @@ def call(Map config = [:]){
                       }
                     }
 
-                    if (PYTHON_VERSION == PYTHON_DEPLOY_VERSION) {
-                        stage("Build and Deploy - Python ${pythonVersion}") {
+                    if ((config?.skip_build != true) && (PYTHON_VERSION == PYTHON_DEPLOY_VERSION)) {
+                        stage("Build - Python ${pythonVersion}") {
                           stage("Build Docs - Python ${pythonVersion}") {
                             sh "${ACTIVATE} && make build-doc"
                           }
