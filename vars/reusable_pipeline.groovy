@@ -9,6 +9,7 @@ def call(Map config = [:]){
   test_types: The tests to run. Must be subset (inclusive) of ['unit', 'integration', 'e2e']
   requires_slurm: Whether the child tasks require the slurm scheduler.
   skip_build: Skips the package and doc building steps.
+  skip_doc_build: Only skips the doc build.
   */
   task_node = config.requires_slurm ? 'slurm' : 'matrix-tasks'
 
@@ -173,8 +174,10 @@ def call(Map config = [:]){
 
                     if ((config?.skip_build != true) && (PYTHON_VERSION == PYTHON_DEPLOY_VERSION)) {
                         stage("Build - Python ${pythonVersion}") {
-                          stage("Build Docs - Python ${pythonVersion}") {
-                            sh "${ACTIVATE} && make build-doc"
+                          if (config?.skip_doc_build != true) {
+                            stage("Build Docs - Python ${pythonVersion}") {
+                              sh "${ACTIVATE} && make build-doc"
+                            }
                           }
                           stage("Build Package - Python ${pythonVersion}") {
                             sh "${ACTIVATE} && make build-package"
