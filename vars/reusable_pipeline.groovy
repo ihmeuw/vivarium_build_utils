@@ -27,7 +27,7 @@ def call(Map config = [:]){
     throw new IllegalArgumentException("test_types must be a subset of ['e2e', 'unit', 'integration']")
   }
   // Allow for building conda env on shared fs if required
-  conda_env_name = config.use_shared_fs ? "${env.BUILD_TAG}-${BUILD_NUMBER}" : "${env.JOB_NAME}-${BUILD_NUMBER}"
+  conda_env_name = config.use_shared_fs ? "${env.JOB_NAME.replaceAll('/', '-')}-${BUILD_NUMBER}" : "${env.JOB_NAME}-${BUILD_NUMBER}"
   conda_env_dir = config.use_shared_fs ? "/mnt/team/simulation_science/priv/engineering/tests/venv" : "/tmp"
 
 
@@ -141,7 +141,7 @@ def call(Map config = [:]){
                       }
 
                       stage("Install Package - Python ${pythonVersion}") {
-                        sh "${ACTIVATE} && make install"
+                        sh "${ACTIVATE} && make install && pip install ."
                       }
 
                       stage("Format - Python ${pythonVersion}") {
