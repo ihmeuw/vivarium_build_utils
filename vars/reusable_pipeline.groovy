@@ -109,7 +109,6 @@ def call(Map config = [:]){
                   
                   withEnv(envVars.collect { k, v -> "${k}=${v}" }) {
                     try {
-                      checkout scm
                       stage("Debug Info - Python ${pythonVersion}") {
                         echo "Jenkins pipeline run timestamp: ${TIMESTAMP}"
                         // Display parameters used.
