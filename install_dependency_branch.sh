@@ -20,7 +20,7 @@ do
   else
     echo "Could not find ${dependency_name} branch '${branch_name_to_check}'. Finding parent branch."
     # Get the commit hash of where this branch diverged from main
-    merge_base=$(git merge-base "${branch_name_to_check}" main)
+    merge_base=$(git merge-base "${branch_name_to_check}" "main")
     # Find the next parent branch by getting the symbolic name of the merge base
     branch_name_to_check=$(git name-rev --exclude "tags/*" --exclude "${branch_name_to_check}" --refs="refs/heads/*" --name-only "${merge_base}" | sed 's/\^[0-9]*$//')
     
