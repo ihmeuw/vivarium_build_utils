@@ -95,7 +95,6 @@ if [ "$dependency_branch_name" != "main" ]; then
     pip install .
     cd "$root_dir" || exit
 fi
-fi
 
 echo "Determined branch name: ${branch_name_to_check}"
 iterations=0
