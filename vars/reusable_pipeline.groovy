@@ -160,16 +160,18 @@ def call(Map config = [:]){
                           def parallelTests = test_types.collectEntries {
                               ["${full_name(it)} Tests" : {
                                   stage("Run ${full_name(it)} Tests - Python ${pythonVersion}") {
-                                      sh "${ACTIVATE} && make ${it}"
-                                      publishHTML([
-                                        allowMissing: true,
-                                        alwaysLinkToLastBuild: false,
-                                        keepAll: true,
-                                        reportDir: "output/htmlcov_${it}",
-                                        reportFiles: "index.html",
-                                        reportName: "Coverage Report - ${full_name(it)} tests",
-                                        reportTitles: ''
-                                      ])
+                                      withEnv(['JAVA_OPTS=-Xmx4G', 'MAVEN_OPTS=-Xmx4G']) {
+                                          sh "${ACTIVATE} && make ${it}"
+                                          publishHTML([
+                                          allowMissing: true,
+                                          alwaysLinkToLastBuild: false,
+                                          keepAll: true,
+                                          reportDir: "output/htmlcov_${it}",
+                                          reportFiles: "index.html",
+                                          reportName: "Coverage Report - ${full_name(it)} tests",
+                                          reportTitles: ''
+                                        ])
+                                      }
                                   }
                               }]
                           }
