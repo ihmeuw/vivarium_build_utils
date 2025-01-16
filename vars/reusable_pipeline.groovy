@@ -162,14 +162,14 @@ def call(Map config = [:]){
                                   stage("Run ${full_name(it)} Tests - Python ${pythonVersion}") {
                                       sh "${ACTIVATE} && make ${it}"
                                       publishHTML([
-                                      allowMissing: true,
-                                      alwaysLinkToLastBuild: false,
-                                      keepAll: true,
-                                      reportDir: "output/htmlcov_${it}",
-                                      reportFiles: "index.html",
-                                      reportName: "Coverage Report - ${full_name(it)} tests",
-                                      reportTitles: ''
-                                    ])
+                                        allowMissing: true,
+                                        alwaysLinkToLastBuild: false,
+                                        keepAll: true,
+                                        reportDir: "output/htmlcov_${it}",
+                                        reportFiles: "index.html",
+                                        reportName: "Coverage Report - ${full_name(it)} tests",
+                                        reportTitles: ''
+                                      ])
                                   }
                               }]
                           }
