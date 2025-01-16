@@ -43,7 +43,7 @@ iterations=0
 while [ "$branch_name_to_check" != "$dependency_branch_name" ] && [ $iterations -lt 20 ]
 do
   echo "Checking for ${dependency_name} branch: '${branch_name_to_check}'"
-  if 
+  if
     git ls-remote --exit-code \
     --heads https://github.com/ihmeuw/"${dependency_name}".git "${branch_name_to_check}"
   then
