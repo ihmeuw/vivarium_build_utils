@@ -48,40 +48,40 @@ do
     --heads https://github.com/ihmeuw/"${dependency_name}".git "${branch_name_to_check}"
   then
     dependency_branch_name=${branch_name_to_check}
-      echo "Found matching dependency branch: ${dependency_branch_name}"
+    echo "Found matching dependency branch: ${dependency_branch_name}"
   else
-      echo "Could not find ${dependency_name} branch '${branch_name_to_check}'. Finding parent branch."
-        
-      # Try to find parent branch using git-merge-base and name-rev
-      merge_base=$(git merge-base origin/main HEAD 2>/dev/null)
-      if [ $? -eq 0 ] && [ -n "$merge_base" ]; then
-        # Get the parent branch name, removing remotes/origin/ prefix and any ^0 suffix
-        branch_name_to_check=$(git name-rev --exclude "tags/*" --refs="refs/remotes/origin/*" --name-only "$merge_base" | \
-                             sed -E 's/^(remotes\/)?origin\///' | \
-                             sed 's/\^[0-9]*$//')
+    echo "Could not find ${dependency_name} branch '${branch_name_to_check}'. Finding parent branch."
+      
+    # Try to find parent branch using git-merge-base and name-rev
+    merge_base=$(git merge-base origin/main HEAD 2>/dev/null)
+    if [ $? -eq 0 ] && [ -n "$merge_base" ]; then
+      # Get the parent branch name, removing remotes/origin/ prefix and any ^0 suffix
+      branch_name_to_check=$(git name-rev --exclude "tags/*" --refs="refs/remotes/origin/*" --name-only "$merge_base" | \
+                           sed -E 's/^(remotes\/)?origin\///' | \
+                           sed 's/\^[0-9]*$//')
+    else
+      # If merge-base fails, try to get parent from GitHub API if we have a PR number
+      pr_number=$(echo "$branch_name_to_check" | grep -o 'PR-[0-9]*' | cut -d'-' -f2)
+      if [ -n "$pr_number" ] && [ -n "$GITHUB_TOKEN" ]; then
+        base_branch=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+          "https://api.github.com/repos/ihmeuw/$dependency_name/pulls/$pr_number" | \
+          grep '"base": {' -A 3 | grep '"ref":' | cut -d'"' -f4)
+          if [ -n "$base_branch" ]; then
+            branch_name_to_check=$base_branch
+          else
+            branch_name_to_check="main"
+          fi
       else
-        # If merge-base fails, try to get parent from GitHub API if we have a PR number
-        pr_number=$(echo "$branch_name_to_check" | grep -o 'PR-[0-9]*' | cut -d'-' -f2)
-        if [ -n "$pr_number" ] && [ -n "$GITHUB_TOKEN" ]; then
-          base_branch=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://api.github.com/repos/ihmeuw/$dependency_name/pulls/$pr_number" | \
-            grep '"base": {' -A 3 | grep '"ref":' | cut -d'"' -f4)
-            if [ -n "$base_branch" ]; then
-              branch_name_to_check=$base_branch
-            else
-              branch_name_to_check="main"
-            fi
-        else
-          branch_name_to_check="main"
-        fi
-      fi
-        
-      if [ -z "$branch_name_to_check" ] || [ "$branch_name_to_check" = "undefined" ]; then
-        echo "Could not find parent branch. Will use released version of ${dependency_name}."
         branch_name_to_check="main"
       fi
-      echo "Next dependee branch to check: ${branch_name_to_check}"
-      iterations=$((iterations+1))
+    fi
+      
+    if [ -z "$branch_name_to_check" ] || [ "$branch_name_to_check" = "undefined" ]; then
+      echo "Could not find parent branch. Will use released version of ${dependency_name}."
+      branch_name_to_check="main"
+    fi
+    echo "Next dependee branch to check: ${branch_name_to_check}"
+    iterations=$((iterations+1))
   fi
 done
 
