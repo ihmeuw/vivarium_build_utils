@@ -81,6 +81,7 @@ def call(Map config = [:]){
           script {
             // Use the name of the branch in the build name
             currentBuild.displayName = "#${BUILD_NUMBER} ${GIT_BRANCH}"
+            load_shared_makefiles()
           }
         }
       }
