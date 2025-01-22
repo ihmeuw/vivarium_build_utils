@@ -57,6 +57,12 @@ def call(Map config = [:]){
         defaultValue: false,
         description: "Whether to deploy despite building a non-default branch. Builds of the default branch are always deployed."
       )
+    parameters {
+      booleanParam(
+        name: "RUN_SLOW",
+        defaultValue: false,
+        description: "Whether to run slow tests as part of pytest suite."
+      )
       string(
         name: "SLACK_TO",
         defaultValue: "simsci-ci-status",
@@ -158,7 +164,7 @@ def call(Map config = [:]){
                           def parallelTests = test_types.collectEntries {
                               ["${full_name(it)} Tests" : {
                                   stage("Run ${full_name(it)} Tests - Python ${pythonVersion}") {
-                                      sh "${ACTIVATE} && make ${it}${env.IS_CRON.toBoolean() ? '-runslow' : ''}"
+                                      sh "${ACTIVATE} && make ${it}${(env.IS_CRON.toBoolean() || params.RUN_SLOW) ? '-runslow' : ''}"
                                       publishHTML([
                                         allowMissing: true,
                                         alwaysLinkToLastBuild: false,
