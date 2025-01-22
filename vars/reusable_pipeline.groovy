@@ -34,6 +34,9 @@ def call(Map config = [:]){
   pipeline {
     // This agent runs as svc-simsci on node simsci-ci-coordinator-01.
     // It has access to standard IHME filesystems and singularity
+    environment {
+        IS_CRON = "${currentBuild.buildCauses.toString().contains('TimerTrigger')}"
+    }
     agent { label "coordinator" }
 
     options {
@@ -53,11 +56,6 @@ def call(Map config = [:]){
         name: "DEPLOY_OVERRIDE",
         defaultValue: false,
         description: "Whether to deploy despite building a non-default branch. Builds of the default branch are always deployed."
-      )
-      booleanParam(
-        name: "IS_CRON",
-        defaultValue: true,
-        description: "Indicates a recurring build. Used to skip deployment steps."
       )
       string(
         name: "SLACK_TO",
@@ -160,7 +158,7 @@ def call(Map config = [:]){
                           def parallelTests = test_types.collectEntries {
                               ["${full_name(it)} Tests" : {
                                   stage("Run ${full_name(it)} Tests - Python ${pythonVersion}") {
-                                      sh "${ACTIVATE} && make ${it}"
+                                      sh "${ACTIVATE} && make ${it}${IS_CRON ? '-runslow' : ''}"
                                       publishHTML([
                                         allowMissing: true,
                                         alwaysLinkToLastBuild: false,
