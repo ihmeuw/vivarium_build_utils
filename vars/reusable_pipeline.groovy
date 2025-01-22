@@ -158,7 +158,7 @@ def call(Map config = [:]){
                           def parallelTests = test_types.collectEntries {
                               ["${full_name(it)} Tests" : {
                                   stage("Run ${full_name(it)} Tests - Python ${pythonVersion}") {
-                                      sh "${ACTIVATE} && make ${it}${IS_CRON ? '-runslow' : ''}"
+                                      sh "${ACTIVATE} && make ${it}${env.IS_CRON.toBoolean() ? '-runslow' : ''}"
                                       publishHTML([
                                         allowMissing: true,
                                         alwaysLinkToLastBuild: false,
