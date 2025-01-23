@@ -27,7 +27,7 @@ CONDA_ENV_CREATION_FLAG = $(if $(CONDA_ENV_PATH),-p ${CONDA_ENV_PATH},-n ${CONDA
 MAKE_SOURCES := $(shell find . -type d -name "*" ! -path "./.git*" ! -path "./.vscode" ! -path "./output" ! -path "./output/*" ! -path "./archive" ! -path "./dist" ! -path "./output/htmlcov*" ! -path "**/.pytest_cache*" ! -path "**/__pycache__" ! -path "./output/docs_build*" ! -path "./.pytype*" ! -path "." ! -path "./src/${PACKAGE_NAME}/legacy*" ! -path ./.history ! -path "./.history/*" ! -path "./src/${PACKAGE_NAME}.egg-info" ! -path ./.idea ! -path "./.idea/*" )
 
 # Phony targets don't produce artifacts.
-.PHONY: .list-targets build-env build-doc format integration build-package clean debug deploy-doc deploy-package full help install list quick
+.PHONY: .list-targets build-env build-doc format integration build-package clean debug deploy-doc deploy-package full help list quick install-upstream-deps
 
 # List of Make targets is generated dynamically. To add description of target, use a # on the target definition.
 list help: debug .list-targets
@@ -47,6 +47,14 @@ debug: # Print debug information (environment variables)
 	@echo "PACKAGE_VERSION:                  ${PACKAGE_VERSION}"
 	@echo "PYPI_ARTIFACTORY_CREDENTIALS_USR: ${PYPI_ARTIFACTORY_CREDENTIALS_USR} "
 	@echo "Make sources:                     ${MAKE_SOURCES}"
+
+install-upstream-deps:
+	@echo "Contents of install_dependency_branch.sh"
+	@echo "----------------------------------------"
+	@cat vivarium_build_utils/install_dependency_branch.sh
+	@echo ""
+	@echo "----------------------------------------"
+	@sh vivarium_build_utils/install_dependency_branch.sh layered_config_tree ${GIT_BRANCH} jenkins
 
 build-env: # Make a new conda environment
 	@[ "${CONDA_ENV_NAME}" ] && echo "" > /dev/null || ( echo "CONDA_ENV_NAME is not set"; exit 1 )
