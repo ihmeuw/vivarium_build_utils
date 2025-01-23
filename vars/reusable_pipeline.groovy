@@ -11,6 +11,7 @@ def call(Map config = [:]){
   skip_build: Skips the package and doc building steps.
   skip_doc_build: Only skips the doc build.
   use_shared_fs: Whether to use the shared filesystem for conda envs.
+  upstream_repos: A list of repos to check for upstream changes.
   */
   task_node = config.requires_slurm ? 'slurm' : 'matrix-tasks'
 
@@ -30,6 +31,8 @@ def call(Map config = [:]){
   conda_env_name = config.use_shared_fs ? "${env.JOB_NAME.replaceAll('/', '-')}-${BUILD_NUMBER}" : "${env.JOB_NAME}-${BUILD_NUMBER}"
   conda_env_dir = config.use_shared_fs ? "/mnt/team/simulation_science/priv/engineering/tests/venv" : "/tmp"
 
+  // Define the upstream repos to check for changes
+  upstream_repos = config.upstream_repos ?: []
 
   pipeline {
     // This agent runs as svc-simsci on node simsci-ci-coordinator-01.
@@ -143,7 +146,14 @@ def call(Map config = [:]){
 
                       stage("Install Package - Python ${pythonVersion}") {
                         sh "${ACTIVATE} && make install && pip install ."
-                        sh "${ACTIVATE} && . ./install_dependency_branch.sh"
+                      }
+                      stage("Install Upstream Dependency Branches - Python ${pythonVersion}") {
+                        sh """
+                            ${ACTIVATE} && \
+                            for repo in ${upstream_repos}; do
+                                . ./install_dependency_branch.sh "\$repo" "${GIT_BRANCH}" jenkins
+                            done
+                        """
                       }
 
                       stage("Format - Python ${pythonVersion}") {
