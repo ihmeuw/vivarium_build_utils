@@ -145,7 +145,7 @@ def call(Map config = [:]){
                         sh "${ACTIVATE} && make install && pip install ."
                         sh "pwd"
                         sh "ls"
-                        sh "${ACTIVATE} && . install_dependency_branch.sh"
+                        sh "${ACTIVATE} && . ./install_dependency_branch.sh"
                       }
 
                       stage("Format - Python ${pythonVersion}") {
