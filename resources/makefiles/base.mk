@@ -52,24 +52,6 @@ build-env: # Make a new conda environment
 	@[ "${CONDA_ENV_NAME}" ] && echo "" > /dev/null || ( echo "CONDA_ENV_NAME is not set"; exit 1 )
 	conda create ${CONDA_ENV_CREATION_FLAG} python=${PYTHON_VERSION} --yes
 
-install: # Install setuptools, install this package in editable mode
-	pip install --upgrade pip setuptools
-	pip install -e .[DEV]
-	@cd ..
-	@echo "----------------------------------------"
-	@if [ ! -d "vivarium_build_utils" ]; then \
-		# Clone the build utils repo if it doesn't exist. \
-		git clone https://github.com/ihmeuw/vivarium_build_utils.git; \
-	else \
-		echo "vivarium_build_utils already exists. Skipping clone."; \
-	fi
-	@echo "Contents of install_dependency_branch.sh"
-	@echo "----------------------------------------"
-	@cat vivarium_build_utils/install_dependency_branch.sh
-	@echo ""
-	@echo "----------------------------------------"
-	@sh vivarium_build_utils/install_dependency_branch.sh layered_config_tree ${GIT_BRANCH} jenkins
-
 format: setup.py pyproject.toml $(MAKE_SOURCES) # Run the code formatter and import sorter
 	isort $(LOCATIONS)
 	black $(LOCATIONS)
