@@ -26,7 +26,6 @@ CONDA_ENV_CREATION_FLAG = $(if $(CONDA_ENV_PATH),-p ${CONDA_ENV_PATH},-n ${CONDA
 # When one of these files changes, it means that Make targets need to run again.
 MAKE_SOURCES := $(shell find . -type d -name "*" ! -path "./.git*" ! -path "./.vscode" ! -path "./output" ! -path "./output/*" ! -path "./archive" ! -path "./dist" ! -path "./output/htmlcov*" ! -path "**/.pytest_cache*" ! -path "**/__pycache__" ! -path "./output/docs_build*" ! -path "./.pytype*" ! -path "." ! -path "./src/${PACKAGE_NAME}/legacy*" ! -path ./.history ! -path "./.history/*" ! -path "./src/${PACKAGE_NAME}.egg-info" ! -path ./.idea ! -path "./.idea/*" )
 
-
 # Phony targets don't produce artifacts.
 .PHONY: .list-targets build-env build-doc format integration build-package clean debug deploy-doc deploy-package full help install list quick
 
@@ -74,10 +73,6 @@ install: # Install setuptools, install this package in editable mode
 format: setup.py pyproject.toml $(MAKE_SOURCES) # Run the code formatter and import sorter
 	isort $(LOCATIONS)
 	black $(LOCATIONS)
-
-integration: $(MAKE_SOURCES) # Run the end-to-end tests
-	export COVERAGE_FILE=./output/.coverage.integration
-	pytest --runslow tests --cov --cov-report term --cov-report html:./output/htmlcov_integration
 
 build-doc: $(MAKE_SOURCES) # Build the Sphinx docs
 	$(MAKE) -C docs/ html
