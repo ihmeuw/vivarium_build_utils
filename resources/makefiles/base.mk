@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-this_makefile := $(lastword $(MAKEFILE_LIST)) # Used to automatically list targets
+UTILS_DIR := $(dir $(abspath $(dir $(abspath $(dir $(lastword $(MAKEFILE_LIST)))))))
 .DEFAULT_GOAL := list # If someone runs "make", run "make list"
 
 # Source files to format, lint, and type check.
@@ -35,7 +35,9 @@ list help: debug .list-targets
 .list-targets: # Print available Make targets
 	@echo
 	@echo "Make targets:"
-	@grep -i "^[a-zA-Z][a-zA-Z0-9_ \.\-]*: .*[#].*" ${this_makefile} | sort | sed 's/:.*#/ : /g' | column -t -s:
+	@for file in Makefile $(UTILS_DIR)resources/makefiles/*.mk; do \
+		grep -i "^[a-zA-Z][a-zA-Z0-9_ \.\-]*: .*[#].*" $$file | sort | sed 's/:.*#/ : /g'; \
+	done | column -t -s:
 	@echo
 
 debug: # Print debug information (environment variables)
@@ -48,13 +50,13 @@ debug: # Print debug information (environment variables)
 	@echo "PYPI_ARTIFACTORY_CREDENTIALS_USR: ${PYPI_ARTIFACTORY_CREDENTIALS_USR} "
 	@echo "Make sources:                     ${MAKE_SOURCES}"
 
-install-upstream-deps:
+install-upstream-deps: # Install upstream dependencies
 	@echo "Contents of install_dependency_branch.sh"
 	@echo "----------------------------------------"
-	@cat vivarium_build_utils/install_dependency_branch.sh
+	@cat $(UTILS_DIR)/install_dependency_branch.sh
 	@echo ""
 	@echo "----------------------------------------"
-	@sh vivarium_build_utils/install_dependency_branch.sh layered_config_tree ${GIT_BRANCH} jenkins
+	@sh $(UTILS_DIR)/install_dependency_branch.sh layered_config_tree ${GIT_BRANCH} jenkins
 
 build-env: # Make a new conda environment
 	@[ "${CONDA_ENV_NAME}" ] && echo "" > /dev/null || ( echo "CONDA_ENV_NAME is not set"; exit 1 )
