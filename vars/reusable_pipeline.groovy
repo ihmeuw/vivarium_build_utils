@@ -148,7 +148,7 @@ def call(Map config = [:]){
                         sh "${ACTIVATE} && make install && pip install ."
                       }
                       stage("Install Upstream Dependency Branches - Python ${pythonVersion}") {
-                        upstream_repos.split(',').each { repo ->
+                        upstream_repos.each { repo ->
                             sh """
                                 ${ACTIVATE} && \
                                 . ./install_dependency_branch.sh "${repo}" "${GIT_BRANCH}" jenkins
