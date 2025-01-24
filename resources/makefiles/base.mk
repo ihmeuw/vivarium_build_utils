@@ -53,11 +53,10 @@ debug: # Print debug information (environment variables)
 install-upstream-deps: # Install upstream dependencies
 	@echo "Contents of install_dependency_branch.sh"
 	@echo "----------------------------------------"
-	@cat $(UTILS_DIR)/install_dependency_branch.sh
+	@cat $(UTILS_DIR)/resources/scripts/install_dependency_branch.sh
 	@echo ""
 	@echo "----------------------------------------"
-	@sh $(UTILS_DIR)/install_dependency_branch.sh layered_config_tree ${GIT_BRANCH} jenkins
-
+	@sh $(UTILS_DIR)/resources/scripts/install_dependency_branch.sh $(DEPENDENCY_NAME) $(BRANCH_NAME) $(WORKFLOW)
 build-env: # Make a new conda environment
 	@[ "${CONDA_ENV_NAME}" ] && echo "" > /dev/null || ( echo "CONDA_ENV_NAME is not set"; exit 1 )
 	conda create ${CONDA_ENV_CREATION_FLAG} python=${PYTHON_VERSION} --yes
