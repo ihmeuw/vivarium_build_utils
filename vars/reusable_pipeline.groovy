@@ -167,7 +167,7 @@ def call(Map config = [:]){
                               return "All"
                             } else {
                                 return test_type.capitalize()
-                              }
+                            }
                           }
                           def parallelTests = test_types.collectEntries {
                               ["${full_name(it)} Tests" : {
