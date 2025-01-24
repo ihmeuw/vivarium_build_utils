@@ -22,7 +22,7 @@ def call(Map config = [:]){
   python_versions = config.python_versions ?: ["3.10", "3.11"]
   PYTHON_DEPLOY_VERSION = "3.11"
 
-  test_types = config.test_types ?: []
+  test_types = config.test_types ?: ['all-tests']
   // raise an error if test_types is not a subset of  ['e2e', 'unit', 'integration']
   if (!test_types.every { ['all-tests', 'e2e', 'unit', 'integration'].contains(it) }) {
     throw new IllegalArgumentException("test_types must be a subset of ['all-tests', 'e2e', 'unit', 'integration']")
