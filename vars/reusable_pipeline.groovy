@@ -164,7 +164,7 @@ def call(Map config = [:]){
                             if (test_type == 'e2e') {
                                 return "End-to-End"
                             } else if (test_type == 'all-tests') {
-                              return "All Tests"
+                              return "All"
                             } else {
                                 return test_type.capitalize()
                               }
