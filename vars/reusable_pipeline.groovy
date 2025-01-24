@@ -148,12 +148,12 @@ def call(Map config = [:]){
                         sh "${ACTIVATE} && make install && pip install ."
                       }
                       stage("Install Upstream Dependency Branches - Python ${pythonVersion}") {
-                        sh """
-                            ${ACTIVATE} && \
-                            for repo in ${upstream_repos}; do
-                                . ./install_dependency_branch.sh "\$repo" "${GIT_BRANCH}" jenkins
-                            done
-                        """
+                        upstream_repos.split(',').each { repo ->
+                            sh """
+                                ${ACTIVATE} && \
+                                . ./install_dependency_branch.sh "${repo}" "${GIT_BRANCH}" jenkins
+                            """
+                        }
                       }
 
                       stage("Format - Python ${pythonVersion}") {
