@@ -150,7 +150,7 @@ def call(Map config = [:]){
                       stage("Install Upstream Dependency Branches - Python ${pythonVersion}") {
                         sh "chmod +x install_dependency_branch.sh"
                         upstream_repos.each { repo ->
-                          sh "${ACTIVATE} && ./install_dependency_branch.sh "${repo}" "${GIT_BRANCH}" jenkins"
+                          sh "${ACTIVATE} && ./install_dependency_branch.sh ${repo} ${GIT_BRANCH} jenkins"
                         }
                       }
 
