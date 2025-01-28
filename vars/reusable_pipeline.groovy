@@ -205,36 +205,29 @@ def call(Map config = [:]){
                             sh "${ACTIVATE} && make build-package"
                           }
                         }
+                        
                         stage("Deploy - Python ${pythonVersion}") {
-                          when {
-                            expression { (config?.deployable == true) && !env.IS_CRON.toBoolean()}
-                            anyOf {
-                              environment name: "BRANCH", value: "main";
-                              expression { params.DEPLOY_OVERRIDE }
+                          if ((config?.deployable == true) && 
+                              !env.IS_CRON.toBoolean() && 
+                              (env.BRANCH == "main" || params.DEPLOY_OVERRIDE)) {
+                            
+                            stage("Deploy Docs") {
+                              withEnv(["DOCS_ROOT_PATH=/mnt/team/simulation_science/pub/docs"]) {
+                                sh "${ACTIVATE} && make deploy-doc"
+                              }
                             }
-                          }
-                          stage("Deploy Docs") {
-                            environment {
-                              DOCS_ROOT_PATH = "/mnt/team/simulation_science/pub/docs"
-                            }
-                            steps {
-                              sh "${ACTIVATE} && make deploy-doc"
-                            }
-                          }
 
-                          stage("Deploy Package to PyPi") {
-                            environment {
-                              // Note that Jenkins can only read credentials by ID, so read the ID rather than the
-                              // name of the secret here.
-                              PYPI_ARTIFACTORY_CREDENTIALS = credentials("artifactory_simsci")
+                            stage("Deploy Package to PyPi") {
+                              withCredentials([usernamePassword(
+                                credentialsId: 'artifactory_simsci',
+                                usernameVariable: 'PYPI_ARTIFACTORY_USERNAME',
+                                passwordVariable: 'PYPI_ARTIFACTORY_PASSWORD'
+                              )]) {
+                                sh "${ACTIVATE} && make deploy-package"
+                              }
                             }
-                            steps {
-                              sh "${ACTIVATE} && make deploy-package"
-                            }
-                          }
 
-                          stage("Tagging Version and Pushing") {
-                            steps {
+                            stage("Tagging Version and Pushing") {
                               sh "${ACTIVATE} && make tag-version"
                             }
                           }
