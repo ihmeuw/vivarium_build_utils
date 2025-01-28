@@ -159,8 +159,8 @@ def call(Map config = [:]){
                         }
                       }
 
-                      stage("Format - Python ${pythonVersion}") {
-                        sh "${ACTIVATE} && make format"
+                      stage("Check Formatting - Python ${pythonVersion}") {
+                        sh "${ACTIVATE} && make lint"
                       }
 
                       stage("Run Tests - Python ${pythonVersion}") {

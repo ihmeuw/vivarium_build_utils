@@ -71,6 +71,11 @@ format: setup.py pyproject.toml $(MAKE_SOURCES) # Run the code formatter and imp
 	isort $(LOCATIONS)
 	black $(LOCATIONS)
 
+lint: # Check for formatting errors
+	isort $(LOCATIONS) --check --verbose --only-modified --diff
+	black $(LOCATIONS) --check --diff
+
+
 build-doc: $(MAKE_SOURCES) # Build the Sphinx docs
 	$(MAKE) -C docs/ html
 
