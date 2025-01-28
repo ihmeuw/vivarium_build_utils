@@ -144,7 +144,7 @@ def call(Map config = [:]){
                         // The env should have been cleaned out after the last build, but delete it again
                         // here just to be safe.
                         sh "rm -rf ${CONDA_ENV_PATH}"
-                        sh "${ACTIVATE_BASE} && make build-env PYTHON_VERSION=${PYTHON_VERSION}"
+                        sh "${ACTIVATE_BASE} && make create-env ENV_NAME=${CONDA_ENV_NAME} PYTHON_VERSION=${PYTHON_VERSION}"
                         // open permissions for test users to create file in workspace
                         sh "chmod 777 ${WORKSPACE}"
                       }
