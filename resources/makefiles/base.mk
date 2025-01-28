@@ -70,6 +70,7 @@ build-env: # Make a new conda environment
 format: setup.py pyproject.toml $(MAKE_SOURCES) # Run the code formatter and import sorter
 	isort $(LOCATIONS)
 	black $(LOCATIONS)
+	@echo "Ignore, Created by Makefile, `date`" > $@
 
 lint: # Check for formatting errors
 	isort $(LOCATIONS) --check --verbose --only-modified --diff
@@ -78,6 +79,7 @@ lint: # Check for formatting errors
 
 build-doc: $(MAKE_SOURCES) # Build the Sphinx docs
 	$(MAKE) -C docs/ html
+	@echo "Ignore, Created by Makefile, `date`" > $@
 
 deploy-doc: # Deploy the Sphinx docs
 	@[ "${DOCS_ROOT_PATH}" ] && echo "" > /dev/null || ( echo "DOCS_ROOT_PATH is not set"; exit 1 )
@@ -89,6 +91,7 @@ deploy-doc: # Deploy the Sphinx docs
 build-package: $(MAKE_SOURCES) # Build the package as a pip wheel
 	pip install build
 	python -m build
+	@echo "Ignore, Created by Makefile, `date`" > $@
 
 deploy-package-artifactory: # Deploy the package to Artifactory
 	@[ "${PYPI_ARTIFACTORY_CREDENTIALS_USR}" ] && echo "" > /dev/null || ( echo "PYPI_ARTIFACTORY_CREDENTIALS_USR is not set"; exit 1 )
