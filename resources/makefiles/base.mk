@@ -63,13 +63,11 @@ install-upstream-deps: # Install upstream dependencies
 	@echo "----------------------------------------"
 	@sh $(UTILS_DIR)/resources/scripts/install_dependency_branch.sh $(DEPENDENCY_NAME) $(BRANCH_NAME) $(WORKFLOW)
 
-create-env: ## Create a new conda environment
-	$(if $(ENV_NAME),,$(error ENV_NAME is not set. Usage: make create-env ENV_NAME=your_env_name))
-	conda create -n $(ENV_NAME) python=${PYTHON_VERSION} --yes
+create-env: ## Create a new conda environment. Specify env name with CONDA_ENV_NAME. Default env name is PACKAGE_NAME_PYTHON_VERSION.
+	conda create ${CONDA_ENV_CREATION_FLAG} python=${PYTHON_VERSION} --yes
 
-build-env: ## Create environment and install packages
-	$(if $(ENV_NAME),,$(error ENV_NAME is not set. Usage: make build-env ENV_NAME=your_env_name))
-	make create-env ENV_NAME=$(ENV_NAME)
+build-env: ## Create environment and install packages. Specify env name with CONDA_ENV_NAME. Default env name is PACKAGE_NAME_PYTHON_VERSION.
+	make create-env CONDA_ENV_NAME=$(CONDA_ENV_NAME)
 	conda run -n $(ENV_NAME) make install
 
 format: setup.py pyproject.toml $(MAKE_SOURCES) # Run the code formatter and import sorter
