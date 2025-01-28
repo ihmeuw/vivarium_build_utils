@@ -8,6 +8,7 @@ def call(Map config = [:]){
   python_versions: The versions of python to test against.
   test_types: The tests to run. Must be subset (inclusive) of ['unit', 'integration', 'e2e']
   requires_slurm: Whether the child tasks require the slurm scheduler.
+  deployable: Whether the package can be deployed by Jenkins.
   skip_build: Skips the package and doc building steps.
   skip_doc_build: Only skips the doc build.
   use_shared_fs: Whether to use the shared filesystem for conda envs.
@@ -162,38 +163,38 @@ def call(Map config = [:]){
                         sh "${ACTIVATE} && make format"
                       }
 
-                    stage("Run Tests - Python ${pythonVersion}") {
-                      script {
-                          def full_name = { test_type ->
-                            if (test_type == 'e2e') {
-                                return "End-to-End"
-                            } else if (test_type == 'all-tests') {
-                              return "All"
-                            } else {
-                                return test_type.capitalize()
+                      stage("Run Tests - Python ${pythonVersion}") {
+                        script {
+                            def full_name = { test_type ->
+                              if (test_type == 'e2e') {
+                                  return "End-to-End"
+                              } else if (test_type == 'all-tests') {
+                                return "All"
+                              } else {
+                                  return test_type.capitalize()
+                              }
                             }
-                          }
-                          def parallelTests = test_types.collectEntries {
-                              ["${full_name(it)} Tests" : {
-                                  stage("Run ${full_name(it)} Tests - Python ${pythonVersion}") {
-                                      sh "${ACTIVATE} && make ${it}${(env.IS_CRON.toBoolean() || params.RUN_SLOW) ? ' RUNSLOW=1' : ''}"
-                                      publishHTML([
-                                        allowMissing: true,
-                                        alwaysLinkToLastBuild: false,
-                                        keepAll: true,
-                                        reportDir: "output/htmlcov_${it}",
-                                        reportFiles: "index.html",
-                                        reportName: "Coverage Report - ${full_name(it)} tests",
-                                        reportTitles: ''
-                                      ])
-                                  }
-                              }]
-                          }
-                          parallel parallelTests
+                            def parallelTests = test_types.collectEntries {
+                                ["${full_name(it)} Tests" : {
+                                    stage("Run ${full_name(it)} Tests - Python ${pythonVersion}") {
+                                        sh "${ACTIVATE} && make ${it}${(env.IS_CRON.toBoolean() || params.RUN_SLOW) ? ' RUNSLOW=1' : ''}"
+                                        publishHTML([
+                                          allowMissing: true,
+                                          alwaysLinkToLastBuild: false,
+                                          keepAll: true,
+                                          reportDir: "output/htmlcov_${it}",
+                                          reportFiles: "index.html",
+                                          reportName: "Coverage Report - ${full_name(it)} tests",
+                                          reportTitles: ''
+                                        ])
+                                    }
+                                }]
+                            }
+                            parallel parallelTests
+                        }
                       }
-                    }
 
-                    if ((config?.skip_build != true) && (PYTHON_VERSION == PYTHON_DEPLOY_VERSION)) {
+                      if ((config?.skip_build != true) && (PYTHON_VERSION == PYTHON_DEPLOY_VERSION)) {
                         stage("Build - Python ${pythonVersion}") {
                           if (config?.skip_doc_build != true) {
                             stage("Build Docs - Python ${pythonVersion}") {
@@ -202,6 +203,40 @@ def call(Map config = [:]){
                           }
                           stage("Build Package - Python ${pythonVersion}") {
                             sh "${ACTIVATE} && make build-package"
+                          }
+                        }
+                        stage("Deploy - Python ${pythonVersion}") {
+                          when {
+                            expression { (config?.deployable == true) && !env.IS_CRON.toBoolean()}
+                            anyOf {
+                              environment name: "BRANCH", value: "main";
+                              expression { params.DEPLOY_OVERRIDE }
+                            }
+                          }
+                          stage("Deploy Docs") {
+                            environment {
+                              DOCS_ROOT_PATH = "/mnt/team/simulation_science/pub/docs"
+                            }
+                            steps {
+                              sh "${ACTIVATE} && make deploy-doc"
+                            }
+                          }
+
+                          stage("Deploy Package to PyPi") {
+                            environment {
+                              // Note that Jenkins can only read credentials by ID, so read the ID rather than the
+                              // name of the secret here.
+                              PYPI_ARTIFACTORY_CREDENTIALS = credentials("artifactory_simsci")
+                            }
+                            steps {
+                              sh "${ACTIVATE} && make deploy-package"
+                            }
+                          }
+
+                          stage("Tagging Version and Pushing") {
+                            steps {
+                              sh "${ACTIVATE} && make tag-version"
+                            }
                           }
                         }
                       }
