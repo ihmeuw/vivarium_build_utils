@@ -1,5 +1,7 @@
 // Extract the python versions in the downstream repository's python_versions.json file
 // and return them as a list
+import groovy.json.JsonSlurper
+
 def call() {
     def python_versions = []
     def python_versions_file = readFile("python_versions.json")
