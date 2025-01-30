@@ -3,6 +3,6 @@
 import groovy.json.JsonSlurper
 
 def call(workspace) {
-    def python_versions_file = readFile "${workspace}/python_versions.json"
-    return new JsonSlurper().parse(python_versions_file)
+    def python_versions_string = readFile "${workspace}/python_versions.json"
+    return new JsonSlurper().parseText(python_versions_string)
 }
