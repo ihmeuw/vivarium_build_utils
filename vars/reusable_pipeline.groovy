@@ -17,8 +17,6 @@ def call(Map config = [:]){
   scheduled_branches = config.scheduled_branches ?: [] 
   CRON_SETTINGS = scheduled_branches.contains(BRANCH_NAME) ? 'H H(20-23) * * *' : ''
 
-  // Define Python versions - can be parameterized through config
-  python_versions =  get_python_versions(WORKSPACE)
   PYTHON_DEPLOY_VERSION = "3.11"
 
   test_types = config.test_types ?: ['all-tests']
@@ -94,6 +92,7 @@ def call(Map config = [:]){
       stage("Python Versions") {
         steps {
           script {
+            python_versions =  get_python_versions(WORKSPACE)
             def parallelPythonVersions = [:]
             
             python_versions.each { pythonVersion ->
