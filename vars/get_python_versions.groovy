@@ -2,7 +2,7 @@
 // and return them as a list
 import groovy.json.JsonSlurper
 
-def call() {
-    def python_versions_file = new File("python_versions.json")
+def call(workspace) {
+    def python_versions_file = new File("${workspace}/python_versions.json")
     return new JsonSlurper().parse(python_versions_file)
 }
