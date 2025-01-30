@@ -85,6 +85,7 @@ def call(Map config = [:]){
           script {
             // Use the name of the branch in the build name
             currentBuild.displayName = "#${BUILD_NUMBER} ${GIT_BRANCH}"
+            python_versions = get_python_versions(WORKSPACE)
           }
         }
       }
@@ -92,7 +93,6 @@ def call(Map config = [:]){
       stage("Python Versions") {
         steps {
           script {
-            python_versions =  get_python_versions(WORKSPACE)
             def parallelPythonVersions = [:]
             
             python_versions.each { pythonVersion ->
