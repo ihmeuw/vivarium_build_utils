@@ -206,11 +206,11 @@ def call(Map config = [:]){
                     } finally {
                   // Cleanup
                       sh "${ACTIVATE} && make clean"
-                      sh "rm -rf ${conda_env_path}"
-                      cleanWs()
-                      dir("${WORKSPACE}@tmp") {
-                        deleteDir()
-                      }
+                      // sh "rm -rf ${conda_env_path}"
+                      // cleanWs()
+                      // dir("${WORKSPACE}@tmp") {
+                      //   deleteDir()
+                      // }
                     }
                   }
                 }
@@ -270,13 +270,13 @@ def call(Map config = [:]){
           }
         }
       }
-      cleanup { // cleanup for outer workspace
-        cleanWs()
-        // manually remove @tmp dirs
-        dir("${WORKSPACE}@tmp"){
-          deleteDir()
-        }
-      }
+      // cleanup { // cleanup for outer workspace
+      //   cleanWs()
+      //   // manually remove @tmp dirs
+      //   dir("${WORKSPACE}@tmp"){
+      //     deleteDir()
+      //   }
+      // }
     }  // End of post
   }  // End of pipeline
 }
