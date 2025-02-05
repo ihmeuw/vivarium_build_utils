@@ -8,7 +8,7 @@ def call(workspace, git_url) {
     // raise an error if the file doesn't exist
     def filename = "${workspace}/python_versions.json"
     if (!fileExists(filename)) {
-        error("python_versions.json file not found in ${repo_name}")
+        error("python_versions.json file not found in repository ${repo_name}")
     }
     def python_versions_string = readFile filename
     return new JsonSlurper().parseText(python_versions_string)
