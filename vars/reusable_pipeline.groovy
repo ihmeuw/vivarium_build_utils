@@ -86,7 +86,7 @@ def call(Map config = [:]){
           script {
             // Use the name of the branch in the build name
             currentBuild.displayName = "#${BUILD_NUMBER} ${GIT_BRANCH}"
-            python_versions = get_python_versions(WORKSPACE)
+            python_versions = get_python_versions(WORKSPACE, GIT_URL)
           }
         }
       }
