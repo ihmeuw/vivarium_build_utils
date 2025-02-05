@@ -134,8 +134,6 @@ def call(Map config = [:]){
                         CONDA_ENV_PATH: '${CONDA_ENV_PATH}'
                         GIT_BRANCH:     '${GIT_BRANCH}'
                         JOB_NAME:       '${JOB_NAME}'
-                        JOB_BASE_NAME:  '${JOB_BASE_NAME}'
-                        GIT_URL:        '${GIT_URL}'
                         WORKSPACE:      '${WORKSPACE}'
                         XDG_CACHE_HOME: '${XDG_CACHE_HOME}'"""
                       }
