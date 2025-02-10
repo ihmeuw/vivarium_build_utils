@@ -37,13 +37,21 @@ def call(Map config = [:]){
     // It has access to standard IHME filesystems and singularity
     environment {
         IS_CRON = "${currentBuild.buildCauses.toString().contains('TimerTrigger')}"
-        SHARED_PATH: "/svc-simsci",
-        BRANCH: sh(script: "echo ${GIT_BRANCH} | rev | cut -d '/' -f1 | rev", returnStdout: true).trim(),
-        TIMESTAMP: sh(script: 'date', returnStdout: true),
-        CONDARC: "/svc-simsci/miniconda3/.condarc",
-        CONDA_BIN_PATH: "/svc-simsci/miniconda3/bin",
-        XDG_CACHE_HOME: "/svc-simsci/pip-cache",
-        ACTIVATE_BASE: "source /svc-simsci/miniconda3/bin/activate &> /dev/null"
+        // defaults for conda and pip are a local directory /svc-simsci for improved speed.
+        // In the past, we used /ihme/code/* on the NFS (which is slower)
+        shared_path="/svc-simsci"
+        // Get the branch being built and strip everything but the text after the last "/"
+        BRANCH = sh(script: "echo ${GIT_BRANCH} | rev | cut -d '/' -f1 | rev", returnStdout: true).trim()
+        TIMESTAMP = sh(script: 'date', returnStdout: true)
+        // Specify the path to the .condarc file via environment variable.
+        // This file configures the shared conda package cache.
+        CONDARC = "${shared_path}/miniconda3/.condarc"
+        CONDA_BIN_PATH = "${shared_path}/miniconda3/bin"
+        // Set the Pip cache.
+        XDG_CACHE_HOME = "${shared_path}/pip-cache"
+        // Jenkins commands run in separate processes, so need to activate the environment every
+        // time we run pip, poetry, etc.
+        ACTIVATE = "source ${CONDA_BIN_PATH}/activate ${CONDA_ENV_PATH} &> /dev/null"
     }
 
     agent { label "coordinator" }
@@ -118,7 +126,7 @@ def call(Map config = [:]){
                       checkout scm
                       load_shared_files()
                       stage("Debug Info - Python ${pythonVersion}") {
-                        echo "Jenkins pipeline run timestamp: ${TIMESTAMP}"
+                        echo "Jenkins pipeline run timestamp: ${env.TIMESTAMP}"
                         // Display parameters used.
                         echo """Parameters:
                         DEPLOY_OVERRIDE: ${params.DEPLOY_OVERRIDE}"""
