@@ -90,6 +90,19 @@ def call(Map config = [:]){
           }
         }
       }
+      def envVars = [
+        CONDA_ENV_NAME: "${conda_env_name}-${pythonVersion}",
+        CONDA_ENV_PATH: "${conda_env_dir}/${conda_env_name}-${pythonVersion}",
+        SHARED_PATH: "/svc-simsci",
+        BRANCH: sh(script: "echo ${GIT_BRANCH} | rev | cut -d '/' -f1 | rev", returnStdout: true).trim(),
+        TIMESTAMP: sh(script: 'date', returnStdout: true),
+        CONDARC: "/svc-simsci/miniconda3/.condarc",
+        CONDA_BIN_PATH: "/svc-simsci/miniconda3/bin",
+        PYTHON_VERSION: pythonVersion,
+        XDG_CACHE_HOME: "/svc-simsci/pip-cache",
+        ACTIVATE: "source /svc-simsci/miniconda3/bin/activate ${conda_env_dir}/${conda_env_name}-${pythonVersion} &> /dev/null",
+        ACTIVATE_BASE: "source /svc-simsci/miniconda3/bin/activate &> /dev/null"
+      ]
 
       stage("Python Versions") {
         steps {
@@ -99,19 +112,6 @@ def call(Map config = [:]){
             python_versions.each { pythonVersion ->
               parallelPythonVersions["Python ${pythonVersion}"] = {
                 node(task_node) {
-                  def envVars = [
-                    CONDA_ENV_NAME: "${conda_env_name}-${pythonVersion}",
-                    CONDA_ENV_PATH: "${conda_env_dir}/${conda_env_name}-${pythonVersion}",
-                    SHARED_PATH: "/svc-simsci",
-                    BRANCH: sh(script: "echo ${GIT_BRANCH} | rev | cut -d '/' -f1 | rev", returnStdout: true).trim(),
-                    TIMESTAMP: sh(script: 'date', returnStdout: true),
-                    CONDARC: "/svc-simsci/miniconda3/.condarc",
-                    CONDA_BIN_PATH: "/svc-simsci/miniconda3/bin",
-                    PYTHON_VERSION: pythonVersion,
-                    XDG_CACHE_HOME: "/svc-simsci/pip-cache",
-                    ACTIVATE: "source /svc-simsci/miniconda3/bin/activate ${conda_env_dir}/${conda_env_name}-${pythonVersion} &> /dev/null",
-                    ACTIVATE_BASE: "source /svc-simsci/miniconda3/bin/activate &> /dev/null"
-                  ]
                   
                   withEnv(envVars.collect { k, v -> "${k}=${v}" }) {
                     try {
