@@ -93,50 +93,51 @@ def call(Map config = [:]){
 
       stage("Python Versions") {
         steps {
-          def envVars = [
-              CONDA_ENV_NAME: "${conda_env_name}-${pythonVersion}",
-              CONDA_ENV_PATH: "${conda_env_dir}/${conda_env_name}-${pythonVersion}",
-              SHARED_PATH: "/svc-simsci",
-              BRANCH: sh(script: "echo ${GIT_BRANCH} | rev | cut -d '/' -f1 | rev", returnStdout: true).trim(),
-              TIMESTAMP: sh(script: 'date', returnStdout: true),
-              CONDARC: "/svc-simsci/miniconda3/.condarc",
-              CONDA_BIN_PATH: "/svc-simsci/miniconda3/bin",
-              PYTHON_VERSION: pythonVersion,
-              XDG_CACHE_HOME: "/svc-simsci/pip-cache",
-              ACTIVATE: "source /svc-simsci/miniconda3/bin/activate ${conda_env_dir}/${conda_env_name}-${pythonVersion} &> /dev/null",
-              ACTIVATE_BASE: "source /svc-simsci/miniconda3/bin/activate &> /dev/null"
-            ]
           script {
+            def envVars = [
+                CONDA_ENV_NAME: "${conda_env_name}-${pythonVersion}",
+                CONDA_ENV_PATH: "${conda_env_dir}/${conda_env_name}-${pythonVersion}",
+                SHARED_PATH: "/svc-simsci",
+                BRANCH: sh(script: "echo ${GIT_BRANCH} | rev | cut -d '/' -f1 | rev", returnStdout: true).trim(),
+                TIMESTAMP: sh(script: 'date', returnStdout: true),
+                CONDARC: "/svc-simsci/miniconda3/.condarc",
+                CONDA_BIN_PATH: "/svc-simsci/miniconda3/bin",
+                PYTHON_VERSION: pythonVersion,
+                XDG_CACHE_HOME: "/svc-simsci/pip-cache",
+                ACTIVATE: "source /svc-simsci/miniconda3/bin/activate ${conda_env_dir}/${conda_env_name}-${pythonVersion} &> /dev/null",
+                ACTIVATE_BASE: "source /svc-simsci/miniconda3/bin/activate &> /dev/null"
+              ]
+              
+              withEnv(envVars.collect { k, v -> "${k}=${v}" }) {
+                try {
+                  checkout scm
+                  load_shared_files()
+                  stage("Debug Info - Python ${pythonVersion}") {
+                    echo "Jenkins pipeline run timestamp: ${TIMESTAMP}"
+                    // Display parameters used.
+                    echo """Parameters:
+                    DEPLOY_OVERRIDE: ${params.DEPLOY_OVERRIDE}"""
+
+                    // Display environment variables from Jenkins.
+                    echo """Environment:
+                    ACTIVATE:       '${ACTIVATE}'
+                    BUILD_NUMBER:   '${BUILD_NUMBER}'
+                    BRANCH:         '${BRANCH}'
+                    CONDARC:        '${CONDARC}'
+                    CONDA_BIN_PATH: '${CONDA_BIN_PATH}'
+                    CONDA_ENV_NAME: '${CONDA_ENV_NAME}'
+                    CONDA_ENV_PATH: '${CONDA_ENV_PATH}'
+                    GIT_BRANCH:     '${GIT_BRANCH}'
+                    JOB_NAME:       '${JOB_NAME}'
+                    WORKSPACE:      '${WORKSPACE}'
+                    XDG_CACHE_HOME: '${XDG_CACHE_HOME}'"""
+                  }
             def parallelPythonVersions = [:]
             
             python_versions.each { pythonVersion ->
               parallelPythonVersions["Python ${pythonVersion}"] = {
                 node(task_node) {
                   
-                  withEnv(envVars.collect { k, v -> "${k}=${v}" }) {
-                    try {
-                      checkout scm
-                      load_shared_files()
-                      stage("Debug Info - Python ${pythonVersion}") {
-                        echo "Jenkins pipeline run timestamp: ${TIMESTAMP}"
-                        // Display parameters used.
-                        echo """Parameters:
-                        DEPLOY_OVERRIDE: ${params.DEPLOY_OVERRIDE}"""
-
-                        // Display environment variables from Jenkins.
-                        echo """Environment:
-                        ACTIVATE:       '${ACTIVATE}'
-                        BUILD_NUMBER:   '${BUILD_NUMBER}'
-                        BRANCH:         '${BRANCH}'
-                        CONDARC:        '${CONDARC}'
-                        CONDA_BIN_PATH: '${CONDA_BIN_PATH}'
-                        CONDA_ENV_NAME: '${CONDA_ENV_NAME}'
-                        CONDA_ENV_PATH: '${CONDA_ENV_PATH}'
-                        GIT_BRANCH:     '${GIT_BRANCH}'
-                        JOB_NAME:       '${JOB_NAME}'
-                        WORKSPACE:      '${WORKSPACE}'
-                        XDG_CACHE_HOME: '${XDG_CACHE_HOME}'"""
-                      }
 
                       stage("Build Environment - Python ${pythonVersion}") {
                         // The env should have been cleaned out after the last build, but delete it again
