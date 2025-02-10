@@ -37,6 +37,13 @@ def call(Map config = [:]){
     // It has access to standard IHME filesystems and singularity
     environment {
         IS_CRON = "${currentBuild.buildCauses.toString().contains('TimerTrigger')}"
+        SHARED_PATH: "/svc-simsci",
+        BRANCH: sh(script: "echo ${GIT_BRANCH} | rev | cut -d '/' -f1 | rev", returnStdout: true).trim(),
+        TIMESTAMP: sh(script: 'date', returnStdout: true),
+        CONDARC: "/svc-simsci/miniconda3/.condarc",
+        CONDA_BIN_PATH: "/svc-simsci/miniconda3/bin",
+        XDG_CACHE_HOME: "/svc-simsci/pip-cache",
+        ACTIVATE_BASE: "source /svc-simsci/miniconda3/bin/activate &> /dev/null"
     }
 
     agent { label "coordinator" }
@@ -87,19 +94,6 @@ def call(Map config = [:]){
             // Use the name of the branch in the build name
             currentBuild.displayName = "#${BUILD_NUMBER} ${GIT_BRANCH}"
             python_versions = get_python_versions(WORKSPACE, GIT_URL)
-            def envVars = [
-                CONDA_ENV_NAME: "${conda_env_name}-${pythonVersion}",
-                CONDA_ENV_PATH: "${conda_env_dir}/${conda_env_name}-${pythonVersion}",
-                SHARED_PATH: "/svc-simsci",
-                BRANCH: sh(script: "echo ${GIT_BRANCH} | rev | cut -d '/' -f1 | rev", returnStdout: true).trim(),
-                TIMESTAMP: sh(script: 'date', returnStdout: true),
-                CONDARC: "/svc-simsci/miniconda3/.condarc",
-                CONDA_BIN_PATH: "/svc-simsci/miniconda3/bin",
-                PYTHON_VERSION: pythonVersion,
-                XDG_CACHE_HOME: "/svc-simsci/pip-cache",
-                ACTIVATE: "source /svc-simsci/miniconda3/bin/activate ${conda_env_dir}/${conda_env_name}-${pythonVersion} &> /dev/null",
-                ACTIVATE_BASE: "source /svc-simsci/miniconda3/bin/activate &> /dev/null"
-              ]
           }
         }
       }
@@ -112,7 +106,12 @@ def call(Map config = [:]){
             python_versions.each { pythonVersion ->
               parallelPythonVersions["Python ${pythonVersion}"] = {
                 node(task_node) {
-            
+                  def envVars = [
+                    CONDA_ENV_NAME: "${conda_env_name}-${pythonVersion}",
+                    CONDA_ENV_PATH: "${conda_env_dir}/${conda_env_name}-${pythonVersion}",
+                    PYTHON_VERSION: pythonVersion,
+                    ACTIVATE: "source /svc-simsci/miniconda3/bin/activate ${conda_env_dir}/${conda_env_name}-${pythonVersion} &> /dev/null",
+                  ]
                   
                   withEnv(envVars.collect { k, v -> "${k}=${v}" }) {
                     try {
