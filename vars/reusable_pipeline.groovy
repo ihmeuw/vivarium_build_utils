@@ -51,7 +51,7 @@ def call(Map config = [:]){
         XDG_CACHE_HOME = "${shared_path}/pip-cache"
         // Jenkins commands run in separate processes, so need to activate the environment every
         // time we run pip, poetry, etc.
-        ACTIVATE = "source ${CONDA_BIN_PATH}/activate ${CONDA_ENV_PATH} &> /dev/null"
+        ACTIVATE_BASE = "source ${CONDA_BIN_PATH}/activate &> /dev/null"
     }
 
     agent { label "coordinator" }
