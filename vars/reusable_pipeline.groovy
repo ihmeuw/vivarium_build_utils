@@ -268,10 +268,6 @@ def call(Map config = [:]){
             script: "git log -1 --pretty=format:'%an'",
             returnStdout: true
           ).trim()
-          echo "Most recent developerID: ${developerID}"
-          echo "This is env.BRANCH: ${env.BRANCH}"
-          echo "This is env.GIT_BRANCH: ${env.GIT_BRANCH}"
-
           if (env.BRANCH == "main") {
             channelName = "simsci-ci-status"
             slackID = "channel"
