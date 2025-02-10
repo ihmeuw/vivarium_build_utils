@@ -271,13 +271,8 @@ def call(Map config = [:]){
           echo "Most recent developerID: ${developerID}"
           echo "This is env.BRANCH: ${env.BRANCH}"
           echo "This is env.GIT_BRANCH: ${env.GIT_BRANCH}"
-          echo (${env.BRANCH} == "main")
           echo (env.BRANCH == "main")
 
-          
-          if (${env.BRANCH} == "main") {
-            echo "New syntax for env.branch works."
-          }
           if (env.BRANCH == "main") {
             channelName = "simsci-ci-status"
             slackID = "channel"
