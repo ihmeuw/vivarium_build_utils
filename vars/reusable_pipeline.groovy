@@ -224,8 +224,8 @@ def call(Map config = [:]){
                             stage("Deploy Package to Artifactory") {
                               withCredentials([usernamePassword(
                                 credentialsId: 'artifactory_simsci',
-                                usernameVariable: 'PYPI_ARTIFACTORY_USERNAME',
-                                passwordVariable: 'PYPI_ARTIFACTORY_PASSWORD'
+                                usernameVariable: 'PYPI_ARTIFACTORY_CREDENTIALS_USR',
+                                passwordVariable: 'PYPI_ARTIFACTORY_CREDENTIALS_PSW'
                               )]) {
                                 sh "${ACTIVATE} && make deploy-package-artifactory"
                               }
