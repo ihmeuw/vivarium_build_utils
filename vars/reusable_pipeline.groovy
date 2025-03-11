@@ -232,7 +232,9 @@ def call(Map config = [:]){
                             }
 
                             stage("Tagging Version and Pushing") {
-                              sh "${ACTIVATE} && make tag-version"
+                              sshagent(['svc-simsci-ssh']) {
+                                sh "${ACTIVATE} && make tag-version"
+                              }
                             }
                           }
                         }
