@@ -211,10 +211,12 @@ def call(Map config = [:]){
                             sh "${ACTIVATE} && make build-package"
                           }
                         }
+
                       stage("Deploy - Python ${pythonVersion}") {         
                         if ((config?.deployable == true) && 
                           !env.IS_CRON.toBoolean() && 
                           (env.BRANCH == "main" || params.DEPLOY_OVERRIDE)) {
+                            
                             stage("Deploy Docs") {
                               withEnv(["DOCS_ROOT_PATH=/mnt/team/simulation_science/pub/docs"]) {
                                 sh "${ACTIVATE} && make deploy-doc"
