@@ -210,11 +210,11 @@ def call(Map config = [:]){
                           stage("Build Package - Python ${pythonVersion}") {
                             sh "${ACTIVATE} && make build-package"
                           }
-                        }         
-                      if ((config?.deployable == true) && 
-                        !env.IS_CRON.toBoolean() && 
-                        (env.BRANCH == "main" || params.DEPLOY_OVERRIDE)) {
-                          stage("Deploy - Python ${pythonVersion}") {
+                        }
+                      stage("Deploy - Python ${pythonVersion}") {         
+                        if ((config?.deployable == true) && 
+                          !env.IS_CRON.toBoolean() && 
+                          (env.BRANCH == "main" || params.DEPLOY_OVERRIDE)) {
                             stage("Deploy Docs") {
                               withEnv(["DOCS_ROOT_PATH=/mnt/team/simulation_science/pub/docs"]) {
                                 sh "${ACTIVATE} && make deploy-doc"
