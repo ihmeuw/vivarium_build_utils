@@ -100,6 +100,7 @@ deploy-package-artifactory: # Deploy the package to Artifactory
 	twine upload --repository-url ${IHME_PYPI} -u ${PYPI_ARTIFACTORY_CREDENTIALS_USR} -p ${PYPI_ARTIFACTORY_CREDENTIALS_PSW} dist/*
 
 tag-version: # Tag the version and push
+	ssh -vT git@github.com
 	git tag -a "v${PACKAGE_VERSION}" -m "Tag automatically generated from Jenkins."
 	git push --tags
 
