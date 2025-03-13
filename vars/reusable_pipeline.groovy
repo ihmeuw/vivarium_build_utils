@@ -8,7 +8,6 @@ def call(Map config = [:]){
   test_types: The tests to run. Must be subset (inclusive) of ['unit', 'integration', 'e2e']
   requires_slurm: Whether the child tasks require the slurm scheduler.
   deployable: Whether the package can be deployed by Jenkins.
-  skip_build: Skips the package and doc building steps.
   skip_doc_build: Only skips the doc build.
   use_shared_fs: Whether to use the shared filesystem for conda envs.
   upstream_repos: A list of repos to check for upstream changes.
