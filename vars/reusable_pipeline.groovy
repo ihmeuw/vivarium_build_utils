@@ -69,11 +69,6 @@ def call(Map config = [:]){
 
     parameters {
       booleanParam(
-        name: "DEPLOY_OVERRIDE",
-        defaultValue: false,
-        description: "Whether to deploy despite building a non-default branch. Builds of the default branch are always deployed."
-      )
-      booleanParam(
         name: "SKIP_DEPLOY",
         defaultValue: false,
         description: "Whether to skip deploying on a run of the default branch."
@@ -89,9 +84,9 @@ def call(Map config = [:]){
         description: "The Slack channel to send messages to."
       )
       booleanParam(
-      name: "DEBUG",
-      defaultValue: false,
-      description: "Used as needed for debugging purposes."
+        name: "DEBUG",
+        defaultValue: false,
+        description: "Used as needed for debugging purposes."
       )
     }
 
@@ -133,7 +128,11 @@ def call(Map config = [:]){
                         echo "Jenkins pipeline run timestamp: ${env.TIMESTAMP}"
                         // Display parameters used.
                         echo """Parameters:
-                        DEPLOY_OVERRIDE: ${params.DEPLOY_OVERRIDE}"""
+                        SKIP_DEPLOY: ${params.SKIP_DEPLOY}
+                        RUN_SLOW: ${params.RUN_SLOW}
+                        SLACK_TO: ${params.SLACK_TO}
+                        DEBUG: ${params.DEBUG}
+                        """
 
                         // Display environment variables from Jenkins.
                         echo """Environment:
@@ -215,7 +214,7 @@ def call(Map config = [:]){
                           if ((config?.deployable == true) && 
                             !env.IS_CRON.toBoolean() &&
                             !params.SKIP_DEPLOY &&
-                            (env.BRANCH == "main" || params.DEPLOY_OVERRIDE)) {
+                            env.BRANCH == "main" {
                             
                             stage("Tagging Version and Pushing") {
                                   sh "${ACTIVATE} && make tag-version"
@@ -273,7 +272,10 @@ def call(Map config = [:]){
             script: "git log -1 --pretty=format:'%an'",
             returnStdout: true
           ).trim()
-          if (env.BRANCH == "main") {
+          if (params.SLACK_TO != "") {
+            channelName = params.SLACK_TO
+            slackID = "channel"
+          } else if (env.BRANCH == "main") {
             channelName = "simsci-ci-status"
             slackID = "channel"
           } else {
