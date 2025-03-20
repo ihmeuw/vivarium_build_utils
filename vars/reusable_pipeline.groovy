@@ -76,7 +76,7 @@ def call(Map config = [:]){
       booleanParam(
         name: "SKIP_DEPLOY",
         defaultValue: false,
-        description: "Whether to skip building on a run of the default branch."
+        description: "Whether to skip deploying on a run of the default branch."
       )
       booleanParam(
         name: "RUN_SLOW",
