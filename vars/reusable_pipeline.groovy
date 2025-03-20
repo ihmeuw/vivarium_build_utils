@@ -272,7 +272,7 @@ def call(Map config = [:]){
             script: "git log -1 --pretty=format:'%an'",
             returnStdout: true
           ).trim()
-          if (params.SLACK_TO != "") {
+          if (params.SLACK_TO) {
             channelName = params.SLACK_TO
             slackID = "channel"
           } else if (env.BRANCH == "main") {
