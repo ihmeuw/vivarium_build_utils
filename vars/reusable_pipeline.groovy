@@ -80,7 +80,7 @@ def call(Map config = [:]){
       )
       string(
         name: "SLACK_TO",
-        defaultValue: "simsci-ci-status",
+        defaultValue: "",
         description: "The Slack channel to send messages to."
       )
       booleanParam(
