@@ -213,7 +213,7 @@ def call(Map config = [:]){
                           if ((config?.deployable == true) && 
                             !env.IS_CRON.toBoolean() &&
                             !params.SKIP_DEPLOY &&
-                            env.BRANCH == "main" {
+                            (env.BRANCH == "main")) {
                             
                             stage("Tagging Version and Pushing") {
                                   sh "${ACTIVATE} && make tag-version"
