@@ -131,8 +131,7 @@ def call(Map config = [:]){
                         SKIP_DEPLOY: ${params.SKIP_DEPLOY}
                         RUN_SLOW: ${params.RUN_SLOW}
                         SLACK_TO: ${params.SLACK_TO}
-                        DEBUG: ${params.DEBUG}
-                        """
+                        DEBUG: ${params.DEBUG}"""
 
                         // Display environment variables from Jenkins.
                         echo """Environment:
