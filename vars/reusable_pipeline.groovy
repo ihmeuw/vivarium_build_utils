@@ -74,6 +74,11 @@ def call(Map config = [:]){
         description: "Whether to deploy despite building a non-default branch. Builds of the default branch are always deployed."
       )
       booleanParam(
+        name: "SKIP_DEPLOY",
+        defaultValue: false,
+        description: "Whether to skip building on a run of the default branch."
+      )
+      booleanParam(
         name: "RUN_SLOW",
         defaultValue: false,
         description: "Whether to run slow tests as part of pytest suite."
@@ -208,7 +213,8 @@ def call(Map config = [:]){
 
                         stage("Build and Deploy - Python ${pythonVersion}") {
                           if ((config?.deployable == true) && 
-                            !env.IS_CRON.toBoolean() && 
+                            !env.IS_CRON.toBoolean() &&
+                            !params.SKIP_DEPLOY &&
                             (env.BRANCH == "main" || params.DEPLOY_OVERRIDE)) {
                             
                             stage("Tagging Version and Pushing") {
