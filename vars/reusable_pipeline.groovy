@@ -1,6 +1,6 @@
 def call(Map config = [:]){
   /* This is the funtion called from the repo
-  Example: fhs_standard_pipeline(job_name: JOB_NAME)
+  Example: reusable_pipeline(job_name: JOB_NAME)
   JOB_NAME is a reserved Jenkins var
   -------------
   Configuration options:
@@ -101,7 +101,7 @@ def call(Map config = [:]){
       stage("Initialization") {
         steps {
           script {
-            if (ignored_dirs) {
+            if (ignored_dirs && !env.IS_CRON.toBoolean() && !currentBuild.rawBuild.getCauses().any { it.toString().contains('UserIdCause') }) {
               def diffOutput
               if (env.CHANGE_TARGET) {
                 sh "git fetch origin ${env.CHANGE_TARGET}"
