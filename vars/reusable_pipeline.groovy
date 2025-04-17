@@ -127,34 +127,34 @@ def call(Map config = [:]){
                       checkout scm
                       load_shared_files()          
                       stage("Debug Info - Python ${pythonVersion}") {
-                        buildStages.run_debug_info(envVars)
+                        buildStages.runDebugInfo(envVars)
                       }
 
                       stage("Build Environment - Python ${pythonVersion}") {
-                        buildStages.build_environment(envVars)
+                        buildStages.buildEnvironment(envVars)
                       }
 
                       stage("Install Package - Python ${pythonVersion}") {
-                        buildStages.install_package(envVars)
+                        buildStages.installPackage(envVars)
                       }
                       
                       stage("Install Upstream Dependency Branches - Python ${pythonVersion}") {
-                        buildStages.install_dependencies(envVars, upstream_repos)
+                        buildStages.installDependencies(envVars, upstream_repos)
                       }
 
                       stage("Check Formatting - Python ${pythonVersion}") {
-                        buildStages.check_formatting(envVars)
+                        buildStages.checkFormatting(envVars)
                       }
 
                       stage("Run Tests - Python ${pythonVersion}") {
-                        buildStages.run_tests(envVars, test_types)
+                        buildStages.runTests(envVars, test_types)
                       }
 
                       if (pythonVersion == PYTHON_DEPLOY_VERSION) {
-                        buildStages.handle_docs(envVars, config?.skip_doc_build)
+                        buildStages.handleDocs(envVars, config?.skip_doc_build)
                         
                         stage("Build and Deploy - Python ${pythonVersion}") {
-                          buildStages.handle_deployment(envVars, config?.deployable, config?.skip_doc_build)
+                          buildStages.handleDeployment(envVars, config?.deployable, config?.skip_doc_build)
                         }
                       }
                     } finally {
