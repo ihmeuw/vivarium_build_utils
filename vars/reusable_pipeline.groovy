@@ -125,7 +125,7 @@ def call(Map config = [:]){
                   withEnv(envVars.collect { k, v -> "${k}=${v}" }) {
                     try {
                       checkout scm
-                      load_shared_files()          
+                      load_shared_files()
                       stage("Debug Info - Python ${pythonVersion}") {
                         buildStages.runDebugInfo()
                       }
