@@ -98,9 +98,6 @@ def call(Map config = [:]){
       stage("Initialization") {
         steps {
           script {
-            // Load build stages
-            def buildStages = load 'build_stages.groovy'
-            
             // Use the name of the branch in the build name
             currentBuild.displayName = "#${BUILD_NUMBER} ${GIT_BRANCH}"
             python_versions = get_python_versions(WORKSPACE, GIT_URL)
@@ -111,7 +108,7 @@ def call(Map config = [:]){
       stage("Python Versions") {
         steps {
           script {
-            def buildStages = load 'build_stages.groovy'
+            def buildStages = build_stages()
             
             def parallelPythonVersions = [:]
             
