@@ -14,7 +14,7 @@ def call(Map config = [:]){
   */
   task_node = config.requires_slurm ? 'slurm' : 'matrix-tasks'
 
-  scheduled_branches = config.scheduled_branches ?: [] 
+  scheduled_branches = config.scheduled_branches ?: []
   CRON_SETTINGS = scheduled_branches.contains(BRANCH_NAME) ? 'H H(20-23) * * *' : ''
 
   PYTHON_DEPLOY_VERSION = "3.11"
@@ -23,7 +23,7 @@ def call(Map config = [:]){
   // raise an error if test_types is not a subset of  ['e2e', 'unit', 'integration']
   if (!test_types.every { ['all-tests', 'e2e', 'unit', 'integration'].contains(it) }) {
     throw new IllegalArgumentException("test_types must be a subset of ['all-tests', 'e2e', 'unit', 'integration']")
-  }
+}
   // Allow for building conda env on shared fs if required
   conda_env_name = config.use_shared_fs ? "${env.JOB_NAME.replaceAll('/', '-')}-${BUILD_NUMBER}" : "${env.JOB_NAME}-${BUILD_NUMBER}"
   conda_env_dir = config.use_shared_fs ? "/mnt/team/simulation_science/priv/engineering/tests/venv" : "/tmp"
@@ -106,9 +106,9 @@ def call(Map config = [:]){
         steps {
           script {
             def buildStages = build_stages()
-            
+
             def parallelPythonVersions = [:]
-            
+
             python_versions.each { pythonVersion ->
               parallelPythonVersions["Python ${pythonVersion}"] = {
                 node(task_node) {
@@ -118,7 +118,7 @@ def call(Map config = [:]){
                     PYTHON_VERSION: pythonVersion,
                     ACTIVATE: "source /svc-simsci/miniconda3/bin/activate ${conda_env_dir}/${conda_env_name}-${pythonVersion} &> /dev/null",
                   ]
-                  
+
                   withEnv(envVars.collect { k, v -> "${k}=${v}" }) {
                     try {
                       checkout scm
@@ -139,18 +139,18 @@ def call(Map config = [:]){
                           if (config?.skip_doc_build != true) {
                             buildStages.testDocs()
                           }
-                          
+
                           stage("Build and Deploy - Python ${pythonVersion}") {
                             if ((config?.deployable == true) &&
                               !env.IS_CRON.toBoolean() &&
                               !params.SKIP_DEPLOY &&
                               (env.BRANCH == "main")) {
-                                buildStages.deployPackage()
+                              buildStages.deployPackage()
 
                               if (config?.skip_doc_build != true) {
                                 buildStages.deployDocs()
                               }
-                            }
+                              }
                           }
                         }
                       }
@@ -158,16 +158,16 @@ def call(Map config = [:]){
                       // Cleanup
                       buildStages.cleanup()
                     }
-                  }
                 }
               }
             }
+          }
 
             parallel parallelPythonVersions
-          }
         }
       }
     }
+  }
 
     post {
       always {
