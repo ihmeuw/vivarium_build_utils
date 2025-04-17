@@ -4,7 +4,7 @@ def call() {
     if (env.CHANGE_TARGET) {
         // Get the list of changed files
         def changedFiles = sh(
-            script: "git diff --name-only origin/${env.CHANGE_TARGET} || echo ''",
+            script: "git diff --name-only refs/remotes/origin/${env.CHANGE_TARGET} || echo ''",
             returnStdout: true
         ).trim()
         echo "Changed files: ${changedFiles}"
