@@ -126,29 +126,12 @@ def call(Map config = [:]){
                     try {
                       checkout scm
                       load_shared_files()
-                      stage("Debug Info - Python ${pythonVersion}") {
-                        buildStages.runDebugInfo()
-                      }
-
-                      stage("Build Environment - Python ${pythonVersion}") {
-                        buildStages.buildEnvironment()
-                      }
-
-                      stage("Install Package - Python ${pythonVersion}") {
-                        buildStages.installPackage()
-                      }
-                      
-                      stage("Install Upstream Dependency Branches - Python ${pythonVersion}") {
-                        buildStages.installDependencies(upstream_repos)
-                      }
-
-                      stage("Check Formatting - Python ${pythonVersion}") {
-                        buildStages.checkFormatting()
-                      }
-
-                      stage("Run Tests - Python ${pythonVersion}") {
-                        buildStages.runTests(test_types)
-                      }
+                      buildStages.runDebugInfo()
+                      buildStages.buildEnvironment()
+                      buildStages.installPackage()
+                      buildStages.installDependencies(upstream_repos)
+                      buildStages.checkFormatting()
+                      buildStages.runTests(test_types)
 
                       if (PYTHON_VERSION == PYTHON_DEPLOY_VERSION) {
                         if (config?.skip_doc_build != true) {
