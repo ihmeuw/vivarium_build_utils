@@ -37,7 +37,7 @@ def call(Map config = [:]){
     environment {
         IS_CRON = "${currentBuild.buildCauses.toString().contains('TimerTrigger')}"
         // defaults for conda and pip are a local directory /svc-simsci for improved speed.
-        // In the past, we used /ihme/code/* on the NFS (which is slower)
+        // In the past, we used /ihme/code/* on the NFS (which is slower)d
         shared_path="/svc-simsci"
         // Get the branch being built and strip everything but the text after the last "/"
         BRANCH = sh(script: "echo ${GIT_BRANCH} | rev | cut -d '/' -f1 | rev", returnStdout: true).trim()
@@ -51,6 +51,7 @@ def call(Map config = [:]){
         // Jenkins commands run in separate processes, so need to activate the environment every
         // time we run pip, poetry, etc.
         ACTIVATE_BASE = "source ${CONDA_BIN_PATH}/activate &> /dev/null"
+        IS_DOC_ONLY_CHANGE = "${is_doc_only_change()}"
     }
 
     agent { label "coordinator" }
@@ -58,10 +59,6 @@ def call(Map config = [:]){
     options {
       // Keep 100 old builds.
       buildDiscarder logRotator(numToKeepStr: "100")
-      
-      // Wait 60 seconds before starting the build.
-      // If another commit enters the build queue in this time, the first build will be discarded.
-      quietPeriod(60)
 
       // Fail immediately if any part of a parallel stage fails
       parallelsAlwaysFailFast()
@@ -128,25 +125,31 @@ def call(Map config = [:]){
                       load_shared_files()
                       buildStages.runDebugInfo()
                       buildStages.buildEnvironment()
-                      buildStages.installPackage()
-                      buildStages.installDependencies(upstream_repos)
-                      buildStages.checkFormatting()
-                      buildStages.runTests(test_types)
 
-                      if (PYTHON_VERSION == PYTHON_DEPLOY_VERSION) {
-                        if (config?.skip_doc_build != true) {
-                          buildStages.testDocs()
-                        }
-                        
-                        stage("Build and Deploy - Python ${pythonVersion}") {
-                          if ((config?.deployable == true) &&
-                            !env.IS_CRON.toBoolean() &&
-                            !params.SKIP_DEPLOY &&
-                            (env.BRANCH == "main")) {
-                              buildStages.deployPackage()
+                      if IS_DOC_ONLY_CHANGE.toBoolean() {
+                        buildStages.installPackage("doc")
+                        buildStages.testDocs()
+                      } else {
+                        buildStages.installPackage()
+                        buildStages.installDependencies(upstream_repos)
+                        buildStages.checkFormatting()
+                        buildStages.runTests(test_types)
 
-                            if (config?.skip_doc_build != true) {
-                              buildStages.deployDocs()
+                        if (PYTHON_VERSION == PYTHON_DEPLOY_VERSION) {
+                          if (config?.skip_doc_build != true) {
+                            buildStages.testDocs()
+                          }
+                          
+                          stage("Build and Deploy - Python ${pythonVersion}") {
+                            if ((config?.deployable == true) &&
+                              !env.IS_CRON.toBoolean() &&
+                              !params.SKIP_DEPLOY &&
+                              (env.BRANCH == "main")) {
+                                buildStages.deployPackage()
+
+                              if (config?.skip_doc_build != true) {
+                                buildStages.deployDocs()
+                              }
                             }
                           }
                         }
