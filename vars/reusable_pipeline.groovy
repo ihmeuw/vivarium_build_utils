@@ -143,7 +143,7 @@ def call(Map config = [:]){
                             !env.IS_CRON.toBoolean() &&
                             !params.SKIP_DEPLOY &&
                             (env.BRANCH == "main")) {
-                              buildStages.deployPackage()
+                            buildStages.deployPackage()
 
                             if (config?.skip_doc_build != true) {
                               buildStages.deployDocs()
