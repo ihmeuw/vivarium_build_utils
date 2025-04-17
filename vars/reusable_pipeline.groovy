@@ -51,6 +51,7 @@ def call(Map config = [:]){
         // Jenkins commands run in separate processes, so need to activate the environment every
         // time we run pip, poetry, etc.
         ACTIVATE_BASE = "source ${CONDA_BIN_PATH}/activate &> /dev/null"
+        IS_DOC_ONLY_CHANGE = "${is_doc_only_change()}"
     }
 
     agent { label "coordinator" }
@@ -127,26 +128,31 @@ def call(Map config = [:]){
                       checkout scm
                       load_shared_files()
                       buildStages.runDebugInfo()
-                      buildStages.buildEnvironment()
-                      buildStages.installPackage()
-                      buildStages.installDependencies(upstream_repos)
-                      buildStages.checkFormatting()
-                      buildStages.runTests(test_types)
+                      if (IS_DOC_ONLY_CHANGE.toBoolean()) {
+                        buildStages.buildEnvironment("doc")
+                        buildStages.testDocs()
+                      } else {
+                        buildStages.buildEnvironment()
+                        buildStages.installPackage()
+                        buildStages.installDependencies(upstream_repos)
+                        buildStages.checkFormatting()
+                        buildStages.runTests(test_types)
 
-                      if (PYTHON_VERSION == PYTHON_DEPLOY_VERSION) {
-                        if (config?.skip_doc_build != true) {
-                          buildStages.testDocs()
-                        }
-                        
-                        stage("Build and Deploy - Python ${pythonVersion}") {
-                          if ((config?.deployable == true) &&
-                            !env.IS_CRON.toBoolean() &&
-                            !params.SKIP_DEPLOY &&
-                            (env.BRANCH == "main")) {
-                            buildStages.deployPackage()
+                        if (PYTHON_VERSION == PYTHON_DEPLOY_VERSION) {
+                          if (config?.skip_doc_build != true) {
+                            buildStages.testDocs()
+                          }
+                          
+                          stage("Build and Deploy - Python ${pythonVersion}") {
+                            if ((config?.deployable == true) &&
+                              !env.IS_CRON.toBoolean() &&
+                              !params.SKIP_DEPLOY &&
+                              (env.BRANCH == "main")) {
+                              buildStages.deployPackage()
 
-                            if (config?.skip_doc_build != true) {
-                              buildStages.deployDocs()
+                              if (config?.skip_doc_build != true) {
+                                buildStages.deployDocs()
+                              }
                             }
                           }
                         }
