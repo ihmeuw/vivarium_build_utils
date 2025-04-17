@@ -14,7 +14,7 @@ def call(Map config = [:]){
   */
   task_node = config.requires_slurm ? 'slurm' : 'matrix-tasks'
 
-  scheduled_branches = config.scheduled_branches ?: []
+  scheduled_branches = config.scheduled_branches ?: [] 
   CRON_SETTINGS = scheduled_branches.contains(BRANCH_NAME) ? 'H H(20-23) * * *' : ''
 
   PYTHON_DEPLOY_VERSION = "3.11"
@@ -51,7 +51,6 @@ def call(Map config = [:]){
         // Jenkins commands run in separate processes, so need to activate the environment every
         // time we run pip, poetry, etc.
         ACTIVATE_BASE = "source ${CONDA_BIN_PATH}/activate &> /dev/null"
-        IS_DOC_ONLY_CHANGE = "${is_doc_only_change()}"
     }
 
     agent { label "coordinator" }
@@ -59,6 +58,10 @@ def call(Map config = [:]){
     options {
       // Keep 100 old builds.
       buildDiscarder logRotator(numToKeepStr: "100")
+      
+      // Wait 60 seconds before starting the build.
+      // If another commit enters the build queue in this time, the first build will be discarded.
+      quietPeriod(60)
 
       // Fail immediately if any part of a parallel stage fails
       parallelsAlwaysFailFast()
@@ -106,9 +109,9 @@ def call(Map config = [:]){
         steps {
           script {
             def buildStages = build_stages()
-
+            
             def parallelPythonVersions = [:]
-
+            
             python_versions.each { pythonVersion ->
               parallelPythonVersions["Python ${pythonVersion}"] = {
                 node(task_node) {
@@ -118,39 +121,33 @@ def call(Map config = [:]){
                     PYTHON_VERSION: pythonVersion,
                     ACTIVATE: "source /svc-simsci/miniconda3/bin/activate ${conda_env_dir}/${conda_env_name}-${pythonVersion} &> /dev/null",
                   ]
-
+                  
                   withEnv(envVars.collect { k, v -> "${k}=${v}" }) {
                     try {
                       checkout scm
                       load_shared_files()
                       buildStages.runDebugInfo()
                       buildStages.buildEnvironment()
+                      buildStages.installPackage()
+                      buildStages.installDependencies(upstream_repos)
+                      buildStages.checkFormatting()
+                      buildStages.runTests(test_types)
 
-                      if IS_DOC_ONLY_CHANGE.toBoolean() {
-                        buildStages.installPackage("doc")
-                        buildStages.testDocs()
-                      } else {
-                        buildStages.installPackage()
-                        buildStages.installDependencies(upstream_repos)
-                        buildStages.checkFormatting()
-                        buildStages.runTests(test_types)
+                      if (PYTHON_VERSION == PYTHON_DEPLOY_VERSION) {
+                        if (config?.skip_doc_build != true) {
+                          buildStages.testDocs()
+                        }
+                        
+                        stage("Build and Deploy - Python ${pythonVersion}") {
+                          if ((config?.deployable == true) &&
+                            !env.IS_CRON.toBoolean() &&
+                            !params.SKIP_DEPLOY &&
+                            (env.BRANCH == "main")) {
+                            buildStages.deployPackage()
 
-                        if (PYTHON_VERSION == PYTHON_DEPLOY_VERSION) {
-                          if (config?.skip_doc_build != true) {
-                            buildStages.testDocs()
-                          }
-
-                          stage("Build and Deploy - Python ${pythonVersion}") {
-                            if ((config?.deployable == true) &&
-                              !env.IS_CRON.toBoolean() &&
-                              !params.SKIP_DEPLOY &&
-                              (env.BRANCH == "main")) {
-                              buildStages.deployPackage()
-
-                              if (config?.skip_doc_build != true) {
-                                buildStages.deployDocs()
-                              }
-                              }
+                            if (config?.skip_doc_build != true) {
+                              buildStages.deployDocs()
+                            }
                           }
                         }
                       }
@@ -158,16 +155,16 @@ def call(Map config = [:]){
                       // Cleanup
                       buildStages.cleanup()
                     }
+                  }
                 }
               }
             }
-          }
 
             parallel parallelPythonVersions
+          }
         }
       }
     }
-  }
 
     post {
       always {
