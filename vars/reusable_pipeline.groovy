@@ -150,7 +150,7 @@ def call(Map config = [:]){
                         buildStages.runTests(test_types)
                       }
 
-                      if (pythonVersion == PYTHON_DEPLOY_VERSION) {
+                      if (PYTHON_VERSION == PYTHON_DEPLOY_VERSION) {
                         if (config?.skip_doc_build != true) {
                           buildStages.testDocs()
                         }
