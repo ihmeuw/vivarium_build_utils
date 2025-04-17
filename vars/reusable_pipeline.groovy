@@ -1,6 +1,6 @@
 def call(Map config = [:]){
   /* This is the funtion called from the repo
-  Example: fhs_standard_pipeline(job_name: JOB_NAME)
+  Example: reusable_pipeline(job_name: JOB_NAME)
   JOB_NAME is a reserved Jenkins var
   -------------
   Configuration options:
@@ -11,10 +11,12 @@ def call(Map config = [:]){
   skip_doc_build: Only skips the doc build.
   use_shared_fs: Whether to use the shared filesystem for conda envs.
   upstream_repos: A list of repos to check for upstream changes.
+  ignored_dirs: A list of directories to ignore; if no changes outside of these, the build is skipped.
   */
+
   task_node = config.requires_slurm ? 'slurm' : 'matrix-tasks'
 
-  scheduled_branches = config.scheduled_branches ?: [] 
+  scheduled_branches = config.scheduled_branches ?: []
   CRON_SETTINGS = scheduled_branches.contains(BRANCH_NAME) ? 'H H(20-23) * * *' : ''
 
   PYTHON_DEPLOY_VERSION = "3.11"
@@ -30,10 +32,13 @@ def call(Map config = [:]){
 
   // Define the upstream repos to check for changes
   upstream_repos = config.upstream_repos ?: []
+  ignored_dirs = config.ignored_dirs ?: []
 
   pipeline {
     // This agent runs as svc-simsci on node simsci-ci-coordinator-01.
     // It has access to standard IHME filesystems and singularity
+    agent { label "coordinator" }
+
     environment {
         IS_CRON = "${currentBuild.buildCauses.toString().contains('TimerTrigger')}"
         // defaults for conda and pip are a local directory /svc-simsci for improved speed.
@@ -53,18 +58,22 @@ def call(Map config = [:]){
         ACTIVATE_BASE = "source ${CONDA_BIN_PATH}/activate &> /dev/null"
     }
 
-    agent { label "coordinator" }
-
     options {
       // Keep 100 old builds.
       buildDiscarder logRotator(numToKeepStr: "100")
-      
-      // Wait 60 seconds before starting the build.
-      // If another commit enters the build queue in this time, the first build will be discarded.
-      quietPeriod(60)
 
       // Fail immediately if any part of a parallel stage fails
       parallelsAlwaysFailFast()
+
+      // Wait 60 seconds before starting the build.
+      // If another commit enters the build queue in this time, the first build will be discarded.
+      // However, we re-implement this feature ourselves (see below) in order to allow
+      // skips to happen *before* the quiet period.
+      quietPeriod(0)
+
+      // Don't allow multiple builds *on the same branch* to run at once,
+      // which avoids race conditions with our custom quietPeriod implemented below.
+      disableConcurrentBuilds()
     }
 
     parameters {
@@ -98,14 +107,78 @@ def call(Map config = [:]){
       stage("Initialization") {
         steps {
           script {
+            // Decide whether or not to skip the build.
+            // We don't build when the only changes are in ignored_dirs,
+            // when the pipeline is being run because of a PR.
+            // When it's not run because of a PR (e.g. cron job or manual build)
+            // we never skip it.
+            env.SKIP_BUILD = 'false'
+            // env.CHANGE_TARGET set when building a PR
+            if (ignored_dirs && env.CHANGE_TARGET) {
+              // Fetch the CHANGE_TARGET so we can diff against it -- note that we
+              // explicitly set to a refs/remotes/origin/ location because a simple
+              // git fetch origin ${env.CHANGE_TARGET} may not put it there due to a
+              // refspec.
+              sh "git fetch origin +refs/heads/${env.CHANGE_TARGET}:refs/remotes/origin/${env.CHANGE_TARGET}"
+              def diffOutput = sh(
+                script: "git diff --name-only origin/${env.CHANGE_TARGET}...HEAD",
+                returnStdout: true
+              ).trim()
+
+              // Check if diff includes any files *not* in ignored_dirs
+              def hasRelevantChange = diffOutput.split("\n").any { file ->
+                !ignored_dirs.any { file.startsWith(it) }
+              }
+
+              if (!hasRelevantChange) {
+                echo "No relevant changes outside ignored_dirs: ${ignored_dirs}. Skipping build."
+                currentBuild.result = 'SUCCESS'
+                env.SKIP_BUILD = 'true'
+              }
+            }
+
             // Use the name of the branch in the build name
             currentBuild.displayName = "#${BUILD_NUMBER} ${GIT_BRANCH}"
             python_versions = get_python_versions(WORKSPACE, GIT_URL)
           }
         }
       }
+      
+      stage('Quiet Period Simulation') {
+        when {
+          expression {
+            return env.SKIP_BUILD != 'true'
+          }
+        }
+        steps {
+          script {
+            def quietPeriodSeconds = 60
+
+            echo "Simulating quiet period of ${quietPeriodSeconds} seconds..."
+            sleep quietPeriodSeconds
+
+            // Get the latest build number for this job
+            def job = Jenkins.instance.getItemByFullName(env.JOB_NAME)
+            def latestBuild = job.getLastBuild()
+
+            // If the latest build is newer than this one, abort this build
+            if (latestBuild.number > currentBuild.number) {
+                echo "Newer build (#${latestBuild.number}) detected. Aborting this build (#${currentBuild.number})."
+                currentBuild.result = 'ABORTED'
+                error("Aborting due to newer build in queue.")
+            }
+
+            echo "No newer builds detected. Continuing execution."
+          }
+        }
+      }
 
       stage("Python Versions") {
+        when {
+          expression {
+            return env.SKIP_BUILD != 'true'
+          }
+        }
         steps {
           script {
             def parallelPythonVersions = [:]
