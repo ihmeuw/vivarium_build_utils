@@ -156,11 +156,10 @@ def call(Map config = [:]){
                         }
                         
                         stage("Build and Deploy - Python ${pythonVersion}") {
-                          if (config?.deployable == true && 
-                            !env.IS_CRON.toBoolean() && 
-                            !params.SKIP_DEPLOY && 
+                          if ((config?.deployable == true) &&
+                            !env.IS_CRON.toBoolean() &&
+                            !params.SKIP_DEPLOY &&
                             (env.BRANCH == "main")) {
-                              
                               buildStages.deployPackage()
 
                             if (config?.skip_doc_build != true) {
@@ -188,7 +187,7 @@ def call(Map config = [:]){
     post {
       always {
         // Generate a message to send to Slack.
-        script {    
+        script {
           // Run git command to get the author of the last commit
           developerID = sh(
             script: "git log -1 --pretty=format:'%an'",
@@ -243,4 +242,3 @@ def call(Map config = [:]){
       }
     }  // End of post
   }  // End of pipeline
-}
