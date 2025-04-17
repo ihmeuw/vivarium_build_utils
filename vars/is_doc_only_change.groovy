@@ -1,12 +1,13 @@
 def call() {
     // Check if this is a PR build by looking for CHANGE_TARGET
+    echo "${env.CHANGE_TARGET}"
     if (env.CHANGE_TARGET) {
         // Get the list of changed files
         def changedFiles = sh(
             script: "git diff --name-only origin/${env.CHANGE_TARGET}..HEAD || echo ''",
             returnStdout: true
         ).trim()
-
+        echo "Changed files: ${changedFiles}"
         // If no files are found (which shouldn't happen), return false
         if (changedFiles == '') {
             return false
@@ -21,7 +22,7 @@ def call() {
             """,
             returnStdout: true
         ).trim().toInteger() > 0
-
+        echo "Has non-doc changes: ${hasNonDocChanges}"
         // Return true if there are no non-doc changes
         return !hasNonDocChanges
     } else {

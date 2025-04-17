@@ -59,10 +59,6 @@ def call(Map config = [:]){
     options {
       // Keep 100 old builds.
       buildDiscarder logRotator(numToKeepStr: "100")
-      
-      // Wait 60 seconds before starting the build.
-      // If another commit enters the build queue in this time, the first build will be discarded.
-      quietPeriod(60)
 
       // Fail immediately if any part of a parallel stage fails
       parallelsAlwaysFailFast()
