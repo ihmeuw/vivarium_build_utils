@@ -37,7 +37,7 @@ def call(Map config = [:]){
     environment {
         IS_CRON = "${currentBuild.buildCauses.toString().contains('TimerTrigger')}"
         // defaults for conda and pip are a local directory /svc-simsci for improved speed.
-        // In the past, we used /ihme/code/* on the NFS (which is slower)d
+        // In the past, we used /ihme/code/* on the NFS (which is slower)
         shared_path="/svc-simsci"
         // Get the branch being built and strip everything but the text after the last "/"
         BRANCH = sh(script: "echo ${GIT_BRANCH} | rev | cut -d '/' -f1 | rev", returnStdout: true).trim()
