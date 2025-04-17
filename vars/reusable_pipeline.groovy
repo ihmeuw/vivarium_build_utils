@@ -51,7 +51,6 @@ def call(Map config = [:]){
         // Jenkins commands run in separate processes, so need to activate the environment every
         // time we run pip, poetry, etc.
         ACTIVATE_BASE = "source ${CONDA_BIN_PATH}/activate &> /dev/null"
-        IS_DOC_ONLY_CHANGE = "${is_doc_only_change()}"
     }
 
     agent { label "coordinator" }
@@ -124,7 +123,7 @@ def call(Map config = [:]){
                       checkout scm
                       load_shared_files()
                       buildStages.runDebugInfo()
-                      if (IS_DOC_ONLY_CHANGE.toBoolean() == true) {
+                      if (is_doc_only_change() == true) {
                         buildStages.buildEnvironment()
                         buildStages.installPackage("doc")
                         buildStages.testDocs()
