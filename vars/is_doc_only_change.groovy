@@ -1,18 +1,13 @@
 def call() {
     // Check if this is a PR build by looking for CHANGE_TARGET
-    echo "${env.CHANGE_TARGET}"
     if (env.CHANGE_TARGET) {
-        sh(script: "git branch -a", returnStdout: false)
         // Fetch to ensure we get target branch
         sh(script: "git fetch --no-tags --force --progress ${env.GIT_URL} +refs/heads/${env.CHANGE_TARGET}:refs/remotes/origin/${env.CHANGE_TARGET}", returnStdout: false)
 
-        // Get the list of changed files
-        sh(script: "git branch -a", returnStdout: false)
         def changedFiles = sh(
             script: "git diff --name-only origin/${env.CHANGE_TARGET} || echo ''",
             returnStdout: true
         ).trim()
-        echo "Changed files: ${changedFiles}"
         // If no files are found (which shouldn't happen), return false
         if (changedFiles == '') {
             return false
@@ -27,7 +22,6 @@ def call() {
             """,
             returnStdout: true
         ).trim().toInteger() > 0
-        echo "Has non-doc changes: ${hasNonDocChanges}"
         // Return true if there are no non-doc changes
         return !hasNonDocChanges
     } else {
