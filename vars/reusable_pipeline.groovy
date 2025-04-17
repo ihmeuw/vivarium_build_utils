@@ -163,7 +163,7 @@ def call(Map config = [:]){
                               buildStages.deployPackage()
 
                             if (config?.skip_doc_build != true) {
-                                buildStages.deployDocs()
+                              buildStages.deployDocs()
                             }
                           }
                         }
