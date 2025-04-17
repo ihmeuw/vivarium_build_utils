@@ -98,7 +98,7 @@ def testDocs() {
     stage("Test Docs - Python ${PYTHON_VERSION}") {
         sh "${ACTIVATE} && make test-doc"
     }
-    }
+}
 
 def deployPackage() {
     stage("Tagging Version and Pushing") {
