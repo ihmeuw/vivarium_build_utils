@@ -242,3 +242,4 @@ def call(Map config = [:]){
       }
     }  // End of post
   }  // End of pipeline
+}
