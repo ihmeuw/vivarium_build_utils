@@ -3,9 +3,8 @@ def call() {
     echo "${env.CHANGE_TARGET}"
     if (env.CHANGE_TARGET) {
         // Get the list of changed files
-        def branch = sh(script: "echo ${GIT_BRANCH} | rev | cut -d '/' -f1 | rev", returnStdout: true).trim()
         def changedFiles = sh(
-            script: "git diff --name-only origin/${env.CHANGE_TARGET}..{$branch} || echo ''",
+            script: "git diff --name-only origin/${env.CHANGE_TARGET}..HEAD || echo ''",
             returnStdout: true
         ).trim()
         echo "Changed files: ${changedFiles}"
@@ -17,7 +16,7 @@ def call() {
         // Check if all changed files are within the docs/ directory
         def hasNonDocChanges = sh(
             script: """
-                git diff --name-only origin/${env.CHANGE_TARGET}..{$branch} |
+                git diff --name-only origin/${env.CHANGE_TARGET}..HEAD |
                 grep -v '^docs/' |
                 wc -l || echo '0'
             """,
