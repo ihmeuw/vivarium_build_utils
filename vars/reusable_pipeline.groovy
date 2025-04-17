@@ -125,7 +125,8 @@ def call(Map config = [:]){
                       load_shared_files()
                       buildStages.runDebugInfo()
                       if (IS_DOC_ONLY_CHANGE.toBoolean() == true) {
-                        buildStages.buildEnvironment("doc")
+                        buildStages.buildEnvironment()
+                        buildStages.installPackage("doc")
                         buildStages.testDocs()
                       } else {
                         buildStages.buildEnvironment()
