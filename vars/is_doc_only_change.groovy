@@ -4,7 +4,7 @@ def call() {
     if (env.CHANGE_TARGET) {
         sh(script: "git branch -a", returnStdout: false)
         // Fetch to ensure we get target branch
-        sh(script: "git fetch --no-tags --force --progress +refs/heads/${env.CHANGE_TARGET}:refs/remotes/origin/${env.CHANGE_TARGET}", returnStdout: false)
+        sh(script: "git fetch --no-tags --force --progress ${GIT_URL} +refs/heads/${env.CHANGE_TARGET}:refs/remotes/origin/${env.CHANGE_TARGET}", returnStdout: false)
 
         // Get the list of changed files
         sh(script: "git branch -a", returnStdout: false)
