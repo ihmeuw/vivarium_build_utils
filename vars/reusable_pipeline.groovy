@@ -164,7 +164,6 @@ def call(Map config = [:]){
 
                             if (config?.skip_doc_build != true) {
                                 buildStages.deployDocs()
-                              }
                             }
                           }
                         }
