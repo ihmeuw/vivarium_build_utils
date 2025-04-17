@@ -7,8 +7,9 @@ def call() {
         installDependencies: this.&installDependencies,
         checkFormatting: this.&checkFormatting,
         runTests: this.&runTests,
-        handleDocs: this.&handleDocs,
-        handleDeployment: this.&handleDeployment,
+        testDocs: this.&testDocs,
+        deployPackage: this.&deployPackage,
+        deployDocs: this.&deployDocs,
         cleanup: this.&cleanup
     ]
 }
@@ -36,7 +37,7 @@ def runDebugInfo() {
     JOB_NAME:       '${JOB_NAME}'
     WORKSPACE:      '${WORKSPACE}'
     XDG_CACHE_HOME: '${XDG_CACHE_HOME}'"""
-    }
+}
 
 def buildEnvironment() {
     // The env should have been cleaned out after the last build, but delete it again
