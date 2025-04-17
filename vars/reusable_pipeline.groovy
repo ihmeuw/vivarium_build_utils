@@ -127,39 +127,52 @@ def call(Map config = [:]){
                       checkout scm
                       load_shared_files()          
                       stage("Debug Info - Python ${pythonVersion}") {
-                        buildStages.runDebugInfo(envVars)
+                        buildStages.runDebugInfo()
                       }
 
                       stage("Build Environment - Python ${pythonVersion}") {
-                        buildStages.buildEnvironment(envVars)
+                        buildStages.buildEnvironment()
                       }
 
                       stage("Install Package - Python ${pythonVersion}") {
-                        buildStages.installPackage(envVars)
+                        buildStages.installPackage()
                       }
                       
                       stage("Install Upstream Dependency Branches - Python ${pythonVersion}") {
-                        buildStages.installDependencies(envVars, upstream_repos)
+                        buildStages.installDependencies(upstream_repos)
                       }
 
                       stage("Check Formatting - Python ${pythonVersion}") {
-                        buildStages.checkFormatting(envVars)
+                        buildStages.checkFormatting()
                       }
 
                       stage("Run Tests - Python ${pythonVersion}") {
-                        buildStages.runTests(envVars, test_types)
+                        buildStages.runTests(test_types)
                       }
 
                       if (pythonVersion == PYTHON_DEPLOY_VERSION) {
-                        buildStages.handleDocs(envVars, config?.skip_doc_build)
+                        if (config?.skip_doc_build != true) {
+                          buildStages.testDocs()
+                        }
                         
                         stage("Build and Deploy - Python ${pythonVersion}") {
-                          buildStages.handleDeployment(envVars, config?.deployable, config?.skip_doc_build)
+                          if (config?.deployable == true && 
+                            !env.IS_CRON.toBoolean() && 
+                            !params.SKIP_DEPLOY && 
+                            (env.BRANCH == "main")) {
+                              
+                              buildStages.deployPackage()
+
+                            if (config?.skip_doc_build != true) {
+                                buildStages.deployDocs()
+                              }
+                            }
+                          }
                         }
                       }
                     } finally {
                       // Cleanup
-                      buildStages.cleanup("${conda_env_dir}/${conda_env_name}-${pythonVersion}")
+                      buildStages.cleanup()
                     }
                   }
                 }
