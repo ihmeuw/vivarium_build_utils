@@ -124,7 +124,7 @@ def call(Map config = [:]){
                       checkout scm
                       load_shared_files()
                       buildStages.runDebugInfo()
-                      if (IS_DOC_ONLY_CHANGE.toBoolean()) {
+                      if (IS_DOC_ONLY_CHANGE.toBoolean() == true) {
                         buildStages.buildEnvironment("doc")
                         buildStages.testDocs()
                       } else {
