@@ -2,7 +2,7 @@ def call() {
     // Check if this is a PR build by looking for CHANGE_TARGET
     echo "${env.CHANGE_TARGET}"
     if (env.CHANGE_TARGET) {
-        sh(script: "git branch -a", returnStdout: false
+        sh(script: "git branch -a", returnStdout: false)
         // Fetch to ensure we get target branch
         sh(script: "git fetch --no-tags origin ${env.CHANGE_TARGET} || true", returnStdout: false)
         // Get the list of changed files
