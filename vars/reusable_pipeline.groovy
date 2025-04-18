@@ -127,7 +127,7 @@ def call(Map config = [:]){
                       if (IS_DOC_ONLY_CHANGE.toBoolean() == true) {
                         echo "This is a doc-only change. Skipping everything except doc build and doc tests."
                         buildStages.buildEnvironment()
-                        buildStages.installPackage("doc")
+                        buildStages.installPackage("docs")
                         buildStages.testDocs()
                       } else {
                         buildStages.buildEnvironment()
