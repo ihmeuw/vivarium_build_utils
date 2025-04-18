@@ -49,9 +49,10 @@ debug: # Print debug information (environment variables)
 	@echo "Make sources:                     ${MAKE_SOURCES}"
 
 install: ## Install setuptools, package, and build utilities
+	ENV_REQS?=dev
 	pip install uv
 	uv pip install --upgrade pip setuptools 
-	uv pip install -e .[${ENV_REQS?=dev}] --extra-index-url ${IHME_PYPI}simple/ --index-strategy unsafe-best-match
+	uv pip install -e .[${ENV_REQS}] --extra-index-url ${IHME_PYPI}simple/ --index-strategy unsafe-best-match
 
 install-upstream-deps: # Install upstream dependencies
 	@echo "Contents of install_dependency_branch.sh"
