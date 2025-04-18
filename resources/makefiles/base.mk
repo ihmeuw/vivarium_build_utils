@@ -19,7 +19,6 @@ IHME_PYPI := https://artifactory.ihme.washington.edu/artifactory/api/pypi/pypi-s
 PYTHON_VERSION ?= 3.11
 CONDA_ENV_NAME ?= ${PACKAGE_NAME}_py${PYTHON_VERSION}
 CONDA_ENV_CREATION_FLAG = $(if $(CONDA_ENV_PATH),-p ${CONDA_ENV_PATH},-n ${CONDA_ENV_NAME})
-ENV_REQS?=dev
 
 # These are the doc and source code files in this repo.
 # When one of these files changes, it means that Make targets need to run again.
@@ -48,7 +47,8 @@ debug: # Print debug information (environment variables)
 	@echo "PACKAGE_VERSION:                  ${PACKAGE_VERSION}"
 	@echo "PYPI_ARTIFACTORY_CREDENTIALS_USR: ${PYPI_ARTIFACTORY_CREDENTIALS_USR} "
 	@echo "Make sources:                     ${MAKE_SOURCES}"
-
+	
+install: ENV_REQS?=dev
 install: ## Install setuptools, package, and build utilities
 	pip install uv
 	uv pip install --upgrade pip setuptools 
