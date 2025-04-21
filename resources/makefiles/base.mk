@@ -81,7 +81,7 @@ test-doc: $(MAKE_SOURCES) # Test docs
 	$(MAKE) doctest -C docs/
 
 build-doc: $(MAKE_SOURCES) # Build the docs
-	$(MAKE) -C -W docs/ html
+	$(MAKE) -W -C docs/ html
 	@echo "Ignore, Created by Makefile, `date`" > $@
 
 deploy-doc: # Deploy the Sphinx docs
