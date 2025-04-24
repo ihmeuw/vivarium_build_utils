@@ -102,6 +102,7 @@ def runTests(List test_types) {
             }]
         }
         return parallelTests
+        parallel parallelTests
     }
 }
 
