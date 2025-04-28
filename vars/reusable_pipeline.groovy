@@ -224,10 +224,16 @@ def call(Map config = [:]){
         }
       }
       cleanup { // cleanup for outer workspace
-        cleanWs()
-        // manually remove @tmp dirs
-        dir("${WORKSPACE}@tmp"){
-          deleteDir()
+        script {
+          if (params.DEBUG) {
+            echo 'Debug is enabled. Skipping cleanup - MANUALLY CLEAN UP WHEN FINISHED.'
+          } else {
+            cleanWs()
+            // manually remove @tmp dirs
+            dir("${WORKSPACE}@tmp"){
+              deleteDir()
+            }
+          }
         }
       }
     }  // End of post
