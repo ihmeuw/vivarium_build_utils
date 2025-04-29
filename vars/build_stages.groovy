@@ -117,21 +117,65 @@ def testDocs() {
 }
 
 def deployPackage() {
-    stage("Tagging Version and Pushing") {
-        sh "${ACTIVATE} && make tag-version"
+    stage("Checking and Tagging Version") {
+        // Check if git tag already exists
+        def tagExists = sh(
+            script: "git ls-remote --tags origin | grep -q \"refs/tags/v${PACKAGE_VERSION}\$\" && echo 'true' || echo 'false'",
+            returnStdout: true
+        ).trim() == 'true'
+        
+        if (tagExists) {
+            error "Tag v${PACKAGE_VERSION} already exists on remote. Aborting deployment."
+        } else {
+            echo "Tag v${PACKAGE_VERSION} doesn't exist. Proceeding with tagging."
+            sh "${ACTIVATE} && make tag-version"
+        }
     }
 
     stage("Build Package - Python ${PYTHON_VERSION}") {
         sh "${ACTIVATE} && make build-package"
     }
 
-    stage("Deploy Package to Artifactory") {
+    stage("Checking and Deploying Package to Artifactory") {
         withCredentials([usernamePassword(
             credentialsId: 'artifactory_simsci',
             usernameVariable: 'PYPI_ARTIFACTORY_CREDENTIALS_USR',
             passwordVariable: 'PYPI_ARTIFACTORY_CREDENTIALS_PSW'
         )]) {
-            sh "${ACTIVATE} && make deploy-package-artifactory"
+            // Check if package version already exists in Artifactory using Groovy
+            def versionExists = false
+            
+            try {
+                def url = "${env.IHME_PYPI}/simple/${env.PACKAGE_NAME}/"
+                def connection = new URL(url).openConnection()
+                
+                // Set up basic authentication
+                def authString = "${PYPI_ARTIFACTORY_CREDENTIALS_USR}:${PYPI_ARTIFACTORY_CREDENTIALS_PSW}"
+                def encodedAuth = authString.bytes.encodeBase64().toString()
+                connection.setRequestProperty("Authorization", "Basic ${encodedAuth}")
+                
+                // Get the response
+                def responseCode = connection.responseCode
+                def response = ''
+                
+                if (responseCode == 200) {
+                    response = connection.inputStream.text
+                    versionExists = response.contains("${PACKAGE_VERSION}")
+                }
+                
+                echo "Version ${PACKAGE_VERSION} exists in Artifactory: ${versionExists}"
+            } catch (Exception e) {
+                echo "Error checking version in Artifactory: ${e.message}"
+                // If there's an error checking, assume version doesn't exist and proceed
+                versionExists = false
+            }
+            
+            if (versionExists) {
+                error "Version ${PACKAGE_VERSION} already exists in Artifactory. Aborting deployment."
+            } else {
+                echo "Version ${PACKAGE_VERSION} doesn't exist in Artifactory. Proceeding with deployment."
+                sh "${ACTIVATE} && make deploy-package-artifactory"
+            }
         }
     }
 }

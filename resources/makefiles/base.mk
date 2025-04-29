@@ -100,17 +100,7 @@ build-package: $(MAKE_SOURCES) # Build the package as a pip wheel
 deploy-package-artifactory: # Deploy the package to Artifactory
 	@[ "${PYPI_ARTIFACTORY_CREDENTIALS_USR}" ] && echo "" > /dev/null || ( echo "PYPI_ARTIFACTORY_CREDENTIALS_USR is not set"; exit 1 )
 	@[ "${PYPI_ARTIFACTORY_CREDENTIALS_PSW}" ] && echo "" > /dev/null || ( echo "PYPI_ARTIFACTORY_CREDENTIALS_PSW is not set"; exit 1 )
-	pip install twine requests
-	@python -c "import requests; import sys; \
-		auth = ('${PYPI_ARTIFACTORY_CREDENTIALS_USR}', '${PYPI_ARTIFACTORY_CREDENTIALS_PSW}'); \
-		url = '${IHME_PYPI}simple/${PACKAGE_NAME}/'; \
-		print(url); \
-		r = requests.get(url, auth=auth); \
-		print(r); \
-		version_exists = '${PACKAGE_VERSION}' in r.text if r.status_code == 200 else False; \
-		print(f'Version ${PACKAGE_VERSION} exists: {version_exists}'); \
-		sys.exit(1 if version_exists else 0)" || \
-		(echo "Version ${PACKAGE_VERSION} already exists in Artifactory. Skipping upload."; exit 0)
+	pip install twine
 	twine upload --repository-url ${IHME_PYPI} -u ${PYPI_ARTIFACTORY_CREDENTIALS_USR} -p ${PYPI_ARTIFACTORY_CREDENTIALS_PSW} dist/*
 
 tag-version: # Tag the version and push
