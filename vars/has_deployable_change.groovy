@@ -1,10 +1,10 @@
-def call() {
+def check_deployable_change() {
     // Define the patterns to exclude (files that don't count as deployable changes)
     def excludePatterns = [
         'Jenkinsfile',
         'Makefile',
-        '.gitignore',
-        '.github/*'
+        '\\.gitignore',
+        '\\.github/.*'
     ]
     
     // Get the previous commit hash
@@ -31,21 +31,14 @@ def call() {
         return false
     }
     
-    // Create a grep pattern to exclude the specified files
-    def grepExcludePattern = excludePatterns.collect { pattern ->
-        // Escape any special characters in the pattern
-        def escapedPattern = pattern.replaceAll(/[.^$*+?()[\]{}|\\]/, '\\\\$0')
-        // Convert glob-style wildcards to regex
-        escapedPattern = escapedPattern.replace('*', '.*')
-        // Return the pattern
-        return escapedPattern
-    }.join('\\|')
+    // Join the patterns with pipe character for grep -E
+    def grepPattern = excludePatterns.join('|')
     
     // Count the number of changed files that don't match the exclude patterns
     def deployableChangeCount = sh(
         script: """
             git diff --name-only ${previousCommit} ${currentCommit} |
-            grep -v -E '${grepExcludePattern}' |
+            grep -v -E '${grepPattern}' |
             wc -l || echo '0'
         """,
         returnStdout: true
