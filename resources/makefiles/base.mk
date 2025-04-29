@@ -104,8 +104,13 @@ deploy-package-artifactory: # Deploy the package to Artifactory
 	twine upload --repository-url ${IHME_PYPI} -u ${PYPI_ARTIFACTORY_CREDENTIALS_USR} -p ${PYPI_ARTIFACTORY_CREDENTIALS_PSW} dist/*
 
 tag-version: # Tag the version and push
-	git tag -a "v${PACKAGE_VERSION}" -m "Tag automatically generated from Jenkins."
-	git push --tags
+	@if ! git ls-remote --tags origin | grep -q "refs/tags/v${PACKAGE_VERSION}$$"; then \
+		echo "Creating and pushing tag v${PACKAGE_VERSION}"; \
+		git tag -a "v${PACKAGE_VERSION}" -m "Tag automatically generated from Jenkins."; \
+		git push --tags; \
+	else \
+		echo "Tag v${PACKAGE_VERSION} already exists on remote. Skipping."; \
+	fi
 
 clean: # Delete build artifacts and do any custom cleanup such as spinning down services
 	@rm -rf format build-doc build-package integration .pytest_cache
