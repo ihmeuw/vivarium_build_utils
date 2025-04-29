@@ -1,4 +1,4 @@
-def check_deployable_change() {
+def call() {
     // Define the patterns to exclude (files that don't count as deployable changes)
     def excludePatterns = [
         'Jenkinsfile',
