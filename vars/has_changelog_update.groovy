@@ -18,25 +18,37 @@ def call() {
     ).trim()
     
     if (changelogModified == 'true') {
-        // Get the diff of the CHANGELOG.rst
-        def changelogDiff = sh(
-            script: "git diff ${previousCommit} ${currentCommit} CHANGELOG.rst",
+        // Extract only the first version number from the previous changelog
+        def previousVersion = sh(
+            script: "git show ${previousCommit}:CHANGELOG.rst | grep -E '[0-9]+\\.[0-9]+\\.[0-9]+' | head -1 | grep -oE '[0-9]+\\.[0-9]+\\.[0-9]+' || echo ''",
             returnStdout: true
         ).trim()
         
-        // Define a regex pattern to match version format X.X.X
-        def versionPattern = /\+.*?(\d+\.\d+\.\d+/
+        // Extract only the first version number from the current changelog
+        def currentVersion = sh(
+            script: "git show ${currentCommit}:CHANGELOG.rst | grep -E '[0-9]+\\.[0-9]+\\.[0-9]+' | head -1 | grep -oE '[0-9]+\\.[0-9]+\\.[0-9]+' || echo ''",
+            returnStdout: true
+        ).trim()
         
-        // Check if the pattern exists in the changelog diff
-        def matcher = changelogDiff =~ versionPattern
-        
-        if (matcher.find()) {
-            echo "Found version update in CHANGELOG.rst: ${matcher.group(1)}"
-            return true
-        } else {
-            echo "ERROR: No version update found in CHANGELOG.rst with format X.X.X"
+        // Check if both previous and current versions were found
+        if (previousVersion == '') {
+            echo "ERROR: Could not find version in previous changelog"
             return false
         }
+        
+        if (currentVersion == '') {
+            echo "ERROR: Could not find version in current changelog"
+            return false
+        }
+        
+        // Check if the version has been updated
+        if (previousVersion == currentVersion) {
+            echo "ERROR: Changelog version has not been updated. Still: ${currentVersion}"
+            return false
+        }
+        
+        echo "Found version update in CHANGELOG.rst: from ${previousVersion} to ${currentVersion}"
+        return true
     } else {
         echo "ERROR: CHANGELOG.rst was not modified in this commit"
         return false
