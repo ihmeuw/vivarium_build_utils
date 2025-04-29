@@ -144,8 +144,8 @@ def call(Map config = [:]){
                           stage("Build and Deploy - Python ${pythonVersion}") {
                             if ((config?.deployable == true) &&
                               !env.IS_CRON.toBoolean() &&
-                              (env.BRANCH == "main") &&
                               !params.SKIP_DEPLOY &&
+                              (env.BRANCH == "main") &&
                               has_deployable_change()) {
                               if (!has_changelog_update()) {
                                 error "Deploy failed: Changelog does not contain a proper version update."
