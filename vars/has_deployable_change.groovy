@@ -3,8 +3,8 @@ def call() {
     def excludePatterns = [
         'Jenkinsfile',
         'Makefile',
-        '\\.gitignore',
-        '\\.github/.*'
+        '\.gitignore',
+        '\.github/.*'
     ]
     
     // Get the previous commit hash
