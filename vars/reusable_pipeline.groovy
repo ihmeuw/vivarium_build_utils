@@ -205,6 +205,8 @@ def call(Map config = [:]){
             slackMessage += """
               
               Debug was enabled - MANUALLY CLEAN UP WHEN FINISHED.
+              1. Env path: ${env.CONDA_ENV_PATH}
+              2. Workspace: ${env.WORKSPACE}
               """.stripIndent()
           }
         }
