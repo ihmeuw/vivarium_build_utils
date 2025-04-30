@@ -165,10 +165,6 @@ def call(Map config = [:]){
                         if (params.DEBUG) {
                           echo 'Debug was enabled - MANUALLY CLEAN UP WHEN FINISHED.'
                         } else {
-                          // Clean up the conda envs
-                          sh "${ACTIVATE} && make clean"
-                          sh "rm -rf ${conda_env_path}"
-
                           buildStages.cleanup()
                         }
                       }
@@ -242,8 +238,11 @@ def call(Map config = [:]){
         }
       }
       cleanup { // cleanup for outer workspace
-        script{
-          buildStages.cleanup()
+        // NOTE: We always clean up this outer workspace regardless of DEBUG
+        cleanWs()
+        // manually remove @tmp dirs
+        dir("${WORKSPACE}@tmp"){
+          deleteDir()
         }
       }
     }  // End of post
