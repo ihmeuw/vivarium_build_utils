@@ -201,6 +201,9 @@ def call(Map config = [:]){
             Author: @${slackID}
             Build details: <${env.BUILD_URL}/console|See in web console>
             """.stripIndent()
+          if (params.DEBUG) {
+            slackMessage += "\n\nDebug was enabled - MANUALLY CLEAN UP WHEN FINISHED.
+          }
         }
       }
       failure {
@@ -226,7 +229,7 @@ def call(Map config = [:]){
       cleanup { // cleanup for outer workspace
         script {
           if (params.DEBUG) {
-            echo 'Debug is enabled. Skipping cleanup - MANUALLY CLEAN UP WHEN FINISHED.'
+            echo 'Debug was enabled - MANUALLY CLEAN UP WHEN FINISHED.'
           } else {
             cleanWs()
             // manually remove @tmp dirs
