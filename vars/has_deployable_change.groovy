@@ -8,7 +8,7 @@ def call() {
     ]
     
     // Get the previous commit hash
-    def commitInfo = gitUtils.getCommitInfo()
+    def commitInfo = git_utils.getCommitInfo()
     def previousCommit = commitInfo.previousCommit
     def currentCommit = commitInfo.currentCommit
     def changedFiles = commitInfo.changedFiles

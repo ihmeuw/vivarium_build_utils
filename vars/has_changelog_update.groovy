@@ -1,7 +1,7 @@
 def call() {
 
 
-    def commitInfo = gitUtils.getCommitInfo()
+    def commitInfo = git_utils.getCommitInfo()
     def previousCommit = commitInfo.previousCommit
     def currentCommit = commitInfo.currentCommit
     
