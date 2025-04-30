@@ -147,8 +147,6 @@ def deployDocs() {
 }
 
 def cleanup() {
-    sh "${ACTIVATE} && make clean"
-    sh "rm -rf ${conda_env_path}"
     cleanWs()
     dir("${WORKSPACE}@tmp") {
         deleteDir()

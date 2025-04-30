@@ -161,7 +161,17 @@ def call(Map config = [:]){
                       }
                     } finally {
                       // Cleanup
-                      buildStages.cleanup()
+                      script {
+                        if (params.DEBUG) {
+                          echo 'Debug was enabled - MANUALLY CLEAN UP WHEN FINISHED.'
+                        } else {
+                          // Clean up the conda envs
+                          sh "${ACTIVATE} && make clean"
+                          sh "rm -rf ${conda_env_path}"
+                          
+                          buildStages.cleanup()
+                        }
+                      }
                     }
                   }
                 }
@@ -205,7 +215,7 @@ def call(Map config = [:]){
             slackMessage += """
               
               Debug was enabled - MANUALLY CLEAN UP WHEN FINISHED.
-              1. Env path: ${env.CONDA_ENV_PATH}
+              1. Env path: ${conda_env_dir}/${conda_env_name}
               2. Workspace: ${env.WORKSPACE}
               """.stripIndent()
           }
@@ -232,17 +242,7 @@ def call(Map config = [:]){
         }
       }
       cleanup { // cleanup for outer workspace
-        script {
-          if (params.DEBUG) {
-            echo 'Debug was enabled - MANUALLY CLEAN UP WHEN FINISHED.'
-          } else {
-            cleanWs()
-            // manually remove @tmp dirs
-            dir("${WORKSPACE}@tmp"){
-              deleteDir()
-            }
-          }
-        }
+        buildStages.cleanup()
       }
     }  // End of post
   }  // End of pipeline
