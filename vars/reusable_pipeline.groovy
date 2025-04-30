@@ -168,7 +168,7 @@ def call(Map config = [:]){
                           // Clean up the conda envs
                           sh "${ACTIVATE} && make clean"
                           sh "rm -rf ${conda_env_path}"
-                          
+
                           buildStages.cleanup()
                         }
                       }
@@ -242,7 +242,9 @@ def call(Map config = [:]){
         }
       }
       cleanup { // cleanup for outer workspace
-        buildStages.cleanup()
+        script{
+          buildStages.cleanup()
+        }
       }
     }  // End of post
   }  // End of pipeline
