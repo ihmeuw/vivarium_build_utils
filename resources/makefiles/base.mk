@@ -111,9 +111,9 @@ manual-deploy: # Manual deploy to Artifactory
 	@[ "${PYPI_ARTIFACTORY_CREDENTIALS_USR}" ] && echo "" > /dev/null || ( echo "PYPI_ARTIFACTORY_CREDENTIALS_USR is not set, export using simsci artifactory credentials"; exit 1 )
 	@[ "${PYPI_ARTIFACTORY_CREDENTIALS_PSW}" ] && echo "" > /dev/null || ( echo "PYPI_ARTIFACTORY_CREDENTIALS_PSW is not set, export using simsci artifactory credentials"; exit 1 )
 	make build-env
-	make build-package
-	make tag-version
-	make deploy-package-artifactory
+	conda run -n $(CONDA_ENV_NAME) make build-package
+	conda run -n $(CONDA_ENV_NAME) make tag-version
+	conda run -n $(CONDA_ENV_NAME) make deploy-package-artifactory
 
 clean: # Delete build artifacts and do any custom cleanup such as spinning down services
 	@rm -rf format build-doc build-package integration .pytest_cache
