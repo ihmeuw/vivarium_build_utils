@@ -202,7 +202,10 @@ def call(Map config = [:]){
             Build details: <${env.BUILD_URL}/console|See in web console>
             """.stripIndent()
           if (params.DEBUG) {
-            slackMessage += "\n\nDebug was enabled - MANUALLY CLEAN UP WHEN FINISHED.
+            slackMessage += """
+              
+              Debug was enabled - MANUALLY CLEAN UP WHEN FINISHED.
+              """.stripIndent()
           }
         }
       }
