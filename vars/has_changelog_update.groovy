@@ -1,15 +1,9 @@
 def call() {
-    // Get the previous commit hash
-    def previousCommit = sh(
-        script: "git rev-parse HEAD~1",
-        returnStdout: true
-    ).trim()
-    
-    // Get the current commit hash
-    def currentCommit = sh(
-        script: "git rev-parse HEAD",
-        returnStdout: true
-    ).trim()
+
+
+    def commitInfo = gitUtils.getCommitInfo()
+    def previousCommit = commitInfo.previousCommit
+    def currentCommit = commitInfo.currentCommit
     
     // Check if CHANGELOG.rst was modified between the two commits
     def changelogModified = sh(

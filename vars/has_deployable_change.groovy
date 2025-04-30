@@ -8,22 +8,10 @@ def call() {
     ]
     
     // Get the previous commit hash
-    def previousCommit = sh(
-        script: "git rev-parse HEAD~1",
-        returnStdout: true
-    ).trim()
-    
-    // Get the current commit hash
-    def currentCommit = sh(
-        script: "git rev-parse HEAD",
-        returnStdout: true
-    ).trim()
-    
-    // Get all changed files between the two commits
-    def changedFiles = sh(
-        script: "git diff --name-only ${previousCommit} ${currentCommit} || echo ''",
-        returnStdout: true
-    ).trim()
+    def commitInfo = gitUtils.getCommitInfo()
+    def previousCommit = commitInfo.previousCommit
+    def currentCommit = commitInfo.currentCommit
+    def changedFiles = commitInfo.changedFiles
     
     // If no files changed, return false
     if (changedFiles == '') {
