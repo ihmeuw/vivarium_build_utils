@@ -103,21 +103,16 @@ def runTests(List test_types, boolean run_tests_on_slurm) {
                                 reportTitles: ''
                             ])
                         } else {
-                            // create a timestamp for the job name
-                            def timestamp = new Date().format("yyyyMMdd-HHmmss")
-                            // create a unique job name
-                            def jobName = "${JOB_NAME}-${BUILD_NUMBER}-${test_type}-${timestamp}"
+                            def repoName = "${JOB_NAME}".tokenize('/')[1]
+                            def jobName = "${test_type}-tests-${repoName}-${BUILD_NUMBER}"
                             echo "Running ${test_type} tests on Slurm (job name ${jobName}) - refer to logs for test details!"
-                            sh "sbatch --wait --job-name ${jobName} --output ${WORKSPACE}/pytest_output.log --error ${WORKSPACE}/pytest_error.log ${WORKSPACE}/run_tests.sh ${CONDA_ENV_PATH} ${WORKSPACE}"
-                            def jobComplete = false
-                            while (!jobComplete) {
-                                sleep 30  // seconds
-                                def jobStatus = sh(script: "squeue --name=${CONDA_ENV_NAME}", returnStdout: true).trim()
-                                if (jobStatus == "") {
-                                    jobComplete = true
-                                }
+                            def slurmExitCode = sh(script: """
+                            sbatch --wait --job-name ${jobName} --output ${WORKSPACE}/pytest_output.log --error ${WORKSPACE}/pytest_error.log ${WORKSPACE}/run_tests.sh ${CONDA_ENV_PATH} ${WORKSPACE}
+                            """, returnStatus: true)
+                            if (slurmExitCode != "0") {
+                                error "Slurm job failed with exit code ${slurmExitCode}. See ${WORKSPACE}/pytest_{output,error}.log for details."
                             }
-                            def testResults = sh(script: "cat ${CONDA_ENV_PATH}/pytest_output.log", returnStdout: true).trim()
+                            def testResults = sh(script: "cat ${WORKSPACE}/pytest_output.log", returnStdout: true).trim()
                             if (testResults.contains("FAILED")) {
                                 error "Tests failed. See ${CONDA_ENV_PATH}/pytest_{output,error}.log for details."
                             }
