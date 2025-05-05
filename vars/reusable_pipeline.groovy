@@ -27,7 +27,8 @@ def call(Map config = [:]){
     int startMinute = scheduled_branches.indexOf(BRANCH_NAME) * (minutesRange / scheduled_branches.size())
     int cronHour = startHour + (startMinute / 60) as int
     int cronMinute = startMinute % 60 as int
-    cron_schedule = scheduled_branches.contains(BRANCH_NAME) ? "H(${cronMinute}) H(${cronHour}) * * *" : ''
+    // cron_schedule = scheduled_branches.contains(BRANCH_NAME) ? "H(${cronMinute}) H(${cronHour}) * * *" : ''
+    cron_schedule = BRANCH_NAME == 'sbachmei/mic-6032/modify-cron' ? "H(${cronMinute}) H(${cronHour}) * * *" : ''
   } else {
     cron_schedule = scheduled_branches.contains(BRANCH_NAME) ? "H 20-23 * * *" : ''
   }
