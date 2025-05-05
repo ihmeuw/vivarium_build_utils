@@ -76,35 +76,51 @@ def checkFormatting() {
     }
 }
 
-def runTests(List test_types) {
+def runTests(List test_types, boolean run_tests_on_slurm) {
     stage("Run Tests - Python ${PYTHON_VERSION}") {
         script {
             def full_name = { test_type ->
                 if (test_type == 'e2e') {
                     return "End-to-End"
                 } else if (test_type == 'all-tests') {
-                return "All"
+                    return "All"
                 } else {
                     return test_type.capitalize()
                 }
             }
-            def parallelTests = test_types.collectEntries {
-                ["${full_name(it)} Tests" : {
-                    stage("Run ${full_name(it)} Tests - Python ${PYTHON_VERSION}") {
-                        sh "${ACTIVATE} && make ${it}${(env.IS_CRON.toBoolean() || params.RUN_SLOW) ? ' RUNSLOW=1' : ''}"
+            def parallelTests = test_types.collectEntries { test_type ->
+                ["${full_name(test_type)} Tests" : {
+                    stage("Run ${full_name(test_type)} Tests - Python ${PYTHON_VERSION}") {
+                        if (!run_tests_on_slurm) {
+                            sh "${ACTIVATE} && make ${test_type}${(env.IS_CRON.toBoolean() || params.RUN_SLOW) ? ' RUNSLOW=1' : ''}"
+                        } else {
+                            sh "sbatch ${WORKSPACE}/run_tests.sh ${CONDA_ENV_PATH} ${WORKSPACE}"
+                            def jobComplete = false
+                            while (!jobComplete) {
+                                sleep 30  // seconds
+                                def jobStatus = sh(script: "squeue --name=${CONDA_ENV_NAME} --output=${CONDA_ENV_PATH}/pytest_output.log --error=${CONDA_ENV_PATH}/pytest_error.log", returnStdout: true).trim()
+                                if (jobStatus == ) {
+                                    jobComplete = true
+                                }
+                            }
+                            def testResults = sh(script: "cat ${CONDA_ENV_PATH}/pytest_output.log", returnStdout: true).trim()
+                            if (testResults.contains("FAILED")) {
+                                error "Tests failed. See ${CONDA_ENV_PATH}/pytest_{output,error}.log for details."
+                            }
+                        }
+                        // FIXME: the slurm tests probably don't work w/ this
                         publishHTML([
                             allowMissing: true,
                             alwaysLinkToLastBuild: false,
                             keepAll: true,
-                            reportDir: "output/htmlcov_${it}",
+                            reportDir: "output/htmlcov_${test_type}",
                             reportFiles: "index.html",
-                            reportName: "Coverage Report - ${full_name(it)} tests",
+                            reportName: "Coverage Report - ${full_name(test_type)} tests",
                             reportTitles: ''
                         ])
                     }
                 }]
             }
-            parallel parallelTests
         }
     }
 }

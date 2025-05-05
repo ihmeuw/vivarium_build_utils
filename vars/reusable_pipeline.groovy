@@ -11,7 +11,15 @@ def call(Map config = [:]){
   skip_doc_build: Only skips the doc build.
   use_shared_fs: Whether to use the shared filesystem for conda envs.
   upstream_repos: A list of repos to check for upstream changes.
+  run_tests_on_slurm: Whether to run tests on slurm.
   */
+
+  // run_tests_on_slurm requires both requires_slurm and use_shared_fs
+  if (config.run_tests_on_slurm && !(config.requires_slurm && config.use_shared_fs)) {
+    throw new IllegalArgumentException("'run_tests_on_slurm' requires both 'requires_slurm' and 'use_shared_fs' to be true.")
+  }
+  run_tests_on_slurm = config.run_tests_on_slurm ?: false
+
   task_node = config.requires_slurm ? 'slurm' : 'matrix-tasks'
 
   scheduled_branches = config.scheduled_branches ?: [] 
@@ -134,7 +142,7 @@ def call(Map config = [:]){
                         buildStages.installPackage()
                         buildStages.installDependencies(upstream_repos)
                         buildStages.checkFormatting()
-                        buildStages.runTests(test_types)
+                        buildStages.runTests(test_types, run_tests_on_slurm)
 
                         if (PYTHON_VERSION == PYTHON_DEPLOY_VERSION) {
                           if (config?.skip_doc_build != true) {
