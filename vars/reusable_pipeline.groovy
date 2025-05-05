@@ -18,22 +18,16 @@ def call(Map config = [:]){
   scheduled_branches = config.scheduled_branches ?: [] 
   stagger_scheduled_builds = config.stagger_scheduled_builds ?: false
 
-  def staggeredCronSettings(branch, index, numberBranches) {
+  if (stagger_scheduled_builds && scheduled_branches.size() > 1) {
+    // If the branch is not in the list, return an empty string
     startHour = 20
     endHour = 23
     minutesRange = (endHour - startHour + 1) * 60
     // distribute branches evenly across the range
-    int startMinute = index * (minutesRange / numberBranches)
+    int startMinute = scheduled_branches.indexOf(BRANCH_NAME) * (minutesRange / scheduled_branches.size())
     int cronHour = startHour + (startMinute / 60) as int
     int cronMinute = startMinute % 60 as int
-    
-    return "H(${cronMinute}) H(${cronHour}) * * *"
-  }
-
-  if (stagger_scheduled_builds && scheduled_branches.size() > 1) {
-    // If the branch is not in the list, return an empty string
-    CRON_SETTINGS = scheduled_branches.contains(BRANCH_NAME) ? 
-      staggeredCronSettings(BRANCH_NAME, scheduled_branches.indexOf(BRANCH_NAME), scheduled_branches.size()) : ''
+    CRON_SETTINGS = scheduled_branches.contains(BRANCH_NAME) ? "H(${cronMinute}) H(${cronHour}) * * *" : ''
   } else {
     CRON_SETTINGS = scheduled_branches.contains(BRANCH_NAME) ? "H 20-23 * * *" : ''
   }
