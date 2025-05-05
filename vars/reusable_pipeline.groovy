@@ -18,7 +18,7 @@ def call(Map config = [:]){
   scheduled_branches = config.scheduled_branches ?: [] 
   stagger_scheduled_builds = config.stagger_scheduled_builds ?: false
 
-  def staggeredCronSettings(String branch, int index, int numberBranches) {
+  def staggeredCronSettings(branch, index, numberBranches) {
     startHour = 20
     endHour = 23
     minutesRange = (endHour - startHour + 1) * 60
