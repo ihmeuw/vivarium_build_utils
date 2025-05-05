@@ -103,12 +103,12 @@ def runTests(List test_types, boolean run_tests_on_slurm) {
                                 reportTitles: ''
                             ])
                         } else {
-                            echo "Running ${test_type} tests on Slurm - refer to logs for test details!"
                             // create a timestamp for the job name
                             def timestamp = new Date().format("yyyyMMdd-HHmmss")
                             // create a unique job name
                             def jobName = "${JOB_NAME}-${BUILD_NUMBER}-${test_type}-${timestamp}"
-                            sh "sbatch --job-name ${jobName} --output ${WORKSPACE}/pytest_output.log --error ${WORKSPACE}/pytest_error.log ${WORKSPACE}/run_tests.sh ${CONDA_ENV_PATH} ${WORKSPACE}"
+                            echo "Running ${test_type} tests on Slurm (job name ${jobName}) - refer to logs for test details!"
+                            sh "sbatch --wait --job-name ${jobName} --output ${WORKSPACE}/pytest_output.log --error ${WORKSPACE}/pytest_error.log ${WORKSPACE}/run_tests.sh ${CONDA_ENV_PATH} ${WORKSPACE}"
                             def jobComplete = false
                             while (!jobComplete) {
                                 sleep 30  // seconds
@@ -125,6 +125,7 @@ def runTests(List test_types, boolean run_tests_on_slurm) {
                     }
                 }]
             }
+            parallel parallelTests
         }
     }
 }
