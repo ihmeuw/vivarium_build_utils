@@ -24,12 +24,10 @@ def call(Map config = [:]){
     endHour = 23
     minutesRange = (endHour - startHour + 1) * 60
     // distribute branches evenly across the range
-    // int startMinute = scheduled_branches.indexOf(BRANCH_NAME) * (minutesRange / scheduled_branches.size())
-    int startMinute = scheduled_branches.indexOf("release-candidate/v.orange.rebased") * (minutesRange / scheduled_branches.size())
+    int startMinute = scheduled_branches.indexOf(BRANCH_NAME) * (minutesRange / scheduled_branches.size())
     int cronHour = startHour + (startMinute / 60) as int
     int cronMinute = startMinute % 60 as int
-    // cron_schedule = scheduled_branches.contains(BRANCH_NAME) ? "H(${cronMinute}) H(${cronHour}) * * *" : ''
-    cron_schedule = scheduled_branches.contains("release-candidate/v.orange.rebased") ? "H(${cronMinute}) H(${cronHour}) * * *" : ''
+    cron_schedule = scheduled_branches.contains(BRANCH_NAME) ? "H(${cronMinute}) H(${cronHour}) * * *" : ''
   } else {
     cron_schedule = scheduled_branches.contains(BRANCH_NAME) ? "H 20-23 * * *" : ''
   }
