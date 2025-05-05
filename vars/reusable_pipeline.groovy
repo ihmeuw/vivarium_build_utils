@@ -5,6 +5,7 @@ def call(Map config = [:]){
   -------------
   Configuration options:
   scheduled_branches: The branch names for which to run scheduled nightly builds.
+  stagger_scheduled_builds: Whether to stagger the scheduled builds.
   test_types: The tests to run. Must be subset (inclusive) of ['unit', 'integration', 'e2e']
   requires_slurm: Whether the child tasks require the slurm scheduler.
   deployable: Whether the package can be deployed by Jenkins.
@@ -15,7 +16,27 @@ def call(Map config = [:]){
   task_node = config.requires_slurm ? 'slurm' : 'matrix-tasks'
 
   scheduled_branches = config.scheduled_branches ?: [] 
-  CRON_SETTINGS = scheduled_branches.contains(BRANCH_NAME) ? 'H H(20-23) * * *' : ''
+  stagger_scheduled_builds = config.stagger_scheduled_builds ?: false
+
+  def staggeredCronSettings(String branch, int index, int numberBranches) {
+    startHour = 20
+    endHour = 23
+    minutesRange = (endHour - startHour + 1) * 60
+    // distribute branches evenly across the range
+    int startMinute = index * (minutesRange / numberBranches)
+    int cronHour = startHour + (startMinute / 60) as int
+    int cronMinute = startMinute % 60 as int
+    
+    return "H(${cronMinute}) H(${cronHour}) * * *"
+  }
+
+  if (stagger_scheduled_builds && scheduled_branches.size() > 1) {
+    // If the branch is not in the list, return an empty string
+    CRON_SETTINGS = scheduled_branches.contains(BRANCH_NAME) ? 
+      staggeredCronSettings(BRANCH_NAME, scheduled_branches.indexOf(BRANCH_NAME), scheduled_branches.size()) : ''
+  } else {
+    CRON_SETTINGS = scheduled_branches.contains(BRANCH_NAME) ? "H 20-23 * * *" : ''
+  }
 
   PYTHON_DEPLOY_VERSION = "3.11"
 
