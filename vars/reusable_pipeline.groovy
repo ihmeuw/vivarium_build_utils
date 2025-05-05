@@ -27,9 +27,9 @@ def call(Map config = [:]){
     int startMinute = scheduled_branches.indexOf(BRANCH_NAME) * (minutesRange / scheduled_branches.size())
     int cronHour = startHour + (startMinute / 60) as int
     int cronMinute = startMinute % 60 as int
-    CRON_SETTINGS = scheduled_branches.contains(BRANCH_NAME) ? "H(${cronMinute}) H(${cronHour}) * * *" : ''
+    cron_settings = scheduled_branches.contains(BRANCH_NAME) ? "H(${cronMinute}) H(${cronHour}) * * *" : ''
   } else {
-    CRON_SETTINGS = scheduled_branches.contains(BRANCH_NAME) ? "H 20-23 * * *" : ''
+    cron_settings = scheduled_branches.contains(BRANCH_NAME) ? "H 20-23 * * *" : ''
   }
 
   PYTHON_DEPLOY_VERSION = "3.11"
@@ -51,7 +51,7 @@ def call(Map config = [:]){
     // It has access to standard IHME filesystems and singularity
     environment {
         IS_CRON = "${currentBuild.buildCauses.toString().contains('TimerTrigger')}"
-        CRON_SETTINGS = "${CRON_SETTINGS}"
+        CRON_SETTINGS = "${cron_settings}"
         // defaults for conda and pip are a local directory /svc-simsci for improved speed.
         // In the past, we used /ihme/code/* on the NFS (which is slower)
         shared_path="/svc-simsci"
@@ -104,7 +104,7 @@ def call(Map config = [:]){
     }
 
     triggers {
-      cron(CRON_SETTINGS)
+      cron(cron_settings)
     }
 
     stages {
