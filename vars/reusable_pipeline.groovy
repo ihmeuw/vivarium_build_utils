@@ -51,6 +51,7 @@ def call(Map config = [:]){
     // It has access to standard IHME filesystems and singularity
     environment {
         IS_CRON = "${currentBuild.buildCauses.toString().contains('TimerTrigger')}"
+        CRON_SETTINGS = "${CRON_SETTINGS}"
         // defaults for conda and pip are a local directory /svc-simsci for improved speed.
         // In the past, we used /ihme/code/* on the NFS (which is slower)
         shared_path="/svc-simsci"
