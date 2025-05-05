@@ -93,13 +93,22 @@ def runTests(List test_types, boolean run_tests_on_slurm) {
                     stage("Run ${full_name(test_type)} Tests - Python ${PYTHON_VERSION}") {
                         if (!run_tests_on_slurm) {
                             sh "${ACTIVATE} && make ${test_type}${(env.IS_CRON.toBoolean() || params.RUN_SLOW) ? ' RUNSLOW=1' : ''}"
+                            publishHTML([
+                                allowMissing: true,
+                                alwaysLinkToLastBuild: false,
+                                keepAll: true,
+                                reportDir: "output/htmlcov_${test_type}",
+                                reportFiles: "index.html",
+                                reportName: "Coverage Report - ${full_name(test_type)} tests",
+                                reportTitles: ''
+                            ])
                         } else {
                             sh "sbatch ${WORKSPACE}/run_tests.sh ${CONDA_ENV_PATH} ${WORKSPACE}"
                             def jobComplete = false
                             while (!jobComplete) {
                                 sleep 30  // seconds
-                                def jobStatus = sh(script: "squeue --name=${CONDA_ENV_NAME} --output=${CONDA_ENV_PATH}/pytest_output.log --error=${CONDA_ENV_PATH}/pytest_error.log", returnStdout: true).trim()
-                                if (jobStatus == ) {
+                                def jobStatus = sh(script: "squeue --name=${CONDA_ENV_NAME}", returnStdout: true).trim()
+                                if (jobStatus == "") {
                                     jobComplete = true
                                 }
                             }
@@ -108,16 +117,6 @@ def runTests(List test_types, boolean run_tests_on_slurm) {
                                 error "Tests failed. See ${CONDA_ENV_PATH}/pytest_{output,error}.log for details."
                             }
                         }
-                        // FIXME: the slurm tests probably don't work w/ this
-                        publishHTML([
-                            allowMissing: true,
-                            alwaysLinkToLastBuild: false,
-                            keepAll: true,
-                            reportDir: "output/htmlcov_${test_type}",
-                            reportFiles: "index.html",
-                            reportName: "Coverage Report - ${full_name(test_type)} tests",
-                            reportTitles: ''
-                        ])
                     }
                 }]
             }
