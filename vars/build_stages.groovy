@@ -40,8 +40,7 @@ def runDebugInfo() {
         JOB_NAME:       '${JOB_NAME}'
         WORKSPACE:      '${WORKSPACE}'
         XDG_CACHE_HOME: '${XDG_CACHE_HOME}'
-        IS_CRON:        '${IS_CRON}'
-        CRON_SETTINGS:  '${CRON_SETTINGS}'"""
+        IS_CRON:        '${IS_CRON}'"""
     }
 }
 
