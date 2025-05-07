@@ -78,31 +78,47 @@ def checkFormatting() {
     }
 }
 
-def runTests(List test_types) {
+def runTests(List test_types, boolean run_tests_on_slurm) {
     stage("Run Tests - Python ${PYTHON_VERSION}") {
         script {
             def full_name = { test_type ->
                 if (test_type == 'e2e') {
                     return "End-to-End"
                 } else if (test_type == 'all-tests') {
-                return "All"
+                    return "All"
                 } else {
                     return test_type.capitalize()
                 }
             }
-            def parallelTests = test_types.collectEntries {
-                ["${full_name(it)} Tests" : {
-                    stage("Run ${full_name(it)} Tests - Python ${PYTHON_VERSION}") {
-                        sh "${ACTIVATE} && make ${it}${(env.IS_CRON.toBoolean() || params.RUN_SLOW) ? ' RUNSLOW=1' : ''}"
-                        publishHTML([
-                            allowMissing: true,
-                            alwaysLinkToLastBuild: false,
-                            keepAll: true,
-                            reportDir: "output/htmlcov_${it}",
-                            reportFiles: "index.html",
-                            reportName: "Coverage Report - ${full_name(it)} tests",
-                            reportTitles: ''
-                        ])
+            def parallelTests = test_types.collectEntries { test_type ->
+                ["${full_name(test_type)} Tests" : {
+                    stage("Run ${full_name(test_type)} Tests - Python ${PYTHON_VERSION}") {
+                        if (!run_tests_on_slurm) {
+                            sh "${ACTIVATE} && make ${test_type}${(env.IS_CRON.toBoolean() || params.RUN_SLOW) ? ' RUNSLOW=1' : ''}"
+                            publishHTML([
+                                allowMissing: true,
+                                alwaysLinkToLastBuild: false,
+                                keepAll: true,
+                                reportDir: "output/htmlcov_${test_type}",
+                                reportFiles: "index.html",
+                                reportName: "Coverage Report - ${full_name(test_type)} tests",
+                                reportTitles: ''
+                            ])
+                        } else {
+                            def repoName = "${JOB_NAME}".tokenize('/')[1]
+                            def jobName = "${test_type}-tests-${repoName}-${BUILD_NUMBER}"
+                            echo "Running ${test_type} tests on Slurm (job name ${jobName}) - refer to logs for test details!"
+                            def slurmExitCode = sh(script: """
+                            sbatch --wait --job-name ${jobName} --output ${WORKSPACE}/pytest_output.log --error ${WORKSPACE}/pytest_error.log ${WORKSPACE}/run_tests.sh ${CONDA_ENV_PATH} ${WORKSPACE}
+                            """, returnStatus: true)
+                            if (slurmExitCode != "0") {
+                                error "Slurm job failed with exit code ${slurmExitCode}. See ${WORKSPACE}/pytest_{output,error}.log for details."
+                            }
+                            def testResults = sh(script: "cat ${WORKSPACE}/pytest_output.log", returnStdout: true).trim()
+                            if (testResults.contains("FAILED")) {
+                                error "Tests failed. See ${CONDA_ENV_PATH}/pytest_{output,error}.log for details."
+                            }
+                        }
                     }
                 }]
             }
