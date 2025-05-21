@@ -78,6 +78,9 @@ lint: # Check for formatting errors
 	isort $(LOCATIONS) --check --verbose --only-modified --diff
 	black $(LOCATIONS) --check --diff
 
+mypy: # Check for type hinting erros
+	mypy .
+
 test-doc: $(MAKE_SOURCES) # Test docs
 	$(MAKE) doctest -C docs/
 

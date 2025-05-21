@@ -12,11 +12,13 @@ def call(Map config = [:]){
   skip_doc_build: Only skips the doc build.
   use_shared_fs: Whether to use the shared filesystem for conda envs.
   upstream_repos: A list of repos to check for upstream changes.
+  run_mypy: Whether to run mypy on the package
   */
   task_node = config.requires_slurm ? 'slurm' : 'matrix-tasks'
 
   scheduled_branches = config.scheduled_branches ?: [] 
   stagger_scheduled_builds = config.stagger_scheduled_builds ?: false
+  run_mypy = config.run_mypy ?: true
 
   if (stagger_scheduled_builds && scheduled_branches.size() > 1) {
     startHour = 20
@@ -148,7 +150,7 @@ def call(Map config = [:]){
                         buildStages.buildEnvironment()
                         buildStages.installPackage()
                         buildStages.installDependencies(upstream_repos)
-                        buildStages.checkFormatting()
+                        buildStages.checkFormatting(run_mypy)
                         buildStages.runTests(test_types)
 
                         if (PYTHON_VERSION == PYTHON_DEPLOY_VERSION) {
