@@ -72,11 +72,12 @@ def installDependencies(List upstream_repos) {
     }
 }
 
-def checkFormatting(Boolean run_mypy) {
+def checkFormatting(Bool run_mypy) {
     stage("Check Formatting - Python ${PYTHON_VERSION}") {
         script {
+            sh echo "Run mypy is ${run_mypy}"
             sh "${ACTIVATE} && make lint"
-            if (run_mypy) {
+            if (run_mypy == true) {
                 sh "${ACTIVATE} && make mypy"
             }
         }
