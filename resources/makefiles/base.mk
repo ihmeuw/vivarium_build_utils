@@ -79,7 +79,7 @@ lint: # Check for formatting errors
 	black $(LOCATIONS) --check --diff
 
 mypy: # Check for type hinting erros
-	mypy .
+	mypy . --config-file pyproject.toml
 
 test-doc: $(MAKE_SOURCES) # Test docs
 	$(MAKE) doctest -C docs/
