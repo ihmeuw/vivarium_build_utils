@@ -75,7 +75,6 @@ def installDependencies(List upstream_repos) {
 def checkFormatting(Boolean run_mypy) {
     stage("Check Formatting - Python ${PYTHON_VERSION}") {
         script {
-            echo "Run mypy param is set to ${run_mypy}"
             sh "${ACTIVATE} && make lint"
             if (run_mypy == true) {
                 sh "${ACTIVATE} && make mypy"
