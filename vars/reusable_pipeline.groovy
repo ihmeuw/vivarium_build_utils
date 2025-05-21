@@ -18,7 +18,6 @@ def call(Map config = [:]){
 
   scheduled_branches = config.scheduled_branches ?: [] 
   stagger_scheduled_builds = config.stagger_scheduled_builds ?: false
-  run_mypy = config.run_mypy ?: true
 
   if (stagger_scheduled_builds && scheduled_branches.size() > 1) {
     startHour = 20
@@ -46,6 +45,8 @@ def call(Map config = [:]){
 
   // Define the upstream repos to check for changes
   upstream_repos = config.upstream_repos ?: []
+  // Define whether to run mypy
+  run_mypy = config.run_mypy ?: true
 
   pipeline {
     // This agent runs as svc-simsci on node simsci-ci-coordinator-01.
