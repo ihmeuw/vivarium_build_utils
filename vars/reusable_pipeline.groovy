@@ -46,7 +46,7 @@ def call(Map config = [:]){
   // Define the upstream repos to check for changes
   upstream_repos = config.upstream_repos ?: []
   // Define whether to run mypy
-  run_mypy = config.run_mypy ?: true
+  run_mypy = config.run_mypy != null ? config.run_mypy : true
 
   pipeline {
     // This agent runs as svc-simsci on node simsci-ci-coordinator-01.
