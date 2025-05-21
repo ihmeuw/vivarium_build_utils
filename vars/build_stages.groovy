@@ -76,7 +76,7 @@ def checkFormatting(Boolean run_mypy) {
     stage("Check Formatting - Python ${PYTHON_VERSION}") {
         script {
             sh "${ACTIVATE} && make lint"
-            if (run_mypy == true) {
+            if (run_mypy) {
                 sh "${ACTIVATE} && make mypy"
             }
         }
