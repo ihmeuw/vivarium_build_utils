@@ -79,7 +79,7 @@ lint: # Check for formatting errors
 	black $(LOCATIONS) --check --diff
 
 mypy: # Check for type hinting erros
-	mypy $(MAKE_SOURCES)
+	mypy .
 
 test-doc: $(MAKE_SOURCES) # Test docs
 	$(MAKE) doctest -C docs/
