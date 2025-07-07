@@ -1,26 +1,8 @@
 {
   "license": "BSD-3-Clause",
-  "title": "ihmeuw/vivarium: Archival release",
+  "title": "ihmeuw/vivarium_build_utils: Archival release",
   "upload_type": "software",
   "creators": [
-    {
-      "orcid": "0000-0001-7633-7804",
-      "affiliation": "Institute for Health Metrics and Evaluation",
-      "name": "James Collins"
-    },
-    {
-      "affiliation": "Institute for Health Metrics and Evaluation",
-      "name": "Alec Deason"
-    },
-    {
-      "orcid": "0000-0002-6538-2615",
-      "affiliation": "Institute for Health Metrics and Evaluation",
-      "name": "Kate Wilson"
-    },
-    {
-      "affiliation": "Institute for Health Metrics and Evaluation",
-      "name": "Everett Mumford"
-    },
     {
       "orcid": "0000-0001-6033-4713",
       "affiliation": "Institute for Health Metrics and Evaluation",
@@ -32,36 +14,16 @@
       "name": "Rajan Mudambi"
     },
     {
-      "orcid": "0000-0003-0778-295X",
+      "orcid": "0000-0002-5775-2719",
       "affiliation": "Institute for Health Metrics and Evaluation",
-      "name": "Kjell Swedin"
+      "name": "James Albright"
     },
     {
-      "affiliation": "University of Melbourne",
-      "name": "Patrick Andersen"
-    },
-    {
+      "orcid": "0009-0004-6649-7010",
       "affiliation": "Institute for Health Metrics and Evaluation",
-      "name": "Cody Horst"
+      "name": "Steve Bachmeier"
     },
-    {
-      "affiliation": "Institute for Health Metrics and Evaluation",
-      "name": "Jonathan Joseph"
-    },
-    {
-      "affiliation": "Institute for Health Metrics and Evaluation",
-      "name": "Michelle Park"
-    },
-    {
-      "affiliation": "Institute for Health Metrics and Evaluation",
-      "name": "Reed Sorensen"
-    },
-    {
-      "orcid": "0000-0003-2430-5661",
-      "affiliation": "Institute for Health Metrics and Evaluation",
-      "name": "Matthew Kappel"
-    }
   ],
   "access_right": "open",
-  "description": "Vivarium is a simulation framework written using standard scientific Python tools."
+  "description": "Vivarium Build Utils contains shared build utilities for Simulation Science projects."
 }
