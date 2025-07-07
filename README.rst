@@ -10,12 +10,13 @@ You can install ``vivarium_build_utils`` from PyPI with pip::
 
 or build it from source with::
 
-  $ git clone https://github.com/ihmeuw/vivarium.git
-  $ cd vivarium
-  $ conda create -n ENVIRONMENT_NAME python=3.11
-  $ pip install -e .[dev]
+  $ git clone https://github.com/ihmeuw/vivarium_build_utils.git
+  $ cd vivarium_build_utils
+  $ conda create -n ENVIRONMENT_NAME
+  $ pip install -e .
 
-## Overview
+Overview
+========
 
 This repository provides:
 
