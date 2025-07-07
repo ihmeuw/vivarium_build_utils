@@ -118,3 +118,9 @@ _version.py
 
 # macOS
 *.DS_Store
+
+# copilot and AI tools
+.copilot/
+.github/copilot/
+*.copilot
+.copilot-workspace/
