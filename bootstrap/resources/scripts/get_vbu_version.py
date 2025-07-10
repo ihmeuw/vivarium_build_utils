@@ -2,6 +2,9 @@
 """
 Script to determine the vivarium_build_utils version for a project.
 
+The intent is that this script will be called by Jenkins via the `get_vbu_version.groovy`
+bootstrap script in the /bootstrap/vars/ directory.
+
 This script:
 1. Reads python_versions.json to get the maximum supported Python version
 2. Runs pip with --dry-run to resolve dependencies
@@ -21,6 +24,13 @@ MINICONDA_DIR = "/svc-simsci/miniconda3"
 
 def _get_max_python_version():
     """Read python_versions.json and return the maximum supported Python version."""
+    # Ensure we're in a directory with python_versions.json
+    if not os.path.exists("python_versions.json"):
+        print(
+            "ERROR: python_versions.json not found in current directory",
+            file=sys.stderr,
+        )
+        sys.exit(1)
     try:
         with open("python_versions.json", "r") as f:
             versions = json.load(f)
@@ -51,14 +61,15 @@ def _run_pip_dry_run(python_version):
     cmd = f"""
     source {MINICONDA_DIR}/etc/profile.d/conda.sh
     conda activate py{env_version}
-    pip install --dry-run .
+    uv pip install --dry-run .
     """
 
     try:
         result = subprocess.run(
             cmd, shell=True, capture_output=True, text=True, check=True
         )
-        return result.stdout
+        # NOTE: uv evidently sends output to stderr
+        return result.stderr
     except subprocess.CalledProcessError as e:
         print(f"ERROR: Failed to run pip dry-run: {e}", file=sys.stderr)
         print(f"STDERR: {e.stderr}", file=sys.stderr)
@@ -69,16 +80,18 @@ def _extract_vbu_version(dry_run_output):
     """Extract vivarium_build_utils version from pip dry-run output."""
     # Look for line containing "Would install" and extract version
     for line in dry_run_output.split("\n"):
-        if "Would install" in line and "vivarium_build_utils" in line:
+        if "+ vivarium-build-utils==" in line:
             # Use regex to extract version number
             match = re.search(
-                r"vivarium_build_utils-([0-9]+\.[0-9]+\.[0-9]+[^\s]*)", line
+                r"vivarium-build-utils==([0-9]+\.[0-9]+\.[0-9]+[^\s]*)", line
             )
             if match:
                 version = match.group(1)
                 # Add 'v' prefix for git tagging convention
                 return f"v{version}"
 
+    # FIXME SBACHMEI DON'T RETURN THIS
+    return "sbachmei/mic-6026-6194/pin-vbu"
     print(
         "ERROR: Could not find vivarium_build_utils version in pip dry-run output",
         file=sys.stderr,
@@ -90,18 +103,12 @@ def _extract_vbu_version(dry_run_output):
 
 def main():
     """Main function to orchestrate version resolution."""
-    # Ensure we're in a directory with python_versions.json
-    if not os.path.exists("python_versions.json"):
-        print(
-            "ERROR: python_versions.json not found in current directory",
-            file=sys.stderr,
-        )
-        sys.exit(1)
 
     python_version = _get_max_python_version()
     dry_run_output = _run_pip_dry_run(python_version)
     vbu_version = _extract_vbu_version(dry_run_output)
 
+    # NOTE: We must print the vbu_version for Jenkins to capture it!
     print(vbu_version)
     return vbu_version
 
