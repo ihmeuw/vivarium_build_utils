@@ -90,8 +90,6 @@ def _extract_vbu_version(dry_run_output: str) -> str:
                 # Add 'v' prefix for git tagging convention
                 return f"v{version}"
 
-    # FIXME SBACHMEI DON'T RETURN THIS
-    return "sbachmei/mic-6026-6194/pin-vbu"
     print(
         "ERROR: Could not find vivarium_build_utils version in pip dry-run output",
         file=sys.stderr,
