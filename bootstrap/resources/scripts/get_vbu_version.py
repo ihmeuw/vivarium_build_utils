@@ -22,7 +22,7 @@ import sys
 MINICONDA_DIR = "/svc-simsci/miniconda3"
 
 
-def _get_max_python_version():
+def _get_max_python_version() -> str:
     """Read python_versions.json and return the maximum supported Python version."""
     # Ensure we're in a directory with python_versions.json
     if not os.path.exists("python_versions.json"):
@@ -33,7 +33,7 @@ def _get_max_python_version():
         sys.exit(1)
     try:
         with open("python_versions.json", "r") as f:
-            versions = json.load(f)
+            versions: list[str] = json.load(f)
         return max(versions)
     except FileNotFoundError:
         print(
@@ -46,7 +46,7 @@ def _get_max_python_version():
         sys.exit(1)
 
 
-def _run_pip_dry_run(python_version):
+def _run_pip_dry_run(python_version: str) -> str:
     """Run pip install --dry-run and return the output.
 
     Notes
@@ -76,7 +76,7 @@ def _run_pip_dry_run(python_version):
         sys.exit(1)
 
 
-def _extract_vbu_version(dry_run_output):
+def _extract_vbu_version(dry_run_output: str) -> str:
     """Extract vivarium_build_utils version from pip dry-run output."""
     # Look for line containing "Would install" and extract version
     for line in dry_run_output.split("\n"):
@@ -101,7 +101,7 @@ def _extract_vbu_version(dry_run_output):
     sys.exit(1)
 
 
-def main():
+def main() -> str:
     """Main function to orchestrate version resolution."""
 
     python_version = _get_max_python_version()
