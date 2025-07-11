@@ -113,6 +113,11 @@ def call(Map config = [:]){
       stage("Initialization") {
         steps {
           script {
+
+            // FIXME SBACHMEI REMOVE
+            echo 'FIXME SBACHMEI: reusable_pipeline.groovy'
+
+
             // Use the name of the branch in the build name
             currentBuild.displayName = "#${BUILD_NUMBER} ${GIT_BRANCH}"
             python_versions = get_python_versions(WORKSPACE, GIT_URL)

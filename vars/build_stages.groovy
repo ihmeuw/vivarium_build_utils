@@ -18,6 +18,9 @@ def call() {
 def runDebugInfo() {
     stage("Debug Info - Python ${PYTHON_VERSION}") {
 
+        // FIXME SBACHMEI REMOVE
+        echo 'FIXME SBACHMEI: build_stages.groovy'
+
         echo "Jenkins pipeline run timestamp: ${env.TIMESTAMP}"
         
         // Display parameters used.

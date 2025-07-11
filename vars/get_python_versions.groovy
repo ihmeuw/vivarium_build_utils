@@ -3,6 +3,10 @@
 import groovy.json.JsonSlurper
 
 def call(workspace, git_url) {
+
+    // FIXME SBACHMEI REMOVE
+    echo 'FIXME SBACHMEI: get_python_versions.groovy'
+
     // parse the name of the repository from the git url
 
     def repo_name = git_url.tokenize("/")[-1].tokenize(".")[0]
