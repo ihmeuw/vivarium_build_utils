@@ -64,11 +64,7 @@ install-upstream-deps: # Install upstream dependencies
 	@echo "----------------------------------------"
 	@sh $(UTILS_DIR)/resources/scripts/install_dependency_branch.sh $(DEPENDENCY_NAME) $(BRANCH_NAME) $(WORKFLOW)
 
-# FIXME SBACHMEI REMOVE ECHO BELOW
 create-env: ## Create a new conda environment. Specify env name with CONDA_ENV_NAME. Default env name is PACKAGE_NAME_PYTHON_VERSION.
-	
-	@echo "FIXME SBACHMEI: base.mk"
-	
 	conda create ${CONDA_ENV_CREATION_FLAG} python=${PYTHON_VERSION} --yes
 
 build-env: ## Create environment and install packages. Specify env name with CONDA_ENV_NAME. Default env name is PACKAGE_NAME_PYTHON_VERSION.
