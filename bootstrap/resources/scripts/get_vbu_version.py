@@ -78,7 +78,7 @@ def _run_pip_dry_run(python_version: str) -> str:
 
 def _extract_vbu_version(dry_run_output: str) -> str:
     """Extract vivarium_build_utils version from pip dry-run output."""
-    # Look for line containing "Would install" and extract version
+    # uv logs isntalled packages like: + vivarium-build-utils==1.2.3
     for line in dry_run_output.split("\n"):
         if "+ vivarium-build-utils==" in line:
             # Use regex to extract version number
