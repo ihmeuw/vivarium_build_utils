@@ -4,26 +4,31 @@ import os
 from pathlib import Path
 
 
-def get_resources_path():
+def get_resources_path() -> str:
     """Get the path to the vivarium_build_utils resources directory.
 
-    Returns:
+    Returns
+    -------
         Path to the resources directory.
+
+    Raises
+    ------
+        FileNotFoundError: If the resources directory cannot be found in the expected locations.
     """
     this_file = Path(__file__)
 
-    # Try package-relative location first (for installed package)
-    package_resources = this_file.parent / "resources"
-    if package_resources.exists():
-        return str(package_resources)
+    # Use installed package resources if available and repository root otherwise
+    # (for editable installs and Jenkins builds).
+    prioritized_candidates = (
+        this_file.parent / "resources",
+        this_file.parents[2] / "resources",
+    )
+    resources_path = next((path for path in prioritized_candidates if path.exists()), None)
 
-    # Try repository root (for development and Jenkins)
-    repo_root_resources = this_file.parent.parent.parent / "resources"
-    if repo_root_resources.exists():
-        return str(repo_root_resources)
-
-    # Fallback: assume it's at package location
-    return str(package_resources)
+    if not resources_path:
+        raise FileNotFoundError(f"Resources directory not found in expected locations: {prioritized_candidates}")
+    
+    return str(resources_path)
 
 
 def get_makefiles_path():
