@@ -1,4 +1,4 @@
-**1.1.0 - 7/14/2025**
+**1.1.0 - 7/15/2025**
 
   - Allow for pinning in other repos
 
