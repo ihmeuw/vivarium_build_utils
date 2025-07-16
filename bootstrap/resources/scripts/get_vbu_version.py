@@ -66,9 +66,7 @@ def _run_pip_dry_run(python_version: str) -> str:
     """
 
     try:
-        result = subprocess.run(
-            cmd, shell=True, capture_output=True, text=True, check=True
-        )
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, check=True)
         # NOTE: uv evidently sends output to stderr
         return result.stderr
     except subprocess.CalledProcessError as e:
@@ -79,18 +77,27 @@ def _run_pip_dry_run(python_version: str) -> str:
 
 def _extract_vbu_version(dry_run_output: str) -> str:
     """Extract vivarium_build_utils version from pip dry-run output."""
-    # uv logs isntalled packages like: + vivarium-build-utils==1.2.3
+    # uv logs isntalled packages like:
+    #   + vivarium-build-utils==1.2.3
+    # OR
+    #   + vivarium-build-utils @ git+https://github.com/ihmeuw/vivarium_build_utils.git@<HASH>
     for line in dry_run_output.split("\n"):
-        if "+ vivarium-build-utils==" in line:
+        if "+ vivarium-build-utils" in line:
             # Use regex to extract version number
-            match = re.search(
+            version_match = re.search(
                 r"vivarium-build-utils==([0-9]+\.[0-9]+\.[0-9]+[^\s]*)", line
             )
-            if match:
-                version = match.group(1)
+            if version_match:
+                version = version_match.group(1)
                 # Add 'v' prefix for git tagging convention
                 return f"v{version}"
-
+            git_match = re.search(
+                r"vivarium-build-utils @ git\+https://github\.com/ihmeuw/vivarium_build_utils\.git@([a-f0-9]+)",
+                line,
+            )
+            if git_match:
+                commit_hash = git_match.group(1)
+                return commit_hash
     print(
         "ERROR: Could not find vivarium_build_utils version in pip dry-run output",
         file=sys.stderr,
