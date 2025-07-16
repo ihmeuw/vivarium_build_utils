@@ -77,13 +77,13 @@ def _run_pip_dry_run(python_version: str) -> str:
 
 def _extract_vbu_version(dry_run_output: str) -> str:
     """Extract vivarium_build_utils version from pip dry-run output."""
-    # uv logs isntalled packages like:
+    # uv logs installed packages like:
     #   + vivarium-build-utils==1.2.3
     # OR
     #   + vivarium-build-utils @ git+https://github.com/ihmeuw/vivarium_build_utils.git@<HASH>
     for line in dry_run_output.split("\n"):
         if "+ vivarium-build-utils" in line:
-            # Use regex to extract version number
+            # Check for pinned version first
             version_match = re.search(
                 r"vivarium-build-utils==([0-9]+\.[0-9]+\.[0-9]+[^\s]*)", line
             )
@@ -91,6 +91,8 @@ def _extract_vbu_version(dry_run_output: str) -> str:
                 version = version_match.group(1)
                 # Add 'v' prefix for git tagging convention
                 return f"v{version}"
+
+            # Check for git reference
             git_match = re.search(
                 r"vivarium-build-utils @ git\+https://github\.com/ihmeuw/vivarium_build_utils\.git@([a-f0-9]+)",
                 line,
