@@ -40,6 +40,15 @@ if __name__ == "__main__":
 
     setup_requires = ["setuptools_scm"]
 
+    extras_require = {
+        "layered_config_tree": ["layered_config_tree<2.1.0"],
+        "pandas": [
+            "pandas<2.0.0",
+            "numpy>=2.0.0",
+            "pandas-stubs<=2.1.0",
+        ],
+    }
+
     setup(
         name=about["__title__"],
         description=about["__summary__"],
@@ -73,6 +82,7 @@ if __name__ == "__main__":
             ]
         },
         include_package_data=True,
+        extras_require=extras_require,
         cmdclass={
             "build_py": CustomBuildPy,
         },
