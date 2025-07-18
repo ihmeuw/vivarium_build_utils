@@ -1,3 +1,7 @@
+**1.2.0 - TBD**
+
+  - Feature: add common dependencies as setup extras_require
+
 **1.1.2 - 7/16/2025**
 
   - Bugfix: typo in extra-index-url
