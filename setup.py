@@ -41,12 +41,24 @@ if __name__ == "__main__":
     setup_requires = ["setuptools_scm"]
 
     extras_require = {
-        "layered_config_tree": ["layered_config_tree<2.1.0"],
-        "pandas": [
-            "pandas<2.0.0",
-            "numpy>=2.0.0",
-            "pandas-stubs<=2.1.0",
+        # testing
+        "pytest": ["pytest"],
+        "pytest-cov": ["pytest-cov"],
+        "pytest-mock": ["pytest-mock"],
+        "test": [
+            "vivarium_build_utils[pytest]",
+            "vivarium_build_utils[pytest-cov]",
+            "vivarium_build_utils[pytest-mock]",
         ],
+        "vivarium_testing_utils": ["vivarium_testing_utils"],
+        # formatting and linting
+        "black": ["black==22.3.0"],
+        "isort": ["isort==5.13.2"],
+        "lint": [
+            "vivarium_build_utils[black]",
+            "vivarium_build_utils[isort]",
+        ],
+        "mypy": ["mypy"],
     }
 
     setup(
