@@ -41,6 +41,8 @@ if __name__ == "__main__":
     setup_requires = ["setuptools_scm"]
 
     extras_require = {
+        "numpy": ["numpy<2.0.0"],
+        "pandas": ["pandas"],
         # testing
         "pytest": ["pytest"],
         "pytest-cov": ["pytest-cov"],
