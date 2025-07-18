@@ -45,7 +45,7 @@ if __name__ == "__main__":
         "pytest": ["pytest"],
         "pytest-cov": ["pytest-cov"],
         "pytest-mock": ["pytest-mock"],
-        "test": [
+        "testing": [
             "vivarium_build_utils[pytest]",
             "vivarium_build_utils[pytest-cov]",
             "vivarium_build_utils[pytest-mock]",
@@ -54,11 +54,22 @@ if __name__ == "__main__":
         # formatting and linting
         "black": ["black==22.3.0"],
         "isort": ["isort==5.13.2"],
-        "lint": [
+        "linting": [
             "vivarium_build_utils[black]",
             "vivarium_build_utils[isort]",
         ],
         "mypy": ["mypy"],
+        # docs
+        "sphinx": ["sphinx>=4.0,<8.0.0"],
+        "sphinx-rtd-theme": ["sphinx-rtd-theme"],
+        "sphinx-autodoc-typehints": ["sphinx-autodoc-typehints"],
+        "sphinx-click": ["sphinx-click"],
+        "ipython": ["IPython"],
+        "matplotlib": ["matplotlib"],
+        "plotting": [
+            "vivarium_build_utils[ipython]",
+            "vivarium_build_utils[matplotlib]",
+        ]
     }
 
     setup(
