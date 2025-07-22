@@ -25,85 +25,125 @@ CONDA_ENV_CREATION_FLAG = $(if $(CONDA_ENV_PATH),-p ${CONDA_ENV_PATH},-n ${CONDA
 MAKE_SOURCES := $(shell find . -type d -name "*" ! -path "./.git*" ! -path "./.vscode" ! -path "./output" ! -path "./output/*" ! -path "./archive" ! -path "./dist" ! -path "./output/htmlcov*" ! -path "**/.pytest_cache*" ! -path "**/__pycache__" ! -path "./output/docs_build*" ! -path "./.pytype*" ! -path "." ! -path "./src/${PACKAGE_NAME}/legacy*" ! -path ./.history ! -path "./.history/*" ! -path "./src/${PACKAGE_NAME}.egg-info" ! -path ./.idea ! -path "./.idea/*" )
 
 # Phony targets don't produce artifacts.
-.PHONY: .list-targets build-env build-doc format lint mypy integration build-package clean debug deploy-doc deploy-package full help list quick install install-upstream-deps
+.PHONY: build-env build-doc lint mypy integration build-package clean debug deploy-doc deploy-package full help list quick install install-upstream-deps help jenkins-pipeline quick-check
 
 ###############################
 # Help and debugging commands #
 ###############################
 
-# List of Make targets is generated dynamically. To add description of target, use a # on the target definition.
+# List of Make targets is generated dynamically. Note that to have a target show up in this
+# list, it must have an in-line comment starting with a '#' on the target definition,
+# e.g. some-target:  # this is the description for some-target
 list:
-	@echo
+	@echo	
 	@echo "Make targets:"
 	@for file in Makefile $(UTILS_DIR)resources/makefiles/*.mk; do \
 		grep -i "^[a-zA-Z][a-zA-Z0-9_ \.\-]*: .*[#].*" $$file | sort | sed 's/:.*#/ : /g'; \
 	done | column -t -s:
 	@echo
 
-debug: # Print debug information (environment variables)
+debug: # Print debug information
+	@echo
 	@echo "'make' invoked with these environment variables:"
 	@echo "CONDA_ENV_NAME:                   ${CONDA_ENV_NAME}"
+	@echo "PYTHON_VERSION:				     ${PYTHON_VERSION}"
 	@echo "IHME_PYPI:                        ${IHME_PYPI}"
 	@echo "LOCATIONS:                        ${LOCATIONS}"
 	@echo "PACKAGE_NAME:                     ${PACKAGE_NAME}"
 	@echo "PACKAGE_VERSION:                  ${PACKAGE_VERSION}"
 	@echo "PYPI_ARTIFACTORY_CREDENTIALS_USR: ${PYPI_ARTIFACTORY_CREDENTIALS_USR} "
+	@echo
 	@echo "Make sources:                     ${MAKE_SOURCES}"
 	@echo
 	@echo "vivarium_build_utils version:     $(shell python -c "import importlib.metadata; print(importlib.metadata.version('vivarium_build_utils'))" 2>/dev/null || echo "unknown")"
+
+help: ## Show commands that mirror Jenkins CI/CD pipeline
+	@echo
+	@echo "For Make's standard help, run 'make --help'."
+	@echo "For a complete list of available Make commands, run 'make list'."
+	@echo
+	@echo "======================"
+	@echo "Jenkins Build Commands"
+	@echo "======================"
+	@echo
+	@echo "Run the following (in order) to mimic a Jenkins build:"
+	@echo "  1. make build-env        # Create conda environment"
+	@echo "  2. conda activate ${CONDA_ENV_NAME}"
+	@echo "  3. make install          # Install package and dependencies"
+	@echo "  5. make lint             # Check code formatting and style"
+	@echo "  6. make mypy             # Run type checking"
+	@echo "  7. make all-tests        # Run all tests with coverage"
+	@echo "  8. make build-doc        # Build Sphinx documentation"
+	@echo "  9. make build-package    # Build pip wheel"
+	@echo
+	@echo "For individual projects, activate environment first:"
+	@echo "  conda activate ${CONDA_ENV_NAME}"
+	@echo
+	@echo "====================="
+	@echo "Other Useful Commands"
+	@echo "====================="
+	@echo
+	@echo "Quick Commands:"
+	@echo "  make jenkins-pipeline    # Run complete pipeline in one command"
+	@echo "  make quick-check         # Fast development checks (format + lint + unit tests)"
+	@echo "  make list                # Show all available make targets"
+	@echo
+
+	@echo
 
 ##########################
 # Jenkins build commands #
 ##########################
 
-create-env: ## Create a new conda environment. Specify env name with CONDA_ENV_NAME. Default env name is PACKAGE_NAME_PYTHON_VERSION.
+create-env: # Create a new conda environment
 	conda create ${CONDA_ENV_CREATION_FLAG} python=${PYTHON_VERSION} --yes
 
 install: ENV_REQS?=dev
-install: ## Install setuptools, package, and build utilities
+install: # Install package and dependencies
 	pip install uv
 	uv pip install --upgrade pip setuptools 
 	uv pip install -e .[${ENV_REQS}] --extra-index-url ${IHME_PYPI}simple/ --index-strategy unsafe-best-match
 
 lint: # Check for formatting errors
+# NOTE: This is not precisely 'linting' but we historically use that term here
 	isort $(LOCATIONS) --check --verbose --only-modified --diff
 	black $(LOCATIONS) --check --diff
 
-mypy: # Check for type hinting erros
+mypy: # Run type checking
 	mypy --config-file pyproject.toml .
 
 # test: test commands are defined in test.mk
 
-build-doc: $(MAKE_SOURCES) # Build the docs
+build-doc: $(MAKE_SOURCES) # Build documentation
 	$(MAKE) -C docs/ html SPHINXOPTS="-T -W --keep-going"
 	@echo "Ignore, Created by Makefile, `date`" > $@
 
-test-doc: $(MAKE_SOURCES) # Test docs
+test-doc: $(MAKE_SOURCES) ## Test documentation examples
 	$(MAKE) doctest -C docs/
 
-tag-version: # Tag the version and push
+tag-version: ## Tag current version and push to git
 	git tag -a "v${PACKAGE_VERSION}" -m "Tag automatically generated from Jenkins."
 	git push --tags
-
-build-package: $(MAKE_SOURCES) # Build the package as a pip wheel
+	
+build-package: $(MAKE_SOURCES) ## Build pip wheel package
 	pip install build
 	python -m build
 	@echo "Ignore, Created by Makefile, `date`" > $@
 
-deploy-package-artifactory: # Deploy the package to Artifactory
+deploy-package-artifactory: ## Deploy package to IHME Artifactory
 	@[ "${PYPI_ARTIFACTORY_CREDENTIALS_USR}" ] && echo "" > /dev/null || ( echo "PYPI_ARTIFACTORY_CREDENTIALS_USR is not set, export using simsci artifactory credentials"; exit 1 )
 	@[ "${PYPI_ARTIFACTORY_CREDENTIALS_PSW}" ] && echo "" > /dev/null || ( echo "PYPI_ARTIFACTORY_CREDENTIALS_PSW is not set, export using simsci artifactory credentials"; exit 1 )
 	pip install twine
 	twine upload --repository-url ${IHME_PYPI} -u ${PYPI_ARTIFACTORY_CREDENTIALS_USR} -p ${PYPI_ARTIFACTORY_CREDENTIALS_PSW} dist/*
 
-deploy-doc: # Deploy the Sphinx docs
+deploy-doc: ## Deploy documentation to shared server
 	@[ "${DOCS_ROOT_PATH}" ] && echo "" > /dev/null || ( echo "DOCS_ROOT_PATH is not set"; exit 1 )
 	mkdir -m 0775 -p ${DOCS_ROOT_PATH}/${PACKAGE_NAME}/${PACKAGE_VERSION}
 	cp -R ./output/docs_build/* ${DOCS_ROOT_PATH}/${PACKAGE_NAME}/${PACKAGE_VERSION}
 	chmod -R 0775 ${DOCS_ROOT_PATH}/${PACKAGE_NAME}/${PACKAGE_VERSION}
 	cd ${DOCS_ROOT_PATH}/${PACKAGE_NAME} && ln -nsFfv ${PACKAGE_VERSION} current
 
-clean: # Delete build artifacts and do any custom cleanup such as spinning down services
+clean: ## Clean build artifacts and temporary files
 	@rm -rf format build-doc build-package integration .pytest_cache
 	@rm -rf dist output
 	$(shell find . -type f -name '*py[co]' -delete -o -type d -name __pycache__ -delete)
@@ -112,11 +152,21 @@ clean: # Delete build artifacts and do any custom cleanup such as spinning down 
 # Other/helper commands #
 #########################
 
-build-env: ## Create environment and install packages. Specify env name with CONDA_ENV_NAME. Default env name is PACKAGE_NAME_PYTHON_VERSION.
+build-env: ## Create environment and install packages (Jenkins: Environment Setup Stage)
 	make create-env CONDA_ENV_NAME=$(CONDA_ENV_NAME)
 	conda run -n $(CONDA_ENV_NAME) make install
 
-install-upstream-deps: # Install upstream dependencies
+jenkins-pipeline: build-env install format lint mypy all-tests build-doc build-package ## Run complete Jenkins-equivalent pipeline
+	@echo
+	@echo "✅ Jenkins pipeline simulation completed successfully!"
+	@echo "   All stages passed: env setup, install, format, lint, type check, tests, docs, package"
+
+quick-check: format lint unit ## Fast development workflow (format + lint + unit tests)
+	@echo
+	@echo "✅ Quick development checks completed!"
+	@echo "   Formatting, linting, and unit tests all passed"
+
+install-upstream-deps: ## Install upstream dependencies from specific branches
 	@echo "Contents of install_dependency_branch.sh"
 	@echo "----------------------------------------"
 	@cat $(UTILS_DIR)/resources/scripts/install_dependency_branch.sh
@@ -124,16 +174,16 @@ install-upstream-deps: # Install upstream dependencies
 	@echo "----------------------------------------"
 	@sh $(UTILS_DIR)/resources/scripts/install_dependency_branch.sh $(DEPENDENCY_NAME) $(BRANCH_NAME) $(WORKFLOW)
 
+	
 format: setup.py pyproject.toml $(MAKE_SOURCES) # Run the code formatter and import sorter
 	isort $(LOCATIONS)
 	black $(LOCATIONS)
 	@echo "Ignore, Created by Makefile, `date`" > $@
 
-manual-deploy: # Manual deploy to Artifactory
+manual-deploy: ## Manual deployment workflow (combines build, tag, and deploy)
 	@[ "${PYPI_ARTIFACTORY_CREDENTIALS_USR}" ] && echo "" > /dev/null || ( echo "PYPI_ARTIFACTORY_CREDENTIALS_USR is not set, export using simsci artifactory credentials"; exit 1 )
 	@[ "${PYPI_ARTIFACTORY_CREDENTIALS_PSW}" ] && echo "" > /dev/null || ( echo "PYPI_ARTIFACTORY_CREDENTIALS_PSW is not set, export using simsci artifactory credentials"; exit 1 )
 	make build-env
 	conda run -n $(CONDA_ENV_NAME) make build-package
 	conda run -n $(CONDA_ENV_NAME) make tag-version
 	conda run -n $(CONDA_ENV_NAME) make deploy-package-artifactory
-

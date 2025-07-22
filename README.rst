@@ -22,3 +22,31 @@ This repository provides:
 
 - **`vars/`**: Jenkins shared library functions for continuous integration pipelines
 - **`resources/`**: Shared Makefiles and build scripts for consistent build processes
+
+Make Commands and Jenkins Workflow
+===================================
+
+This repository provides shared Makefiles that enable multiple projects to use consistent
+``make`` commands that mirror our Jenkins CI/CD builds.
+
+Quick Start
+-----------
+
+In any project using ``vivarium_build_utils``:
+
+.. code-block:: bash
+
+  # See Make's standard help
+  make --help
+
+  # See our team's curated help
+  make help
+
+  # See all available make targets
+  make list
+
+  # Run complete Jenkins pipeline locally
+  make jenkins-pipeline
+
+  # Fast development workflow
+  make quick-check
