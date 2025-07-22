@@ -27,6 +27,10 @@ MAKE_SOURCES := $(shell find . -type d -name "*" ! -path "./.git*" ! -path "./.v
 # Phony targets don't produce artifacts.
 .PHONY: .list-targets build-env build-doc format lint mypy integration build-package clean debug deploy-doc deploy-package full help list quick install install-upstream-deps
 
+###############################
+# Help and debugging commands #
+###############################
+
 # List of Make targets is generated dynamically. To add description of target, use a # on the target definition.
 list help: debug .list-targets
 
@@ -49,32 +53,19 @@ debug: # Print debug information (environment variables)
 	@echo "Make sources:                     ${MAKE_SOURCES}"
 	@echo
 	@echo "vivarium_build_utils version:     $(shell python -c "import importlib.metadata; print(importlib.metadata.version('vivarium_build_utils'))" 2>/dev/null || echo "unknown")"
-	
+
+##########################
+# Jenkins build commands #
+##########################
+
+create-env: ## Create a new conda environment. Specify env name with CONDA_ENV_NAME. Default env name is PACKAGE_NAME_PYTHON_VERSION.
+	conda create ${CONDA_ENV_CREATION_FLAG} python=${PYTHON_VERSION} --yes
+
 install: ENV_REQS?=dev
 install: ## Install setuptools, package, and build utilities
 	pip install uv
 	uv pip install --upgrade pip setuptools 
 	uv pip install -e .[${ENV_REQS}] --extra-index-url ${IHME_PYPI}simple/ --index-strategy unsafe-best-match
-
-install-upstream-deps: # Install upstream dependencies
-	@echo "Contents of install_dependency_branch.sh"
-	@echo "----------------------------------------"
-	@cat $(UTILS_DIR)/resources/scripts/install_dependency_branch.sh
-	@echo ""
-	@echo "----------------------------------------"
-	@sh $(UTILS_DIR)/resources/scripts/install_dependency_branch.sh $(DEPENDENCY_NAME) $(BRANCH_NAME) $(WORKFLOW)
-
-create-env: ## Create a new conda environment. Specify env name with CONDA_ENV_NAME. Default env name is PACKAGE_NAME_PYTHON_VERSION.
-	conda create ${CONDA_ENV_CREATION_FLAG} python=${PYTHON_VERSION} --yes
-
-build-env: ## Create environment and install packages. Specify env name with CONDA_ENV_NAME. Default env name is PACKAGE_NAME_PYTHON_VERSION.
-	make create-env CONDA_ENV_NAME=$(CONDA_ENV_NAME)
-	conda run -n $(CONDA_ENV_NAME) make install
-	
-format: setup.py pyproject.toml $(MAKE_SOURCES) # Run the code formatter and import sorter
-	isort $(LOCATIONS)
-	black $(LOCATIONS)
-	@echo "Ignore, Created by Makefile, `date`" > $@
 
 lint: # Check for formatting errors
 	isort $(LOCATIONS) --check --verbose --only-modified --diff
@@ -83,19 +74,18 @@ lint: # Check for formatting errors
 mypy: # Check for type hinting erros
 	mypy --config-file pyproject.toml .
 
-test-doc: $(MAKE_SOURCES) # Test docs
-	$(MAKE) doctest -C docs/
+# test: test commands are defined in test.mk
 
 build-doc: $(MAKE_SOURCES) # Build the docs
 	$(MAKE) -C docs/ html SPHINXOPTS="-T -W --keep-going"
 	@echo "Ignore, Created by Makefile, `date`" > $@
 
-deploy-doc: # Deploy the Sphinx docs
-	@[ "${DOCS_ROOT_PATH}" ] && echo "" > /dev/null || ( echo "DOCS_ROOT_PATH is not set"; exit 1 )
-	mkdir -m 0775 -p ${DOCS_ROOT_PATH}/${PACKAGE_NAME}/${PACKAGE_VERSION}
-	cp -R ./output/docs_build/* ${DOCS_ROOT_PATH}/${PACKAGE_NAME}/${PACKAGE_VERSION}
-	chmod -R 0775 ${DOCS_ROOT_PATH}/${PACKAGE_NAME}/${PACKAGE_VERSION}
-	cd ${DOCS_ROOT_PATH}/${PACKAGE_NAME} && ln -nsFfv ${PACKAGE_VERSION} current
+test-doc: $(MAKE_SOURCES) # Test docs
+	$(MAKE) doctest -C docs/
+
+tag-version: # Tag the version and push
+	git tag -a "v${PACKAGE_VERSION}" -m "Tag automatically generated from Jenkins."
+	git push --tags
 
 build-package: $(MAKE_SOURCES) # Build the package as a pip wheel
 	pip install build
@@ -108,9 +98,38 @@ deploy-package-artifactory: # Deploy the package to Artifactory
 	pip install twine
 	twine upload --repository-url ${IHME_PYPI} -u ${PYPI_ARTIFACTORY_CREDENTIALS_USR} -p ${PYPI_ARTIFACTORY_CREDENTIALS_PSW} dist/*
 
-tag-version: # Tag the version and push
-	git tag -a "v${PACKAGE_VERSION}" -m "Tag automatically generated from Jenkins."
-	git push --tags
+deploy-doc: # Deploy the Sphinx docs
+	@[ "${DOCS_ROOT_PATH}" ] && echo "" > /dev/null || ( echo "DOCS_ROOT_PATH is not set"; exit 1 )
+	mkdir -m 0775 -p ${DOCS_ROOT_PATH}/${PACKAGE_NAME}/${PACKAGE_VERSION}
+	cp -R ./output/docs_build/* ${DOCS_ROOT_PATH}/${PACKAGE_NAME}/${PACKAGE_VERSION}
+	chmod -R 0775 ${DOCS_ROOT_PATH}/${PACKAGE_NAME}/${PACKAGE_VERSION}
+	cd ${DOCS_ROOT_PATH}/${PACKAGE_NAME} && ln -nsFfv ${PACKAGE_VERSION} current
+
+clean: # Delete build artifacts and do any custom cleanup such as spinning down services
+	@rm -rf format build-doc build-package integration .pytest_cache
+	@rm -rf dist output
+	$(shell find . -type f -name '*py[co]' -delete -o -type d -name __pycache__ -delete)
+
+#########################
+# Other/helper commands #
+#########################
+
+build-env: ## Create environment and install packages. Specify env name with CONDA_ENV_NAME. Default env name is PACKAGE_NAME_PYTHON_VERSION.
+	make create-env CONDA_ENV_NAME=$(CONDA_ENV_NAME)
+	conda run -n $(CONDA_ENV_NAME) make install
+
+install-upstream-deps: # Install upstream dependencies
+	@echo "Contents of install_dependency_branch.sh"
+	@echo "----------------------------------------"
+	@cat $(UTILS_DIR)/resources/scripts/install_dependency_branch.sh
+	@echo ""
+	@echo "----------------------------------------"
+	@sh $(UTILS_DIR)/resources/scripts/install_dependency_branch.sh $(DEPENDENCY_NAME) $(BRANCH_NAME) $(WORKFLOW)
+
+format: setup.py pyproject.toml $(MAKE_SOURCES) # Run the code formatter and import sorter
+	isort $(LOCATIONS)
+	black $(LOCATIONS)
+	@echo "Ignore, Created by Makefile, `date`" > $@
 
 manual-deploy: # Manual deploy to Artifactory
 	@[ "${PYPI_ARTIFACTORY_CREDENTIALS_USR}" ] && echo "" > /dev/null || ( echo "PYPI_ARTIFACTORY_CREDENTIALS_USR is not set, export using simsci artifactory credentials"; exit 1 )
@@ -120,7 +139,3 @@ manual-deploy: # Manual deploy to Artifactory
 	conda run -n $(CONDA_ENV_NAME) make tag-version
 	conda run -n $(CONDA_ENV_NAME) make deploy-package-artifactory
 
-clean: # Delete build artifacts and do any custom cleanup such as spinning down services
-	@rm -rf format build-doc build-package integration .pytest_cache
-	@rm -rf dist output
-	$(shell find . -type f -name '*py[co]' -delete -o -type d -name __pycache__ -delete)
