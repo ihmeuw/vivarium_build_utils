@@ -118,10 +118,13 @@ def runTests(List test_types) {
     }
 }
 
-def testDocs() {
+def buildDocs() {
     stage("Build Docs - Python ${PYTHON_VERSION}") {
         sh "${ACTIVATE} && make build-doc"
     }
+}
+
+def testDocs() {
     stage("Test Docs - Python ${PYTHON_VERSION}") {
         sh "${ACTIVATE} && make test-doc"
     }

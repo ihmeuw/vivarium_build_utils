@@ -6,7 +6,7 @@ def call(Map config = [:]){
   Configuration options:
   scheduled_branches: The branch names for which to run scheduled nightly builds.
   stagger_scheduled_builds: Whether to stagger the scheduled builds.
-  test_types: The tests to run. Must be subset (inclusive) of ['unit', 'integration', 'e2e']
+  test_types: The tests to run. Must be subset (inclusive) of ['unit', 'integration', 'e2e', 'all-tests']
   requires_slurm: Whether the child tasks require the slurm scheduler.
   deployable: Whether the package can be deployed by Jenkins.
   skip_doc_build: Only skips the doc build.
@@ -142,13 +142,12 @@ def call(Map config = [:]){
                       checkout scm
                       load_shared_files()
                       buildStages.runDebugInfo()
+                      buildStages.buildEnvironment()
                       if (IS_DOC_ONLY_CHANGE.toBoolean() == true) {
                         echo "This is a doc-only change. Skipping everything except doc build and doc tests."
-                        buildStages.buildEnvironment()
                         buildStages.installPackage("docs")
                         buildStages.testDocs()
                       } else {
-                        buildStages.buildEnvironment()
                         buildStages.installPackage()
                         buildStages.installDependencies(upstream_repos)
                         buildStages.checkFormatting(run_mypy)
@@ -156,6 +155,7 @@ def call(Map config = [:]){
 
                         if (PYTHON_VERSION == PYTHON_DEPLOY_VERSION) {
                           if (config?.skip_doc_build != true) {
+                            buildStages.buildDocs()
                             buildStages.testDocs()
                           }
                           
