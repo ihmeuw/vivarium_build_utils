@@ -126,17 +126,6 @@ clean: # Clean build artifacts and temporary files
 # Other/helper commands #
 #########################
 
-build-env: # Create a new environment with installed packages
-# env name: {PACKAGE_NAME}_py{PYTHON_VERSION}.
-	make create-env CONDA_ENV_NAME=$(CONDA_ENV_NAME)
-# 	Bootstrap vivarium_build_utils into the new environment
-	conda run -n $(CONDA_ENV_NAME) pip install vivarium_build_utils
-	conda run -n $(CONDA_ENV_NAME) make install
-	@echo
-	@echo "Environment built ($(CONDA_ENV_NAME))"
-	@echo "Don't forget to activate it with: 'conda activate $(CONDA_ENV_NAME)'"
-	@echo
-
 install-upstream-deps: # Install upstream dependencies
 	@echo "Contents of install_dependency_branch.sh"
 	@echo "----------------------------------------"
@@ -150,7 +139,7 @@ format: setup.py pyproject.toml $(MAKE_SOURCES) # Format code (isort and black)
 	isort $(LOCATIONS)
 	black $(LOCATIONS)
 
-manual-deploy-artifactory: # Deploy package (build, tag, and deploy to artifactory)
+manual-deploy-artifactory: # Deploy package; only use if Jenkins deploy fails
 	@[ "${PYPI_ARTIFACTORY_CREDENTIALS_USR}" ] && echo "" > /dev/null || ( echo "PYPI_ARTIFACTORY_CREDENTIALS_USR is not set, export using simsci artifactory credentials"; exit 1 )
 	@[ "${PYPI_ARTIFACTORY_CREDENTIALS_PSW}" ] && echo "" > /dev/null || ( echo "PYPI_ARTIFACTORY_CREDENTIALS_PSW is not set, export using simsci artifactory credentials"; exit 1 )
 	make build-env
