@@ -53,9 +53,14 @@ debug: # Print debug information
 	@echo "PACKAGE_VERSION:                  ${PACKAGE_VERSION}"
 	@echo "PYPI_ARTIFACTORY_CREDENTIALS_USR: ${PYPI_ARTIFACTORY_CREDENTIALS_USR} "
 	@echo
-	@echo "Make sources:                     ${MAKE_SOURCES}"
-	@echo
 	@echo "vivarium_build_utils version:     $(shell python -c "import importlib.metadata; print(importlib.metadata.version('vivarium_build_utils'))" 2>/dev/null || echo "unknown")"
+	@echo
+
+sources: # Print the source files that trigger Make targets
+	@echo
+	@echo "Make sources:"
+	@echo "${MAKE_SOURCES}"
+	@echo
 
 ##########################
 # Jenkins build commands #
