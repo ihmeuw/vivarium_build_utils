@@ -27,9 +27,9 @@ MAKE_SOURCES := $(shell find . -type d -name "*" ! -path "./.git*" ! -path "./.v
 # Phony targets don't produce artifacts.
 .PHONY: .list-targets build-env build-doc format lint mypy integration build-package clean debug deploy-doc deploy-package full help list quick install install-upstream-deps
 
-###############################
-# Help and debugging commands #
-###############################
+#######################
+# Diagnostic commands #
+#######################
 
 # List of Make targets is generated dynamically. Note that to have a target show up in this
 # list, it must have an in-line comment starting with a '#' on the target definition,
@@ -66,8 +66,12 @@ sources: # Print the source files that trigger Make targets
 # Jenkins build commands #
 ##########################
 
-create-env: # Create a new conda environment with name {PACKAGE_NAME}_py{PYTHON_VERSION}.
+create-env: # Create a new conda environment
+# env name: {PACKAGE_NAME}_py{PYTHON_VERSION}.
 	conda create ${CONDA_ENV_CREATION_FLAG} python=${PYTHON_VERSION} --yes
+	@echo
+	@echo "Environment created ($(CONDA_ENV_NAME))"
+	@echo
 
 install: ENV_REQS?=dev
 install: # Install package and dependencies
@@ -123,9 +127,16 @@ clean: # Clean build artifacts and temporary files
 # Other/helper commands #
 #########################
 
-build-env: # Create a new conda environment with name {PACKAGE_NAME}_py{PYTHON_VERSION} and install packages
+build-env: # Create a new environment with installed packages
+# env name: {PACKAGE_NAME}_py{PYTHON_VERSION}.
 	make create-env CONDA_ENV_NAME=$(CONDA_ENV_NAME)
+# 	Bootstrap vivarium_build_utils into the new environment
+	conda run -n $(CONDA_ENV_NAME) pip install vivarium_build_utils
 	conda run -n $(CONDA_ENV_NAME) make install
+	@echo
+	@echo "Environment built ($(CONDA_ENV_NAME))"
+	@echo "Don't forget to activate it with: 'conda activate $(CONDA_ENV_NAME)'"
+	@echo
 
 install-upstream-deps: # Install upstream dependencies
 	@echo "Contents of install_dependency_branch.sh"
@@ -134,6 +145,7 @@ install-upstream-deps: # Install upstream dependencies
 	@echo
 	@echo "----------------------------------------"
 	@sh $(UTILS_DIR)/resources/scripts/install_dependency_branch.sh $(DEPENDENCY_NAME) $(BRANCH_NAME) $(WORKFLOW)
+	@echo
 
 format: setup.py pyproject.toml $(MAKE_SOURCES) # Format code (isort and black)
 	isort $(LOCATIONS)
