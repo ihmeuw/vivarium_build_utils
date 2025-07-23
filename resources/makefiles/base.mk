@@ -25,12 +25,57 @@ CONDA_ENV_CREATION_FLAG = $(if $(CONDA_ENV_PATH),-p ${CONDA_ENV_PATH},-n ${CONDA
 MAKE_SOURCES := $(shell find . -type d -name "*" ! -path "./.git*" ! -path "./.vscode" ! -path "./output" ! -path "./output/*" ! -path "./archive" ! -path "./dist" ! -path "./output/htmlcov*" ! -path "**/.pytest_cache*" ! -path "**/__pycache__" ! -path "./output/docs_build*" ! -path "./.pytype*" ! -path "." ! -path "./src/${PACKAGE_NAME}/legacy*" ! -path ./.history ! -path "./.history/*" ! -path "./src/${PACKAGE_NAME}.egg-info" ! -path ./.idea ! -path "./.idea/*" )
 
 # Phony targets don't produce artifacts.
-.PHONY: list debug sources create-env install lint mypy build-doc test-doc tag-version 
-.PHONY: build-package deploy-package-artifactory deploy-doc clean build-env install-upstream-deps format manual-deploy
+.PHONY: list debug sources
+.PHONY: create-env install lint mypy build-doc test-doc tag-version build-package deploy-package-artifactory deploy-doc clean
+.PHONY: check install-upstream-deps format manual-deploy-artifactory
 
-#######################
-# Diagnostic commands #
-#######################
+help: # Curated help message 
+	@echo
+	@echo "For Make's standard help, run 'make --help'."
+	@echo
+	@echo "=================="
+	@echo "Diagnostic targets"
+	@echo "=================="
+	@echo
+	@echo "list       Print available Make targets"
+	@echo "debug      Print debug information"
+	@echo "sources    Print the source files that trigger Make targets"
+	@echo
+	@echo "=============="
+	@echo "Helper targets"
+	@echo "=============="
+	@echo
+	@echo "build-env                    Create a new environment with installed packages"
+	@echo "check                        Run development checks"
+	@echo "                             (isort, black, mypy, tests, docs)"
+	@echo "install-upstream-deps        Install upstream dependencies"
+	@echo "format                       Format code (isort and black)"
+	@echo "manual-deploy-artifactory    Deploy package; only use if Jenkins deploy fails"
+	@echo
+	@echo "====================="
+	@echo "Jenkins build targets"
+	@echo "====================="
+	@echo
+	@echo "Run the following targets (in order) to mimic a Jenkins build:"
+	@echo "  1. create-env                       Create a new conda environment"
+	@echo "  2. install                          Install package and dependencies"
+	@echo "  3. lint                             Check for formatting errors"
+	@echo "  4. mypy                             (optional) Check for type hinting errors"
+	@echo "  5. test-<test-type>                 Run specific tests unit, integration,"
+	@echo "                                      e2e, all); include RUNSLOW=true if desired"
+	@echo "  6. build-doc                        Build documentation"
+	@echo "  7. test-doc                         Test documentation examples"
+	@echo "  8. Deploy the package (optional)"
+	@echo "     a. tag-version                   Tag current version and push to git"
+	@echo "     b. build-package                 Build pip wheel package"
+	@echo "     c. deploy-package-artifactory    Deploy the package to Artifactory"
+	@echo "  9. deploy-doc                       Deploy documentation to shared server"
+	@echo " 10. clean                            Clean build artifacts and temporary files"
+	@echo
+
+######################
+# Diagnostic targets #
+######################
 
 # List of Make targets is generated dynamically. Note that to have a target show up in this
 # list, it must have an in-line comment starting with a '#' on the target definition,
@@ -63,9 +108,9 @@ sources: # Print the source files that trigger Make targets
 	@echo "${MAKE_SOURCES}"
 	@echo
 
-##########################
-# Jenkins build commands #
-##########################
+#########################
+# Jenkins build targets #
+#########################
 
 create-env: # Create a new conda environment
 # env name: {PACKAGE_NAME}_py{PYTHON_VERSION}.
@@ -88,7 +133,7 @@ lint: # Check for formatting errors
 mypy: # Check for type hinting errors
 	mypy --config-file pyproject.toml .
 
-# test: test commands are defined in test.mk
+# test: test targets are defined in test.mk
 
 build-doc: $(MAKE_SOURCES) # Build documentation
 	$(MAKE) -C docs/ html SPHINXOPTS="-T -W --keep-going"
@@ -122,9 +167,32 @@ clean: # Clean build artifacts and temporary files
 	@rm -rf dist output
 	$(shell find . -type f -name '*py[co]' -delete -o -type d -name __pycache__ -delete)
 
-#########################
-# Other/helper commands #
-#########################
+##################
+# Helper targets #
+##################
+
+check: # Run development checks
+	@echo
+	@echo "*** Running isort and black ***"
+	make lint
+# 	Run mypy if the py.typed file exists
+	@if [ -f "src/$(PACKAGE_NAME)/py.typed" ]; then \
+		@echo
+		@echo "*** Running mypy ***"
+		make mypy; \
+	fi
+# 	Run all fast tests
+	@echo
+	@echo "*** Running fast tests ***"
+	make test-all
+# 	Build and test docs
+	@echo
+	@echo "*** Building and testing documentation ***"
+	rm -rf docs/build/
+	make build-doc
+	make test-doc
+	@echo
+	@echo "*** All checks passed successfully! ***"
 
 install-upstream-deps: # Install upstream dependencies
 	@echo "Contents of install_dependency_branch.sh"
@@ -142,7 +210,6 @@ format: setup.py pyproject.toml $(MAKE_SOURCES) # Format code (isort and black)
 manual-deploy-artifactory: # Deploy package; only use if Jenkins deploy fails
 	@[ "${PYPI_ARTIFACTORY_CREDENTIALS_USR}" ] && echo "" > /dev/null || ( echo "PYPI_ARTIFACTORY_CREDENTIALS_USR is not set, export using simsci artifactory credentials"; exit 1 )
 	@[ "${PYPI_ARTIFACTORY_CREDENTIALS_PSW}" ] && echo "" > /dev/null || ( echo "PYPI_ARTIFACTORY_CREDENTIALS_PSW is not set, export using simsci artifactory credentials"; exit 1 )
-	make build-env
-	conda run -n $(CONDA_ENV_NAME) make build-package
-	conda run -n $(CONDA_ENV_NAME) make tag-version
-	conda run -n $(CONDA_ENV_NAME) make deploy-package-artifactory
+	make build-package
+	make tag-version
+	make deploy-package-artifactory
