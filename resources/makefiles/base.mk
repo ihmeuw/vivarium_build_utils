@@ -25,7 +25,8 @@ CONDA_ENV_CREATION_FLAG = $(if $(CONDA_ENV_PATH),-p ${CONDA_ENV_PATH},-n ${CONDA
 MAKE_SOURCES := $(shell find . -type d -name "*" ! -path "./.git*" ! -path "./.vscode" ! -path "./output" ! -path "./output/*" ! -path "./archive" ! -path "./dist" ! -path "./output/htmlcov*" ! -path "**/.pytest_cache*" ! -path "**/__pycache__" ! -path "./output/docs_build*" ! -path "./.pytype*" ! -path "." ! -path "./src/${PACKAGE_NAME}/legacy*" ! -path ./.history ! -path "./.history/*" ! -path "./src/${PACKAGE_NAME}.egg-info" ! -path ./.idea ! -path "./.idea/*" )
 
 # Phony targets don't produce artifacts.
-.PHONY: .list-targets build-env build-doc format lint mypy integration build-package clean debug deploy-doc deploy-package full help list quick install install-upstream-deps
+.PHONY: list debug sources create-env install lint mypy build-doc test-doc tag-version 
+.PHONY: build-package deploy-package-artifactory deploy-doc clean build-env install-upstream-deps format manual-deploy
 
 #######################
 # Diagnostic commands #
@@ -91,7 +92,6 @@ mypy: # Check for type hinting errors
 
 build-doc: $(MAKE_SOURCES) # Build documentation
 	$(MAKE) -C docs/ html SPHINXOPTS="-T -W --keep-going"
-	@echo "Ignore, Created by Makefile, `date`" > $@
 
 test-doc: $(MAKE_SOURCES) # Test documentation examples
 	$(MAKE) doctest -C docs/
@@ -103,7 +103,6 @@ tag-version: # Tag current version and push to git
 build-package: $(MAKE_SOURCES) # Build pip wheel package
 	pip install build
 	python -m build
-	@echo "Ignore, Created by Makefile, `date`" > $@
 
 deploy-package-artifactory: # Deploy the package to Artifactory
 	@[ "${PYPI_ARTIFACTORY_CREDENTIALS_USR}" ] && echo "" > /dev/null || ( echo "PYPI_ARTIFACTORY_CREDENTIALS_USR is not set, export using simsci artifactory credentials"; exit 1 )
@@ -150,9 +149,8 @@ install-upstream-deps: # Install upstream dependencies
 format: setup.py pyproject.toml $(MAKE_SOURCES) # Format code (isort and black)
 	isort $(LOCATIONS)
 	black $(LOCATIONS)
-	@echo "Ignore, Created by Makefile, `date`" > $@
 
-manual-deploy: # Deploy package (build, tag, and deploy)
+manual-deploy-artifactory: # Deploy package (build, tag, and deploy to artifactory)
 	@[ "${PYPI_ARTIFACTORY_CREDENTIALS_USR}" ] && echo "" > /dev/null || ( echo "PYPI_ARTIFACTORY_CREDENTIALS_USR is not set, export using simsci artifactory credentials"; exit 1 )
 	@[ "${PYPI_ARTIFACTORY_CREDENTIALS_PSW}" ] && echo "" > /dev/null || ( echo "PYPI_ARTIFACTORY_CREDENTIALS_PSW is not set, export using simsci artifactory credentials"; exit 1 )
 	make build-env
