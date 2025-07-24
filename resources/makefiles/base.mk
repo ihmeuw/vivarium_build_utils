@@ -130,6 +130,8 @@ install: # Install package and dependencies
 
 lint: # Check for formatting errors
 # NOTE: This is not actually running isort and black but rather just checking the --diffs.
+	@echo
+	@echo "Running isort and black"
 	isort $(LOCATIONS) --check --verbose --only-modified --diff
 	black $(LOCATIONS) --check --diff
 
@@ -175,24 +177,25 @@ clean: # Clean build artifacts and temporary files
 ##################
 
 check: # Run development checks
-	@echo
-	@echo "*** Running isort and black ***"
 	make lint
 # 	Run mypy if the py.typed file exists
 	@if [ -f "src/$(PACKAGE_NAME)/py.typed" ]; then \
-		@echo
-		@echo "*** Running mypy ***"
+		echo; \
+		echo "Running mypy"; \
 		make mypy; \
 	fi
 # 	Run all fast tests
 	@echo
-	@echo "*** Running fast tests ***"
+	@echo "Running fast tests"
 	make test-all
-# 	Build and test docs
+# 	Build docs
 	@echo
-	@echo "*** Building and testing documentation ***"
+	@echo "Building documentation"
 	rm -rf docs/build/
 	make build-doc
+# 	Test docs
+	@echo
+	@echo "Running doctests"
 	make test-doc
 	@echo
 	@echo "*** All checks passed successfully! ***"
