@@ -26,8 +26,9 @@ This repository provides:
 Make Commands and Jenkins Workflow
 ===================================
 
-This repository provides shared Makefiles that enable multiple projects to use consistent
-``make`` commands that mirror our Jenkins CI/CD builds.
+This repository contains shared Makefiles with various ``make`` commands that
+(1) provide a consistent interface for the various stages of a Jenkins build and
+(2) provide helper functions for users to run common tasks locally.
 
 Quick Start
 -----------
@@ -45,8 +46,14 @@ In any project using ``vivarium_build_utils``:
   # See all available make targets
   make list
 
-  # Run complete Jenkins pipeline locally
-  make jenkins-pipeline
+  # Format the code using isort and black
+  make format
 
-  # Fast development workflow
-  make quick-check
+  # Check current code base for common issues
+  make check
+
+  # Install upstream dependencies
+  make install-upstream-deps
+
+  # Manually deploy a package to Artifactory (useful if Jenkins deploy fails)
+  make manual-deploy-artifactory

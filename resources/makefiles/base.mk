@@ -92,7 +92,7 @@ debug: # Print debug information
 	@echo
 	@echo "'make' invoked with these environment variables:"
 	@echo "CONDA_ENV_NAME:                   ${CONDA_ENV_NAME}"
-	@echo "PYTHON_VERSION:				     ${PYTHON_VERSION}"
+	@echo "PYTHON_VERSION:                   ${PYTHON_VERSION}"
 	@echo "IHME_PYPI:                        ${IHME_PYPI}"
 	@echo "LOCATIONS:                        ${LOCATIONS}"
 	@echo "PACKAGE_NAME:                     ${PACKAGE_NAME}"
