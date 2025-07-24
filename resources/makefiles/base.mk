@@ -101,6 +101,9 @@ debug: # Print debug information
 	@echo
 	@echo "vivarium_build_utils version:     $(shell python -c "import importlib.metadata; print(importlib.metadata.version('vivarium_build_utils'))" 2>/dev/null || echo "unknown")"
 	@echo
+	@echo
+	@echo "For a list of all source files that trigger Make targets, run 'make sources'."
+	@echo
 
 sources: # Print the source files that trigger Make targets
 	@echo
