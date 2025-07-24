@@ -91,8 +91,6 @@ def runTests(List test_types) {
             def full_name = { test_type ->
                 if (test_type == 'e2e') {
                     return "End-to-End"
-                } else if (test_type == 'all-tests') {
-                return "All"
                 } else {
                     return test_type.capitalize()
                 }

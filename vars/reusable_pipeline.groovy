@@ -6,7 +6,7 @@ def call(Map config = [:]){
   Configuration options:
   scheduled_branches: The branch names for which to run scheduled nightly builds.
   stagger_scheduled_builds: Whether to stagger the scheduled builds.
-  test_types: The tests to run. Must be subset (inclusive) of ['unit', 'integration', 'e2e', 'all-tests']
+  test_types: The tests to run. Must be subset (inclusive) of ['unit', 'integration', 'e2e', 'all']
   requires_slurm: Whether the child tasks require the slurm scheduler.
   deployable: Whether the package can be deployed by Jenkins.
   skip_doc_build: Only skips the doc build.
@@ -34,10 +34,10 @@ def call(Map config = [:]){
 
   PYTHON_DEPLOY_VERSION = "3.11"
 
-  test_types = config.test_types ?: ['all-tests']
+  test_types = config.test_types ?: ['all']
   // raise an error if test_types is not a subset of  ['e2e', 'unit', 'integration']
-  if (!test_types.every { ['all-tests', 'e2e', 'unit', 'integration'].contains(it) }) {
-    throw new IllegalArgumentException("test_types must be a subset of ['all-tests', 'e2e', 'unit', 'integration']")
+  if (!test_types.every { ['all', 'e2e', 'unit', 'integration'].contains(it) }) {
+    throw new IllegalArgumentException("test_types must be a subset of ['all', 'e2e', 'unit', 'integration']")
   }
   
   // Transform test type inputs to actual make test target names
@@ -46,7 +46,7 @@ def call(Map config = [:]){
       case 'unit': return 'test-unit'
       case 'integration': return 'test-integration'
       case 'e2e': return 'test-e2e'
-      case 'all-tests': return 'test-all'
+      case 'all': return 'test-all'
       default: 
         throw new IllegalArgumentException("Unknown test type: ${testType}")
     }
