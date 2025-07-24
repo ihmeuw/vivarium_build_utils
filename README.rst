@@ -3,8 +3,6 @@ Vivarium Build Utils
 ====================
 
 Vivarium Build Utils contains shared build utilities for Simulation Science projects.
-It is intended to be required as needed by other repositories rather than used
-directly.
 
 You can install ``vivarium_build_utils`` from PyPI with pip::
 
