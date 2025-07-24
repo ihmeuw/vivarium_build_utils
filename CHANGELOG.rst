@@ -1,6 +1,6 @@
-**1.1.3 - TBD**
+**2.0.0 - 7/24/2025**
 
-  - Clean up an better document Make files
+  - Clean up and better document Make files
 
 **1.1.2 - 7/16/2025**
 

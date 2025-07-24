@@ -26,7 +26,7 @@ MAKE_SOURCES := $(shell find . -type d -name "*" ! -path "./.git*" ! -path "./.v
 
 # Phony targets don't produce artifacts.
 .PHONY: list debug sources
-.PHONY: create-env install lint mypy build-doc test-doc tag-version build-package deploy-package-artifactory deploy-doc clean
+.PHONY: create-env install lint mypy build-docs test-docs tag-version build-package deploy-package-artifactory deploy-docs clean
 .PHONY: check install-upstream-deps format manual-deploy-artifactory
 
 help: # Curated help message 
@@ -63,13 +63,13 @@ help: # Curated help message
 	echo "  4. mypy                             (optional) Check for type hinting errors"; \
 	echo "  5. test-<test-type>                 Run specific tests unit, integration,"; \
 	echo "                                      e2e, all); include RUNSLOW=true if desired"; \
-	echo "  6. build-doc                        Build documentation"; \
-	echo "  7. test-doc                         Test documentation examples"; \
+	echo "  6. build-docs                       Build documentation"; \
+	echo "  7. test-docs                        Test documentation examples"; \
 	echo "  8. Deploy the package (optional)"; \
 	echo "     a. tag-version                   Tag current version and push to git"; \
 	echo "     b. build-package                 Build pip wheel package"; \
 	echo "     c. deploy-package-artifactory    Deploy the package to Artifactory"; \
-	echo "  9. deploy-doc                       Deploy documentation to shared server"; \
+	echo "  9. deploy-docs                      Deploy documentation to shared server"; \
 	echo " 10. clean                            Clean build artifacts and temporary files"; \
 	echo) | less
 
@@ -140,10 +140,11 @@ mypy: # Check for type hinting errors
 
 # test: test targets are defined in test.mk
 
-build-doc: $(MAKE_SOURCES) # Build documentation
+build-docs: $(MAKE_SOURCES) # Build documentation
+	rm -rf docs/build/
 	$(MAKE) -C docs/ html SPHINXOPTS="-T -W --keep-going"
 
-test-doc: $(MAKE_SOURCES) # Test documentation examples
+test-docs: $(MAKE_SOURCES) # Test documentation examples
 	$(MAKE) doctest -C docs/
 
 tag-version: # Tag current version and push to git
@@ -160,7 +161,7 @@ deploy-package-artifactory: # Deploy the package to Artifactory
 	pip install twine
 	twine upload --repository-url ${IHME_PYPI} -u ${PYPI_ARTIFACTORY_CREDENTIALS_USR} -p ${PYPI_ARTIFACTORY_CREDENTIALS_PSW} dist/*
 
-deploy-doc: # Deploy documentation to shared server
+deploy-docs: # Deploy documentation to shared server
 	@[ "${DOCS_ROOT_PATH}" ] && echo "" > /dev/null || ( echo "DOCS_ROOT_PATH is not set"; exit 1 )
 	mkdir -m 0775 -p ${DOCS_ROOT_PATH}/${PACKAGE_NAME}/${PACKAGE_VERSION}
 	cp -R ./output/docs_build/* ${DOCS_ROOT_PATH}/${PACKAGE_NAME}/${PACKAGE_VERSION}
@@ -168,7 +169,7 @@ deploy-doc: # Deploy documentation to shared server
 	cd ${DOCS_ROOT_PATH}/${PACKAGE_NAME} && ln -nsFfv ${PACKAGE_VERSION} current
 
 clean: # Clean build artifacts and temporary files
-	@rm -rf format build-doc build-package integration .pytest_cache
+	@rm -rf format build-docs build-package integration .pytest_cache
 	@rm -rf dist output
 	$(shell find . -type f -name '*py[co]' -delete -o -type d -name __pycache__ -delete)
 
@@ -191,12 +192,11 @@ check: # Run development checks
 # 	Build docs
 	@echo
 	@echo "Building documentation"
-	rm -rf docs/build/
-	make build-doc
+	make build-docs
 # 	Test docs
 	@echo
 	@echo "Running doctests"
-	make test-doc
+	make test-docs
 	@echo
 	@echo "*** All checks passed successfully! ***"
 

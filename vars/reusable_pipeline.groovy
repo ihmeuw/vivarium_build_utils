@@ -41,17 +41,7 @@ def call(Map config = [:]){
   }
   
   // Transform test type inputs to actual make test target names
-  def transformTestType(testType) {
-    switch(testType) {
-      case 'unit': return 'test-unit'
-      case 'integration': return 'test-integration'
-      case 'e2e': return 'test-e2e'
-      case 'all': return 'test-all'
-      default: 
-        throw new IllegalArgumentException("Unknown test type: ${testType}")
-    }
-  }
-  test_types = test_types.collect { transformTestType(it) }
+  test_types = test_types.collect { "test-${it}" }
   
   // Allow for building conda env on shared fs if required
   conda_env_name = config.use_shared_fs ? "${env.JOB_NAME.replaceAll('/', '-')}-${BUILD_NUMBER}" : "${env.JOB_NAME}-${BUILD_NUMBER}"
