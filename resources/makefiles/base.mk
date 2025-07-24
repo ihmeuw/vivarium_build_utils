@@ -126,7 +126,7 @@ install: # Install package and dependencies
 	uv pip install -e .[${ENV_REQS}] --extra-index-url ${IHME_PYPI}simple/ --index-strategy unsafe-best-match
 
 lint: # Check for formatting errors
-# NOTE: This is not precisely 'linting' but we historically use that term here
+# NOTE: This is not actually running isort and black but rather just checking the --diffs.
 	isort $(LOCATIONS) --check --verbose --only-modified --diff
 	black $(LOCATIONS) --check --diff
 
