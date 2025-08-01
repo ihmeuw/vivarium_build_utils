@@ -112,9 +112,10 @@ def _extract_vbu_version(dry_run_output: str) -> str:
 def main() -> str:
     """Main function to orchestrate version resolution."""
 
-    python_version = _get_max_python_version()
-    dry_run_output = _run_pip_dry_run(python_version)
-    vbu_version = _extract_vbu_version(dry_run_output)
+    # python_version = _get_max_python_version()
+    # dry_run_output = _run_pip_dry_run(python_version)
+    # vbu_version = _extract_vbu_version(dry_run_output)
+    vbu_version = "sbachmei/mic-6274/create-envs-in-team-folder". # TODO: REMOVE THIS AND UNCOMMENT ABOVE
 
     # NOTE: We must print the vbu_version for Jenkins to capture it!
     print(vbu_version)
