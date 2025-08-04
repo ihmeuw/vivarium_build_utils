@@ -62,7 +62,7 @@ def buildEnvironment() {
 def installPackage(String env_reqs = "") {
     env_reqs = env_reqs ? "ENV_REQS=${env_reqs}" : ""
     stage("Install Package - Python ${PYTHON_VERSION}") {
-        sh "${ACTIVATE} && make install ${env_reqs} UV_FLAGS='--no-cache' && pip install ."
+        sh "${ACTIVATE} && make install ${env_reqs} UV_FLAGS='--no-cache' && uv pip install ."
     }
 }
 
