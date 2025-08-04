@@ -42,7 +42,6 @@ def call(Map config = [:]){
   // Transform test type inputs to actual make test target names
   test_types = test_types.collect { "test-${it}" }
   
-  // Allow for building conda env on shared slurm filesystem if required
   conda_env_name_base = "${env.JOB_NAME}-${BUILD_NUMBER}"
   conda_env_dir = "/mnt/team/simulation_science/priv/engineering/jenkins/envs"
 
