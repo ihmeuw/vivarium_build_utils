@@ -1,3 +1,7 @@
+**2.0.5 - 8/7/2025**
+
+  - Create pipeline to clean up Jenkins build directories
+
 **2.0.4 - 8/6/2025**
 
   - Revert v2.0.3
