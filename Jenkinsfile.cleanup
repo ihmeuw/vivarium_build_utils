@@ -1,0 +1,105 @@
+pipeline {
+    agent none // Defined explicitly in each stage
+    
+    triggers {
+        cron('H 7 * * *')
+    }
+    
+    options {
+        timeout(time: 60, unit: 'MINUTES')
+        timestamps()
+        buildDiscarder(logRotator(numToKeepStr: '30'))
+    }
+    
+    stages {
+        stage('Coordinator Node Cleanup') {
+            // Confusingly, simsci-ci-coordinator-01 is actually simsci-jenkinsagent-ci-p02
+            agent { node 'simsci-jenkinsagent-ci-p02' }
+            steps {
+                echo "Starting cleanup on coordinator node: simsci-jenkinsagent-ci-p02"
+                script {
+                    runCleanupScript()
+                }
+            }
+        }
+        
+        stage('Jenkins Agent Node Cleanup') {
+            agent { node 'simsci-jenkinsagent-ci-p01' }
+            steps {
+                echo "Starting cleanup on agent node: simsci-jenkinsagent-ci-p01"
+                script {
+                    runCleanupScript()
+                }
+            }
+        }
+        
+        stage('Slurm Build Node Cleanup') {
+            agent { node 'simsci-slurm-sbuild-p01' }
+            steps {
+                echo "Starting cleanup on slurm node: simsci-slurm-sbuild-p01"
+                script {
+                    runCleanupScript()
+                }
+            }
+        }
+        
+        stage('Built-In Node Cleanup') {
+            agent { node 'flyweight' }
+            steps {
+                echo "Starting cleanup on built-in node: flyweight"
+                script {
+                    runCleanupScript()
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            echo "Sequential cleanup pipeline completed for all nodes"
+        }
+        failure {
+            echo "Node cleanup failed - check the failed stage logs for details"
+        }
+        success {
+            echo "All node cleanups completed successfully"
+        }
+    }
+}
+
+def runCleanupScript() {
+    echo "Starting cleanup on node: ${env.NODE_NAME} (${env.NODE_LABELS})"
+    sh '''
+        #!/bin/bash
+        # Delete all files and folders in the /tmp/ and /opt/jenkins/workspace/ directories older than XXX days
+
+        # Array of directories to clean (DO NOT COMMA-SEPARATE!)
+        DIRS_TO_CLEAN=("/tmp" "/opt/jenkins/workspace" "/mnt/team/simulation_science/priv/engineering/jenkins/envs")
+        OLD_DAYS=3
+
+        # Loop through each directory
+        for dir in "${DIRS_TO_CLEAN[@]}"; do
+            if [ -d "$dir" ]; then
+                echo "----------------------------------------"
+                echo "Running cleanup on $HOSTNAME:$dir"
+                # Change to the directory
+                cd "$dir"
+                # Remove directories
+                echo "Listing directories in $dir older than $OLD_DAYS days:"
+                find . -mindepth 1 -maxdepth 1 -type d -mtime +$OLD_DAYS -print
+                echo "Deleting directories:"
+                find . -mindepth 1 -maxdepth 1 -type d -mtime +$OLD_DAYS -exec rm -rf {} \;
+                # Remove files
+                echo "Listing files in $dir older than $OLD_DAYS days:"
+                find . -mindepth 1 -maxdepth 1 -type f -mtime +$OLD_DAYS -print
+                echo "Deleting files:"
+                find . -mindepth 1 -maxdepth 1 -type f -mtime +$OLD_DAYS -exec rm -f {} \;
+            else
+                echo "Directory $dir does not exist or is not accessible"
+            fi
+        done
+
+        echo "----------------------------------------"
+        echo "Cleanup completed"
+    '''
+}
