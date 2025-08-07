@@ -4,8 +4,7 @@ pipeline {
     environment {
         DIRS_TO_CLEAN_PER_NODE = '/tmp,/opt/jenkins/workspace'
         DIRS_TO_CLEAN_SHARED = '/mnt/team/simulation_science/priv/engineering/jenkins/envs'
-        // FIXME TO THREE DAYS
-        DAYS_OLD = '-1'
+        DAYS_OLD = '3'
     }
     
     options {
@@ -23,6 +22,14 @@ pipeline {
                     cleanDirs("shared")
                 }
             }
+            post {
+                always {
+                    cleanWs()
+                    dir("${env.WORKSPACE}@tmp") {
+                        deleteDir()
+                    }
+                }
+            }
         }
         
         stage('Coordinator Node Cleanup') {
@@ -31,6 +38,14 @@ pipeline {
             steps {
                 script {
                     cleanDirs("per-node")
+                }
+            }
+            post {
+                always {
+                    cleanWs()
+                    dir("${env.WORKSPACE}@tmp") {
+                        deleteDir()
+                    }
                 }
             }
         }
@@ -42,6 +57,14 @@ pipeline {
                     cleanDirs("per-node")
                 }
             }
+            post {
+                always {
+                    cleanWs()
+                    dir("${env.WORKSPACE}@tmp") {
+                        deleteDir()
+                    }
+                }
+            }
         }
         
         stage('Slurm Build Node Cleanup') {
@@ -51,6 +74,14 @@ pipeline {
                     cleanDirs("per-node")
                 }
             }
+            post {
+                always {
+                    cleanWs()
+                    dir("${env.WORKSPACE}@tmp") {
+                        deleteDir()
+                    }
+                }
+            }
         }
         
         stage('Built-In Node Cleanup') {
@@ -58,6 +89,14 @@ pipeline {
             steps {
                 script {
                     cleanDirs("per-node")
+                }
+            }
+            post {
+                always {
+                    cleanWs()
+                    dir("${env.WORKSPACE}@tmp") {
+                        deleteDir()
+                    }
                 }
             }
         }
@@ -71,8 +110,7 @@ pipeline {
             echo "Node cleanup failed - check the failed stage logs for details"
             // Generate a message to send to Slack.
             script {
-                // FIXME PUT TO NORMAL CHANNEL WHEN DONE TESTING
-                def channelName = "simsci-ci-status-test"
+                def channelName = "simsci-ci-status"
                 def slackID = "channel"
                 def slackMessage = """
                     Job: *${env.JOB_NAME}*
