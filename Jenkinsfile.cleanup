@@ -111,6 +111,11 @@ def cleanDirs(cleanupType) {
     // Split the directories and loop through them
     def dirList = dirsToClean.split(',')
     
+    // Special case: built-in node doesn't have /opt/jenkins/workspace
+    if (env.NODE_NAME == "built-in" && cleanupType == "per-node") {
+        dirList = dirList.findAll { it != "/opt/jenkins/workspace" }
+    }
+    
     for (dir in dirList) {
         sh """
             #!/bin/bash
