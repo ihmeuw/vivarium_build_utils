@@ -26,14 +26,6 @@ def call(Map config = [:]){
     'run_mypy'
   ]
   
-  def unsupportedArgs = config.keySet() - supportedArgs
-  if (unsupportedArgs) {
-    throw new IllegalArgumentException(
-      "Unsupported configuration arguments: ${unsupportedArgs.join(', ')}. " +
-      "Supported arguments are: ${supportedArgs.join(', ')}"
-    )
-  }
-  
   def scheduled_branches = config.scheduled_branches ?: [] 
   def stagger_scheduled_builds = config.stagger_scheduled_builds ?: false
   def test_types = config.test_types ?: ['all']
@@ -67,14 +59,6 @@ def call(Map config = [:]){
   }
 
   PYTHON_DEPLOY_VERSION = "3.11"
-
-  // raise an error if test_types is not a subset of  ['e2e', 'unit', 'integration']
-  if (!test_types.every { ['all', 'e2e', 'unit', 'integration'].contains(it) }) {
-    throw new IllegalArgumentException("test_types must be a subset of ['all', 'e2e', 'unit', 'integration']")
-  }
-  
-  // Transform test type inputs to actual make test target names
-  test_types = test_types.collect { "test-${it}" }
   
   conda_env_name_base = "${env.JOB_NAME}-${BUILD_NUMBER}"
   conda_env_dir = "/mnt/team/simulation_science/priv/engineering/jenkins/envs"
@@ -141,6 +125,24 @@ def call(Map config = [:]){
     }
 
     stages {
+      stage("Configuration validation") {
+        steps {
+          script {
+            // Validate the configuration arguments
+            def unsupportedArgs = config.keySet() - supportedArgs
+            if (unsupportedArgs) {
+              error(
+                "Unsupported configuration arguments: ${unsupportedArgs.join(', ')}. " +
+                "Supported arguments are: ${supportedArgs.join(', ')}"
+              )
+            }
+            // Validate test_types
+            if (!test_types.every { ['all', 'e2e', 'unit', 'integration'].contains(it) }) {
+              error("test_types must be a subset of ['all', 'e2e', 'unit', 'integration']")
+            }
+          }
+        }
+      }
       stage("Initialization") {
         steps {
           script {
@@ -183,7 +185,9 @@ def call(Map config = [:]){
                         buildStages.installPackage()
                         buildStages.installDependencies(upstream_repos)
                         buildStages.checkFormatting(run_mypy)
-                        buildStages.runTests(test_types)
+                        // Transform test type inputs to actual make test target names
+                        tests = test_types.collect { "test-${it}" }
+                        buildStages.runTests(tests)
 
                         if (PYTHON_VERSION == PYTHON_DEPLOY_VERSION) {
                           if (!skip_doc_build) {
