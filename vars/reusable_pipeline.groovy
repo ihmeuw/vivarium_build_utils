@@ -43,6 +43,16 @@ def call(Map config = [:]){
   def upstream_repos = config.upstream_repos ?: []
   def run_mypy = (config.run_mypy != null) ? config.run_mypy : true
 
+  echo "Configuration constants:"
+  echo "  scheduled_branches: ${scheduled_branches}"
+  echo "  stagger_scheduled_builds: ${stagger_scheduled_builds}"
+  echo "  test_types: ${test_types}"
+  echo "  task_node: ${task_node}"
+  echo "  is_deployable: ${is_deployable}"
+  echo "  skip_doc_build: ${skip_doc_build}"
+  echo "  upstream_repos: ${upstream_repos}"
+  echo "  run_mypy: ${run_mypy}"
+
   if (stagger_scheduled_builds && scheduled_branches.size() > 1) {
     startHour = 20
     endHour = 23
