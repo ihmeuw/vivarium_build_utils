@@ -13,10 +13,35 @@ def call(Map config = [:]){
   upstream_repos: A list of repos to check for upstream changes.
   run_mypy: Whether to run mypy on the package
   */
-  task_node = config.requires_slurm ? 'slurm' : 'matrix-tasks'
-
-  scheduled_branches = config.scheduled_branches ?: [] 
-  stagger_scheduled_builds = config.stagger_scheduled_builds ?: false
+  
+  // Handle config arguments
+  def supportedArgs = [
+    'scheduled_branches',
+    'stagger_scheduled_builds', 
+    'test_types',
+    'requires_slurm',
+    'deployable',
+    'skip_doc_build',
+    'upstream_repos',
+    'run_mypy'
+  ]
+  
+  def unsupportedArgs = config.keySet() - supportedArgs
+  if (unsupportedArgs) {
+    throw new IllegalArgumentException(
+      "Unsupported configuration arguments: ${unsupportedArgs.join(', ')}. " +
+      "Supported arguments are: ${supportedArgs.join(', ')}"
+    )
+  }
+  
+  def scheduled_branches = config.scheduled_branches ?: [] 
+  def stagger_scheduled_builds = config.stagger_scheduled_builds ?: false
+  def test_types = config.test_types ?: ['all']
+  def task_node = config.requires_slurm ? 'slurm' : 'matrix-tasks'
+  def is_deployable = (config?.deployable == true)
+  def skip_doc_build = (config?.skip_doc_build == true)
+  def upstream_repos = config.upstream_repos ?: []
+  def run_mypy = (config.run_mypy != null) ? config.run_mypy : true
 
   if (stagger_scheduled_builds && scheduled_branches.size() > 1) {
     startHour = 20
@@ -33,7 +58,6 @@ def call(Map config = [:]){
 
   PYTHON_DEPLOY_VERSION = "3.11"
 
-  test_types = config.test_types ?: ['all']
   // raise an error if test_types is not a subset of  ['e2e', 'unit', 'integration']
   if (!test_types.every { ['all', 'e2e', 'unit', 'integration'].contains(it) }) {
     throw new IllegalArgumentException("test_types must be a subset of ['all', 'e2e', 'unit', 'integration']")
@@ -44,11 +68,6 @@ def call(Map config = [:]){
   
   conda_env_name_base = "${env.JOB_NAME}-${BUILD_NUMBER}"
   conda_env_dir = "/mnt/team/simulation_science/priv/engineering/jenkins/envs"
-
-  // Define the upstream repos to check for changes
-  upstream_repos = config.upstream_repos ?: []
-  // Define whether to run mypy
-  run_mypy = config.run_mypy != null ? config.run_mypy : true
 
   pipeline {
     // This agent runs as svc-simsci on node simsci-ci-coordinator-01.
@@ -157,13 +176,13 @@ def call(Map config = [:]){
                         buildStages.runTests(test_types)
 
                         if (PYTHON_VERSION == PYTHON_DEPLOY_VERSION) {
-                          if (config?.skip_doc_build != true) {
+                          if (!skip_doc_build) {
                             buildStages.buildDocs()
                             buildStages.testDocs()
                           }
                           
                           stage("Build and Deploy - Python ${pythonVersion}") {
-                            if ((config?.deployable == true) &&
+                            if (is_deployable &&
                               !env.IS_CRON.toBoolean() &&
                               !params.SKIP_DEPLOY &&
                               (env.BRANCH == "main") &&
@@ -173,7 +192,7 @@ def call(Map config = [:]){
                               }
                               buildStages.deployPackage()
 
-                              if (config?.skip_doc_build != true) {
+                              if (!skip_doc_build) {
                                 buildStages.deployDocs()
                               }
                             }
