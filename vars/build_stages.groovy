@@ -19,6 +19,8 @@ def call() {
 def runDebugInfo() {
     stage("Debug Info - Python ${PYTHON_VERSION}") {
 
+
+        echo "TESTING TESTING SBACHMEI"
         echo "Jenkins pipeline run timestamp: ${env.TIMESTAMP}"
         
         // Display parameters used.
@@ -160,6 +162,7 @@ def deployDocs() {
 
 def cleanup() {
     sh "${ACTIVATE} && make clean"
+
     cleanWs()
     dir("${WORKSPACE}@tmp") {
         deleteDir()
