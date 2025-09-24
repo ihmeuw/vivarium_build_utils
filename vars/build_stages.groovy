@@ -160,7 +160,6 @@ def deployDocs() {
 
 def cleanup() {
     sh "${ACTIVATE} && make clean"
-
     cleanWs()
     dir("${WORKSPACE}@tmp") {
         deleteDir()
