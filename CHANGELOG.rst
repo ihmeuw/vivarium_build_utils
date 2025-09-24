@@ -1,6 +1,6 @@
 **2.0.8 - 9/24/2025**
 
-  - Stop folder cleanup in pipelines
+  - Stop explicit folder deletion in cleanup
 
 **2.0.7 - 9/23/2025**
 
