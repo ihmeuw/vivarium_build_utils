@@ -19,8 +19,6 @@ def call() {
 def runDebugInfo() {
     stage("Debug Info - Python ${PYTHON_VERSION}") {
 
-
-        echo "TESTING TESTING SBACHMEI"
         echo "Jenkins pipeline run timestamp: ${env.TIMESTAMP}"
         
         // Display parameters used.
