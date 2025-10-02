@@ -210,7 +210,7 @@ install-upstream-deps: # Install upstream dependencies
 	@sh $(UTILS_DIR)/resources/scripts/install_dependency_branch.sh $(DEPENDENCY_NAME) $(BRANCH_NAME) $(WORKFLOW)
 	@echo
 
-format: setup.py pyproject.toml $(MAKE_SOURCES) # Format code (isort and black)
+format: pyproject.toml $(MAKE_SOURCES) # Format code (isort and black)
 	isort $(LOCATIONS)
 	black $(LOCATIONS)
 
