@@ -58,7 +58,7 @@ def buildEnvironment() {
         sh "chmod 777 ${WORKSPACE}"
     }
 }
-IHME_PYPI := https://artifactory.ihme.washington.edu/artifactory/api/pypi/pypi-shared/
+
 def installPackage(String env_reqs = "") {
     env_reqs = env_reqs ? "ENV_REQS=${env_reqs}" : ""
     stage("Install Package - Python ${PYTHON_VERSION}") {
