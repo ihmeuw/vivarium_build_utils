@@ -58,11 +58,11 @@ def buildEnvironment() {
         sh "chmod 777 ${WORKSPACE}"
     }
 }
-
+IHME_PYPI := https://artifactory.ihme.washington.edu/artifactory/api/pypi/pypi-shared/
 def installPackage(String env_reqs = "") {
     env_reqs = env_reqs ? "ENV_REQS=${env_reqs}" : ""
     stage("Install Package - Python ${PYTHON_VERSION}") {
-        sh "${ACTIVATE} && make install ${env_reqs} UV_FLAGS='--no-cache' && uv pip install ."
+        sh "${ACTIVATE} && make install ${env_reqs} UV_FLAGS='--no-cache' && uv pip install . --extra-index-url https://artifactory.ihme.washington.edu/artifactory/api/pypi/pypi-shared/simple/ --index-strategy unsafe-best-match --no-cache"
     }
 }
 
