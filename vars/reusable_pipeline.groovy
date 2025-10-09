@@ -174,7 +174,7 @@ def call(Map config = [:]){
                   withEnv(envVars.collect { k, v -> "${k}=${v}" }) {
                     try {
                       checkout scm
-                      load_shared_files()
+                      buildStages.loadSharedFiles()
                       
                       // Evaluate skip conditions after checkout (GIT_PREVIOUS_COMMIT is now available)
                       def previousBuildPassed = previous_build_passed()
