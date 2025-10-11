@@ -10,7 +10,7 @@ List<String> provisionItems(String rootFolderPath, String repositoryURL) {
     echo "Discovering Jenkinsfiles with pattern '**/*/Jenkinsfile'..."
     
     // Find all Jenkinsfiles.
-    List<String> jenkinsfilePaths = findFiles(glob: '**/*/Jenkinsfile').collect { it.path }
+    List<String> jenkinsfilePaths = steps.findFiles(glob: '**/*/Jenkinsfile').collect { it.path }
     echo "Discovered ${jenkinsfilePaths.size()} Jenkinsfile(s)"
 
     echo "Executing Job DSL to provision Jenkins items..."
