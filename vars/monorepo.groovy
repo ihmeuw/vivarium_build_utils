@@ -6,13 +6,7 @@ import hudson.model.*
  * @param repositoryURL The repository URL.
  * @return The list of Jenkinsfile paths for which corresponding items have been provisioned.
  */
-List<String> provisionItems(String rootFolderPath, String repositoryURL) {
-    echo "Discovering Jenkinsfiles with pattern '**/*/Jenkinsfile'..."
-    
-    // Find all Jenkinsfiles.
-    List<String> jenkinsfilePaths = steps.findFiles(glob: '**/*/Jenkinsfile').collect { it.path }
-    echo "Discovered ${jenkinsfilePaths.size()} Jenkinsfile(s)"
-
+List<String> provisionItems(String rootFolderPath, String repositoryURL, List<String> jenkinsfilePaths) {
     echo "Executing Job DSL to provision Jenkins items..."
     // Provision folder and Multibranch Pipelines.
     jobDsl(
@@ -27,8 +21,6 @@ List<String> provisionItems(String rootFolderPath, String repositoryURL) {
             removedJobAction: 'IGNORE'
     )
     echo "Job DSL execution completed"
-
-    return jenkinsfilePaths
 }
 
 /**
@@ -162,12 +154,13 @@ def call(Map config = [:]){
     
     String repositoryName = env.JOB_NAME.split('/')[0]
     String rootFolderPath = "Generated/$repositoryName"
-    
+    List<String> jenkinsfilePaths = config.jenkinsfiles ?: []
+
+    echo "Found ${jenkinsfilePaths.size()} Jenkinsfile(s)"
     echo "Repository Name: ${repositoryName}"
     echo "Root Folder Path: ${rootFolderPath}"
-    
-    List<String> jenkinsfilePaths = provisionItems(rootFolderPath, env.GIT_URL)
-    echo "Found ${jenkinsfilePaths.size()} Jenkinsfile(s)"
+
+    provisionItems(rootFolderPath, env.GIT_URL, jenkinsfilePaths)
     jenkinsfilePaths.each { path ->
         echo "  - ${path}"
     }
