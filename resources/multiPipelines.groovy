@@ -73,11 +73,11 @@ def generateMultibranchPipelines(List<Path> jenkinsfilePaths, Path rootFolder, S
                             credentialsId('fad62062-b1f4-447b-997f-005d6b1ea41e')
 
                             traits {
-                                // Depending on your preferences and root pipeline configuration, you can decide to
-                                // discover branches, pull requests, perhaps even tags.
+                                // Discover branches but exclude those that are also PRs
                                 gitHubBranchDiscovery {
                                     strategyId(EXCLUDE_PULL_REQUESTS_STRATEGY_ID)
                                 }
+                                // Discover pull requests from origin
                                 gitHubPullRequestDiscovery {
                                     strategyId(USE_CURRENT_SOURCE_STRATEGY_ID)
                                 }
@@ -94,14 +94,13 @@ def generateMultibranchPipelines(List<Path> jenkinsfilePaths, Path rootFolder, S
                         }
                     }
 
-                    // By default, Jenkins will trigger builds as it detects changes on the source repository. We want
-                    // to avoid that since we will trigger child pipelines on our own only when relevant.
-                    buildStrategies {
-                        skipInitialBuildOnFirstBranchIndexing()
-                    }
+                    
                     strategy {
                         defaultBranchPropertyStrategy {
                             props {
+                                // By default, Jenkins will trigger builds as it detects changes on the source
+                                // repository. We want to avoid that since we will trigger child pipelines on our
+                                // own only when relevant.
                                 noTriggerBranchProperty()
                             }
                         }
