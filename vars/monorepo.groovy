@@ -128,11 +128,28 @@ def runPipelines(String rootFolderPath, List<String> multibranchPipelinesToRun) 
             timeout(time: 5, unit: 'MINUTES') {
                 waitUntil(initialRecurrencePeriod: 1e3) {
                     def pipeline = Jenkins.instance.getItemByFullName(pipelineName)
-                    if (pipeline && !pipeline.isDisabled()) {
-                        echo "Pipeline ${pipelineName} is ready"
-                        return true
+                    if (pipeline) {
+                        if (pipeline.isDisabled()) {
+                            echo "Pipeline ${pipelineName} exists but is disabled"
+                            return false
+                        } else {
+                            echo "Pipeline ${pipelineName} is ready"
+                            return true
+                        }
+                    } else {
+                        echo "Pipeline ${pipelineName} not found yet, waiting..."
+                        // Let's also check what pipelines exist under the multibranch project
+                        def parentPath = "${rootFolderPath}/${multibranchPipelineToRun}"
+                        def parent = Jenkins.instance.getItemByFullName(parentPath)
+                        if (parent) {
+                            echo "Parent multibranch project exists: ${parentPath}"
+                            def jobs = parent.getItems()
+                            echo "Available branches: ${jobs.collect { it.getName() }.join(', ')}"
+                        } else {
+                            echo "Parent multibranch project not found: ${parentPath}"
+                        }
+                        return false
                     }
-                    return false
                 }
             }
 
