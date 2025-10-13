@@ -116,6 +116,9 @@ def runPipelines(String rootFolderPath, List<String> multibranchPipelinesToRun) 
     parallel(multibranchPipelinesToRun.inject([:]) { stages, multibranchPipelineToRun ->
         stages + [("Build ${multibranchPipelineToRun}"): {
             def branchName = env.CHANGE_BRANCH ?: env.GIT_BRANCH
+            if (branchName?.startsWith('origin/')) {
+                branchName = branchName.substring(7)
+            }
             def encodedBranch = URLEncoder.encode(branchName, 'UTF-8')
             def pipelineName = "${rootFolderPath}/${multibranchPipelineToRun}/${encodedBranch}"
             
