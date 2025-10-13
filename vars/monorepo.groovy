@@ -101,6 +101,29 @@ List<String> findMultibranchPipelinesToRun(List<String> jenkinsfilePaths) {
 }
 
 /**
+ * Get the full pipeline name for a given multibranch pipeline path.
+ * @param rootFolderPath The root folder path for generated pipelines.
+ * @param multibranchPipelineToRun The multibranch pipeline path.
+ * @return The full pipeline name including encoded branch.
+ */
+def getPipelineName(String rootFolderPath, String multibranchPipelineToRun) {
+    // For PR builds, prefer the source branch
+    def branchName
+    if (env.CHANGE_BRANCH) {
+        branchName = env.CHANGE_BRANCH
+    } else {
+        // Strip remote prefix if present
+        branchName = env.GIT_BRANCH ?: 'main'
+        if (branchName.contains('/')) {
+            branchName = branchName.split('/', 2)[1]
+        }
+    }
+    
+    def encodedBranch = URLEncoder.encode(branchName, 'UTF-8')
+    return "${rootFolderPath}/${multibranchPipelineToRun}/${encodedBranch}"
+}
+
+/**
  * Run pipelines.
  * @param rootFolderPath The common root folder of Multibranch Pipelines.
  * @param multibranchPipelinesToRun The list of Multibranch Pipelines for which a Pipeline is run.
@@ -115,12 +138,7 @@ def runPipelines(String rootFolderPath, List<String> multibranchPipelinesToRun) 
     
     parallel(multibranchPipelinesToRun.inject([:]) { stages, multibranchPipelineToRun ->
         stages + [("Build ${multibranchPipelineToRun}"): {
-            def branchName = env.CHANGE_BRANCH ?: env.GIT_BRANCH
-            if (branchName?.startsWith('origin/')) {
-                branchName = branchName.substring(7)
-            }
-            def encodedBranch = URLEncoder.encode(branchName, 'UTF-8')
-            def pipelineName = "${rootFolderPath}/${multibranchPipelineToRun}/${encodedBranch}"
+            def pipelineName = getPipelineName(rootFolderPath, multibranchPipelineToRun)
             
             echo "Triggering pipeline: ${pipelineName}"
             
@@ -131,28 +149,11 @@ def runPipelines(String rootFolderPath, List<String> multibranchPipelinesToRun) 
             timeout(time: 5, unit: 'MINUTES') {
                 waitUntil(initialRecurrencePeriod: 1e3) {
                     def pipeline = Jenkins.instance.getItemByFullName(pipelineName)
-                    if (pipeline) {
-                        if (pipeline.isDisabled()) {
-                            echo "Pipeline ${pipelineName} exists but is disabled"
-                            return false
-                        } else {
-                            echo "Pipeline ${pipelineName} is ready"
-                            return true
-                        }
-                    } else {
-                        echo "Pipeline ${pipelineName} not found yet, waiting..."
-                        // Let's also check what pipelines exist under the multibranch project
-                        def parentPath = "${rootFolderPath}/${multibranchPipelineToRun}"
-                        def parent = Jenkins.instance.getItemByFullName(parentPath)
-                        if (parent) {
-                            echo "Parent multibranch project exists: ${parentPath}"
-                            def jobs = parent.getItems()
-                            echo "Available branches: ${jobs.collect { it.getName() }.join(', ')}"
-                        } else {
-                            echo "Parent multibranch project not found: ${parentPath}"
-                        }
-                        return false
+                    if (pipeline && !pipeline.isDisabled()) {
+                        echo "Pipeline ${pipelineName} is ready"
+                        return true
                     }
+                    return false
                 }
             }
 
