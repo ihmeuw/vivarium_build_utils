@@ -67,6 +67,8 @@ def setWorkingDirectory() {
 
 def buildEnvironment() {
     stage("Build Environment - Python ${PYTHON_VERSION}") {
+        echo "working directory: ${pwd()}"
+        echo "Available files: ${sh(script: 'ls -la', returnStdout: true)}"
         // The env should have been cleaned out after the last build, but delete it again
         // here just to be safe.
         sh "rm -rf ${CONDA_ENV_PATH}"
