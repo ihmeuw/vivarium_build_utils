@@ -2,6 +2,7 @@ def call() {
     // Return a map of functions that can be accessed
     return [
         runDebugInfo: this.&runDebugInfo,
+        setWorkingDirectory: this.&setWorkingDirectory,
         buildEnvironment: this.&buildEnvironment,
         installPackage: this.&installPackage,
         installDependencies: this.&installDependencies,
