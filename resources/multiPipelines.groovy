@@ -94,13 +94,17 @@ def generateMultibranchPipelines(List<Path> jenkinsfilePaths, Path rootFolder, S
                         }
                     }
 
+                    // By default, Jenkins will trigger builds as it detects changes on the source repository. We want
+                    // to avoid that since we will trigger child pipelines on our own only when relevant.
                     
+                    // todo is this needed?
+                    // buildStrategies {
+                    //     skipInitialBuildOnFirstBranchIndexing()
+                    // }
+
                     strategy {
                         defaultBranchPropertyStrategy {
                             props {
-                                // By default, Jenkins will trigger builds as it detects changes on the source
-                                // repository. We want to avoid that since we will trigger child pipelines on our
-                                // own only when relevant.
                                 noTriggerBranchProperty()
                             }
                         }
