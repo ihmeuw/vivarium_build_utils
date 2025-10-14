@@ -79,7 +79,7 @@ def loadSharedFiles() {
 
 def buildEnvironment() {
     stage("Build Environment - Python ${PYTHON_VERSION}") {
-        dir(env.WORKING_DIR) {
+        withWorkingDirectory {
             echo "working directory: ${pwd()}"
             echo "Available files: ${sh(script: 'ls -la', returnStdout: true)}"
             // The env should have been cleaned out after the last build, but delete it again
