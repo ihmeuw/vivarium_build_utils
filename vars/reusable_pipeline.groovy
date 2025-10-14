@@ -181,10 +181,10 @@ def call(Map config = [:]){
                   withEnv(envVars.collect { k, v -> "${k}=${v}" }) {
                     try {
                       checkout scm
-                      load_shared_files()
                       buildStages.runDebugInfo()
                       echo "About to set working directory"
                       buildStages.setWorkingDirectory()
+                      load_shared_files()
                       buildStages.buildEnvironment()
                       if (IS_DOC_ONLY_CHANGE.toBoolean() == true) {
                         echo "This is a doc-only change. Skipping everything except doc build and doc tests."
