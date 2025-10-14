@@ -49,14 +49,16 @@ def runDebugInfo() {
 }
 
 def setWorkingDirectory() {
-    // JOB_NAME is like "Generated/{{REPO-NAME}}/libs/{PACKAGE_NAME}/{BRANCH-NAME}"
-    def pathParts = env.JOB_NAME.split('/')
-    def workingDirectory = "."
-    if (pathParts.length >= 4 && pathParts[0] == 'Generated') {
-        workingDirectory = "${pathParts[2]}/${pathParts[3]}"
-    }
-    dir(workingDirectory) {
-        echo "Set working directory to: ${pwd()}"
+    stage("Set Working Directory - Python ${PYTHON_VERSION}") {
+        // JOB_NAME is like "Generated/{{REPO-NAME}}/libs/{PACKAGE_NAME}/{BRANCH-NAME}"
+        def pathParts = env.JOB_NAME.split('/')
+        def workingDirectory = "."
+        if (pathParts.length >= 4 && pathParts[0] == 'Generated') {
+            workingDirectory = "${pathParts[2]}/${pathParts[3]}"
+        }
+        dir(workingDirectory) {
+            echo "Set working directory to: ${pwd()}"
+        }
     }
 }
 
