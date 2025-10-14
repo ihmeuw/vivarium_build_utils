@@ -51,6 +51,8 @@ def runDebugInfo() {
 def setWorkingDirectory() {
     stage("Set Working Directory - Python ${PYTHON_VERSION}") {
         // JOB_NAME is like "Generated/{{REPO-NAME}}/libs/{PACKAGE_NAME}/{BRANCH-NAME}"
+        echo "Original working directory: ${pwd()}"
+        echo "JOB_NAME: ${env.JOB_NAME}"
         def pathParts = env.JOB_NAME.split('/')
         def workingDirectory = "."
         if (pathParts.length >= 4 && pathParts[0] == 'Generated') {
