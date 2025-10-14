@@ -183,6 +183,7 @@ def call(Map config = [:]){
                       checkout scm
                       load_shared_files()
                       buildStages.runDebugInfo()
+                      buildStages.setWorkingDirectory()
                       buildStages.buildEnvironment()
                       if (IS_DOC_ONLY_CHANGE.toBoolean() == true) {
                         echo "This is a doc-only change. Skipping everything except doc build and doc tests."

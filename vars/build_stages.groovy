@@ -48,6 +48,18 @@ def runDebugInfo() {
     }
 }
 
+def setWorkingDirectory() {
+    // JOB_NAME is like "Generated/{{REPO-NAME}}/libs/{PACKAGE_NAME}/{BRANCH-NAME}"
+    def pathParts = env.JOB_NAME.split('/')
+    def workingDirectory = "."
+    if (pathParts.length >= 4 && pathParts[0] == 'Generated') {
+        workingDirectory = "${pathParts[2]}/${pathParts[3]}"
+    }
+    dir(workingDirectory) {
+        echo "Set working directory to: ${pwd()}"
+    }
+}
+
 def buildEnvironment() {
     stage("Build Environment - Python ${PYTHON_VERSION}") {
         // The env should have been cleaned out after the last build, but delete it again
