@@ -139,19 +139,17 @@ def runTests(List test_types) {
                 def parallelTests = test_types.collectEntries {
                     ["${full_name(it)} Tests" : {
                         stage("Run ${full_name(it)} Tests - Python ${PYTHON_VERSION}") {
-                            withWorkingDirectory {
-                                echo "Running ${full_name(it)} tests in working directory: ${pwd()}"
-                                sh "${ACTIVATE} && make ${it}${(env.IS_CRON.toBoolean() || params.RUN_SLOW) ? ' RUNSLOW=1' : ''}"
-                                publishHTML([
-                                    allowMissing: true,
-                                    alwaysLinkToLastBuild: false,
-                                    keepAll: true,
-                                    reportDir: "output/htmlcov_${it}",
-                                    reportFiles: "index.html",
-                                    reportName: "Coverage Report - ${full_name(it)} tests",
-                                    reportTitles: ''
-                                ])
-                            }
+                            echo "Running ${full_name(it)} tests in working directory: ${pwd()}"
+                            sh "${ACTIVATE} && make ${it}${(env.IS_CRON.toBoolean() || params.RUN_SLOW) ? ' RUNSLOW=1' : ''}"
+                            publishHTML([
+                                allowMissing: true,
+                                alwaysLinkToLastBuild: false,
+                                keepAll: true,
+                                reportDir: "output/htmlcov_${it}",
+                                reportFiles: "index.html",
+                                reportName: "Coverage Report - ${full_name(it)} tests",
+                                reportTitles: ''
+                            ])
                         }
                     }]
                 }
