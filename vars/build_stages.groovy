@@ -140,6 +140,7 @@ def runTests(List test_types) {
                     ["${full_name(it)} Tests" : {
                         stage("Run ${full_name(it)} Tests - Python ${PYTHON_VERSION}") {
                             withWorkingDirectory {
+                                echo "Running ${full_name(it)} tests in working directory: ${pwd()}"
                                 sh "${ACTIVATE} && make ${it}${(env.IS_CRON.toBoolean() || params.RUN_SLOW) ? ' RUNSLOW=1' : ''}"
                                 publishHTML([
                                     allowMissing: true,
