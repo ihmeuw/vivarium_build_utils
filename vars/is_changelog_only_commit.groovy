@@ -5,7 +5,8 @@ def call() {
         returnStdout: true
     ).trim()
     
-    // If no files are found (which shouldn't happen), return false
+    // If no files are found (i.e. it's an empty commit), return false because
+    // we are likely pushing an empty commit to trigger a build
     if (changedFiles == '') {
         return false
     }
@@ -20,6 +21,6 @@ def call() {
         returnStdout: true
     ).trim().toInteger() > 0
     
-    // Return true if there are no non-changelog changes in the latest commit
+    // Return true if there is only changes to the changelog in the latest commit
     return !hasNonChangelogChanges
 }
