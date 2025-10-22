@@ -149,20 +149,18 @@ def call(Map config = [:]){
           script {
             // Use the name of the branch in the build name
             currentBuild.displayName = "#${BUILD_NUMBER} ${GIT_BRANCH}"
-            
-            // Skip builds if this commit only contains changelog changes
-            if (IS_CHANGELOG_ONLY_COMMIT.toBoolean() == true) {
-              echo "This commit only contains changelog changes - skipping builds."
-              currentBuild.result = 'SUCCESS'
-              return
-            }
-            
             python_versions = get_python_versions(WORKSPACE, GIT_URL)
           }
         }
       }
 
       stage("Python Versions") {
+        // Skip builds if this commit only contains changelog changes
+        when {
+          not {
+            environment name: 'IS_CHANGELOG_ONLY_COMMIT', value: 'true'
+          }
+        }
         steps {
           script {
             
