@@ -47,23 +47,21 @@ help: # Curated help message
 	echo "Jenkins build targets"; \
 	echo "====================="; \
 	echo; \
-	echo "Run the following targets (in order) to mimic a Jenkins build."; \
-	echo "Note that the first step of a Jenkins build is to create the conda environment "; \
-	echo "using 'make create-env' which we do not include in this list since it is "; \
-	echo "assumed that you just created this environment."; \
-	echo "  1. install                          Install package and dependencies"; \
-	echo "  2. lint                             Check for formatting errors"; \
-	echo "  3. mypy                             (optional) Check for type hinting errors"; \
-	echo "  4. test-<test-type>                 Run specific tests unit, integration,"; \
+	echo "Run the following targets (in order) to mimic a Jenkins build:"; \
+	echo "  1. create-env                       Create a new conda environment"; \
+	echo "  2. install                          Install package and dependencies"; \
+	echo "  3. lint                             Check for formatting errors"; \
+	echo "  4. mypy                             (optional) Check for type hinting errors"; \
+	echo "  5. test-<test-type>                 Run specific tests unit, integration,"; \
 	echo "                                      e2e, all); include RUNSLOW=true if desired"; \
-	echo "  5. build-docs                       Build documentation"; \
-	echo "  6. test-docs                        Test documentation examples"; \
-	echo "  7. Deploy the package (optional)"; \
+	echo "  6. build-docs                       Build documentation"; \
+	echo "  7. test-docs                        Test documentation examples"; \
+	echo "  8. Deploy the package (optional)"; \
 	echo "     a. tag-version                   Tag current version and push to git"; \
 	echo "     b. build-package                 Build pip wheel package"; \
 	echo "     c. deploy-package-artifactory    Deploy the package to Artifactory"; \
-	echo "  8. deploy-docs                      Deploy documentation to shared server"; \
-	echo "  9. clean                            Clean build artifacts and temporary files"; \
+	echo "  9. deploy-docs                      Deploy documentation to shared server"; \
+	echo " 10. clean                            Clean build artifacts and temporary files"; \
 	echo) | less
 
 ######################
@@ -133,12 +131,20 @@ mypy: # Check for type hinting errors
 
 .PHONY: build-docs
 build-docs: # Build documentation
-	rm -rf docs/build/
-	$(MAKE) -C docs/ html SPHINXOPTS="-T -W --keep-going"
+	@if [ -d docs/ ]; then \
+		rm -rf docs/build/; \
+		$(MAKE) -C docs/ html SPHINXOPTS="-T -W --keep-going"; \
+	else \
+		echo "No 'docs/' folder found - skipping."; \
+	fi
 
 .PHONY: test-docs
 test-docs: # Test documentation examples
-	$(MAKE) doctest -C docs/
+	@if [ -d docs/ ]; then \
+		$(MAKE) doctest -C docs/; \
+	else \
+		echo "No 'docs/' folder found - skipping."; \
+	fi
 
 .PHONY: tag-version
 tag-version: # Tag current version and push to git
@@ -188,18 +194,14 @@ check: # Run development checks
 	@echo
 	@echo "Running fast tests"
 	make test-all
-# 	Run doc checks if there's a docs/ folder
-	@if [ -d "docs" ]; then \
-		echo; \
-		echo "Building documentation"; \
-		make build-docs; \
-		echo; \
-		echo "Running doctests"; \
-		make test-docs; \
-	else \
-		echo; \
-		echo "No 'docs/' folder found - skipping doc checks."; \
-	fi
+# 	Build docs
+	@echo
+	@echo "Building documentation"
+	make build-docs
+# 	Test docs
+	@echo
+	@echo "Running doctests"
+	make test-docs
 	@echo
 	@echo "*** All checks passed successfully! ***"
 
