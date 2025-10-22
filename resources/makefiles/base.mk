@@ -188,14 +188,18 @@ check: # Run development checks
 	@echo
 	@echo "Running fast tests"
 	make test-all
-# 	Build docs
-	@echo
-	@echo "Building documentation"
-	make build-docs
-# 	Test docs
-	@echo
-	@echo "Running doctests"
-	make test-docs
+# 	Run doc checks if there's a docs/ folder
+	@if [ -d "docs" ]; then \
+		echo; \
+		echo "Building documentation"; \
+		make build-docs; \
+		echo; \
+		echo "Running doctests"; \
+		make test-docs; \
+	else \
+		echo; \
+		echo "No 'docs/' folder found - skipping doc checks."; \
+	fi
 	@echo
 	@echo "*** All checks passed successfully! ***"
 
