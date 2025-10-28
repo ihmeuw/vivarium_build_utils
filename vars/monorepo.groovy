@@ -102,23 +102,28 @@ List<String> getOpenPullRequests() {
             return []
         }
         
-        def matcher = gitUrlStr =~ /.+[\/:](?<owner>[^\/]+)\/(?<repository>[^\/]+)(?:\.git)?$/
+        echo "Parsing GIT_URL: ${gitUrlStr}"
+        def matcher = gitUrlStr =~ /.+[\/:]([^\/]+)\/([^\/]+?)(?:\.git)?$/
         if (!matcher.matches()) {
             echo "Could not parse repository URL: ${gitUrlStr}"
             return []
         }
-        String repoOwner = matcher.group('owner')
-        String repoName = matcher.group('repository')
+        String repoOwner = matcher.group(1)
+        String repoName = matcher.group(2)
+        echo "Parsed repo: ${repoOwner}/${repoName}"
         
         // Use GitHub CLI or API to get open PRs
+        echo "Attempting to fetch PRs for ${repoOwner}/${repoName}..."
         def result = sh(
             script: """
-                # Try using GitHub CLI first (if available)
+                set -e
+                echo "Checking for GitHub CLI..."
                 if command -v gh &> /dev/null; then
-                    gh pr list --repo ${repoOwner}/${repoName} --state open --json headRefName --jq '.[].headRefName' || echo ''
+                    echo "GitHub CLI found, fetching PRs..."
+                    gh pr list --repo ${repoOwner}/${repoName} --state open --json headRefName --jq '.[].headRefName' 2>/dev/null || echo ''
                 else
-                    # Fallback: use git to list remote PR branches
-                    git ls-remote --heads origin | grep -E 'refs/heads/(pr-|feature/|fix/)' | sed 's|.*refs/heads/||' || echo ''
+                    echo "GitHub CLI not found, using git fallback..."
+                    git ls-remote --heads origin 2>/dev/null | grep -E 'refs/heads/(pr-|feature/|fix/)' | sed 's|.*refs/heads/||' || echo ''
                 fi
             """,
             returnStdout: true
@@ -126,8 +131,12 @@ List<String> getOpenPullRequests() {
         
         // Ensure we have a string and trim it safely
         def trimmedResult = result?.toString()?.trim() ?: ''
+        echo "PR fetch result: '${trimmedResult}'"
         
-        return trimmedResult ? trimmedResult.split('\n').toList() : []
+        def prList = trimmedResult ? trimmedResult.split('\n').findAll { it.trim() } : []
+        echo "Found ${prList.size()} PR branch(es): ${prList}"
+        
+        return prList
     } catch (Exception e) {
         echo "Warning: Could not fetch open PRs: ${e.message}"
         return []
