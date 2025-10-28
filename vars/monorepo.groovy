@@ -90,6 +90,100 @@ List<String> findRelevantMultibranchPipelines(List<String> changedFilesPathStr, 
 }
 
 /**
+ * Get all open pull requests from GitHub API.
+ * @return List of open PR branch names.
+ */
+List<String> getOpenPullRequests() {
+    try {
+        // Extract repository info from GIT_URL
+        def matcher = env.GIT_URL =~ /.+[\/:](?<owner>[^\/]+)\/(?<repository>[^\/]+)(?:\.git)?$/
+        if (!matcher.matches()) {
+            echo "Could not parse repository URL: ${env.GIT_URL}"
+            return []
+        }
+        String repoOwner = matcher.group('owner')
+        String repoName = matcher.group('repository')
+        
+        // Use GitHub CLI or API to get open PRs
+        def result = sh(
+            script: """
+                # Try using GitHub CLI first (if available)
+                if command -v gh &> /dev/null; then
+                    gh pr list --repo ${repoOwner}/${repoName} --state open --json headRefName --jq '.[].headRefName'
+                else
+                    # Fallback: use git to list remote PR branches
+                    git ls-remote --heads origin | grep -E 'refs/heads/(pr-|feature/|fix/)' | sed 's|.*refs/heads/||' || echo ''
+                fi
+            """,
+            returnStdout: true
+        ).trim()
+        
+        return result ? result.split('\n').toList() : []
+    } catch (Exception e) {
+        echo "Warning: Could not fetch open PRs: ${e.message}"
+        return []
+    }
+}
+
+/**
+ * Get changes in a specific branch compared to main.
+ * @param branchName The branch to compare.
+ * @param targetBranch The target branch (default: main).
+ * @return List of changed directories in the branch.
+ */
+List<String> getChangedDirectoriesInBranch(String branchName, String targetBranch = 'main') {
+    try {
+        def result = sh(
+            script: """
+                # Fetch the target branch to ensure we have latest
+                git fetch origin ${targetBranch}:${targetBranch} 2>/dev/null || true
+                
+                # Get changes between target branch and the specified branch
+                git diff --name-only origin/${targetBranch}...origin/${branchName} | xargs -L1 dirname | uniq || echo ''
+            """,
+            returnStdout: true
+        ).trim()
+        
+        return result ? result.split('\n').toList() : []
+    } catch (Exception e) {
+        echo "Warning: Could not get changes for branch ${branchName}: ${e.message}"
+        return []
+    }
+}
+
+/**
+ * Get all pipelines that should run for open PRs with changes.
+ * @param jenkinsfilePaths The list of Jenkinsfiles paths.
+ * @return Map of [branchName: List<pipelinePaths>] for PRs with relevant changes.
+ */
+Map<String, List<String>> findPipelinesToRunForOpenPRs(List<String> jenkinsfilePaths) {
+    echo "=== Detecting Open PRs with Changes ==="
+    
+    List<String> openPRs = getOpenPullRequests()
+    echo "Found ${openPRs.size()} open PR(s): ${openPRs}"
+    
+    Map<String, List<String>> prPipelines = [:]
+    
+    for (String prBranch : openPRs) {
+        echo "Checking changes in PR branch: ${prBranch}"
+        // todo this only find differences between the PR branch and main
+        //   we also want to look for differences between the current state of the
+        //   branch and its state on the most recent build
+        List<String> changedDirs = getChangedDirectoriesInBranch(prBranch)
+        List<String> relevantPipelines = findRelevantMultibranchPipelines(changedDirs, jenkinsfilePaths)
+        
+        if (!relevantPipelines.isEmpty()) {
+            prPipelines[prBranch] = relevantPipelines
+            echo "  → PR ${prBranch} affects: ${relevantPipelines}"
+        } else {
+            echo "  → PR ${prBranch} has no relevant changes"
+        }
+    }
+    
+    return prPipelines
+}
+
+/**
  * Get the list of Multibranch Pipelines that should be run according to the changeset.
  * @param jenkinsfilePaths The list of Jenkinsfiles paths.
  * @return The list of Multibranch Pipelines to run relative to the repository root.
@@ -121,6 +215,66 @@ def getPipelineName(String rootFolderPath, String multibranchPipelineToRun) {
     
     def encodedBranch = URLEncoder.encode(branchName, 'UTF-8')
     return "${rootFolderPath}/${multibranchPipelineToRun}/${encodedBranch}"
+}
+
+/**
+ * Get the full pipeline name for a specific branch (used for PR builds).
+ * @param rootFolderPath The root folder path for generated pipelines.
+ * @param multibranchPipelineToRun The multibranch pipeline path.
+ * @param branchName The specific branch name to build.
+ * @return The full pipeline name including encoded branch.
+ */
+def getPipelineNameForBranch(String rootFolderPath, String multibranchPipelineToRun, String branchName) {
+    def encodedBranch = URLEncoder.encode(branchName, 'UTF-8')
+    return "${rootFolderPath}/${multibranchPipelineToRun}/${encodedBranch}"
+}
+
+/**
+ * Run pipelines for specific PR branches that have changes.
+ * @param rootFolderPath The common root folder of Multibranch Pipelines.
+ * @param prPipelinesMap Map of [branchName: List<pipelinePaths>] from findPipelinesToRunForOpenPRs.
+ */
+def runPipelinesForPRs(String rootFolderPath, Map<String, List<String>> prPipelinesMap) {
+    if (prPipelinesMap.isEmpty()) {
+        echo "No PR pipelines to run - exiting"
+        return
+    }
+    
+    echo "Preparing to run pipelines for ${prPipelinesMap.size()} PR(s)"
+    
+    Map<String, Closure> parallelStages = [:]
+    
+    prPipelinesMap.each { branchName, pipelinePaths ->
+        pipelinePaths.each { pipelinePath ->
+            def stageKey = "PR ${branchName} - ${pipelinePath}"
+            parallelStages[stageKey] = {
+                def pipelineName = getPipelineNameForBranch(rootFolderPath, pipelinePath, branchName)
+                
+                echo "Triggering PR pipeline: ${pipelineName} (branch: ${branchName})"
+                
+                try {
+                    // Wait for pipeline to be available
+                    timeout(time: 5, unit: 'MINUTES') {
+                        waitUntil(initialRecurrencePeriod: 1e3) {
+                            def pipeline = Jenkins.instance.getItemByFullName(pipelineName)
+                            return pipeline && !pipeline.isDisabled()
+                        }
+                    }
+                    
+                    echo "Starting build for PR pipeline: ${pipelineName}"
+                    build(job: pipelineName, propagate: false, wait: false) // Non-blocking for PR builds
+                    echo "Triggered build for PR pipeline: ${pipelineName}"
+                } catch (Exception e) {
+                    echo "Warning: Could not trigger ${pipelineName}: ${e.message}"
+                }
+            }
+        }
+    }
+    
+    if (!parallelStages.isEmpty()) {
+        parallel(parallelStages)
+        echo "All PR pipeline triggers completed"
+    }
 }
 
 /**
@@ -186,7 +340,30 @@ def call(Map config = [:]){
         echo "  - ${path}"
     }
 
-    echo "Step 2: Detecting Changes"
+    
+    // Check if we should scan all open PRs (useful for nightly builds or manual triggers)
+    boolean scanAllPRs = config.scanAllOpenPRs ?: true
+    
+    if (scanAllPRs) {
+        echo "Enhanced mode: Scanning all open PRs for changes"
+        
+        // Get PR-specific pipeline mappings
+        Map<String, List<String>> prPipelinesMap = findPipelinesToRunForOpenPRs(jenkinsfilePaths)
+        
+        echo "Step 3: Triggering PR-Specific Builds"
+        if (!prPipelinesMap.isEmpty()) {
+            echo "Found ${prPipelinesMap.size()} PR(s) with changes:"
+            prPipelinesMap.each { branchName, pipelines ->
+                echo "  - PR ${branchName}: ${pipelines}"
+            }
+            runPipelinesForPRs(rootFolderPath, prPipelinesMap)
+        } else {
+            echo "No open PRs with relevant changes"
+        }
+        
+    }
+    echo "Step 2: Detecting Changes on main"
+    
     List<String> multibranchPipelinesToRun = findMultibranchPipelinesToRun(jenkinsfilePaths)
     
     if (multibranchPipelinesToRun.isEmpty()) {
