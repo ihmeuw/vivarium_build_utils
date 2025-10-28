@@ -58,9 +58,12 @@ List<String> getChangedDirectories(String baselineRevision) {
             label: 'List changed directories',
             script: "git diff --name-only ${baselineRevision} | xargs -L1 dirname | uniq || echo ''",
             returnStdout: true,
-    ).trim()
+    )
     
-    return result ? result.split().toList() : []
+    // Safely handle the result
+    def trimmedResult = result?.toString()?.trim() ?: ''
+    
+    return trimmedResult ? trimmedResult.split().toList() : []
 }
 
 /**
@@ -103,27 +106,68 @@ List<String> getOpenPullRequests() {
         }
         
         echo "Parsing GIT_URL: ${gitUrlStr}"
-        def matcher = gitUrlStr =~ /.+[\/:]([^\/]+)\/([^\/]+?)(?:\.git)?$/
-        if (!matcher.matches()) {
-            echo "Could not parse repository URL: ${gitUrlStr}"
+        
+        // Use a simpler approach to extract owner and repo
+        def repoOwner = ''
+        def repoName = ''
+        
+        try {
+            if (gitUrlStr.contains('github.com')) {
+                // Handle both HTTPS and SSH formats
+                def urlPart = gitUrlStr.toString()
+                if (urlPart.contains('github.com/')) {
+                    urlPart = urlPart.substring(urlPart.indexOf('github.com/') + 11)
+                } else if (urlPart.contains('github.com:')) {
+                    urlPart = urlPart.substring(urlPart.indexOf('github.com:') + 11)
+                }
+                
+                // Remove .git suffix if present
+                if (urlPart.endsWith('.git')) {
+                    urlPart = urlPart.substring(0, urlPart.length() - 4)
+                }
+                
+                // Split on / to get owner and repo
+                def parts = urlPart.split('/')
+                if (parts && parts.size() >= 2) {
+                    repoOwner = parts[0].toString()
+                    repoName = parts[1].toString()
+                }
+            }
+        } catch (Exception parseError) {
+            echo "Error parsing URL: ${parseError.message}"
             return []
         }
-        String repoOwner = matcher.group(1)
-        String repoName = matcher.group(2)
+        
+        if (!repoOwner || !repoName) {
+            echo "Could not parse repository URL: ${gitUrlStr} - using fallback branch detection"
+            // Fallback: just look for branch patterns that might be PRs
+            def result = sh(
+                script: """
+                    echo "Using branch pattern fallback..."
+                    git ls-remote --heads origin 2>/dev/null | grep -E 'refs/heads/(pr-|feature/|fix/|bugfix/)' | sed 's|.*refs/heads/||' || echo ''
+                """,
+                returnStdout: true
+            )
+            
+            def trimmedResult = result?.toString()?.trim() ?: ''
+            def prList = trimmedResult ? trimmedResult.split('\n').findAll { it?.toString()?.trim() } : []
+            echo "Found ${prList.size()} potential PR branch(es) via fallback: ${prList}"
+            return prList
+        }
+        
         echo "Parsed repo: ${repoOwner}/${repoName}"
         
         // Use GitHub CLI or API to get open PRs
         echo "Attempting to fetch PRs for ${repoOwner}/${repoName}..."
         def result = sh(
             script: """
-                set -e
                 echo "Checking for GitHub CLI..."
                 if command -v gh &> /dev/null; then
                     echo "GitHub CLI found, fetching PRs..."
                     gh pr list --repo ${repoOwner}/${repoName} --state open --json headRefName --jq '.[].headRefName' 2>/dev/null || echo ''
                 else
                     echo "GitHub CLI not found, using git fallback..."
-                    git ls-remote --heads origin 2>/dev/null | grep -E 'refs/heads/(pr-|feature/|fix/)' | sed 's|.*refs/heads/||' || echo ''
+                    git ls-remote --heads origin 2>/dev/null | grep -E 'refs/heads/(pr-|feature/|fix/|bugfix/)' | sed 's|.*refs/heads/||' || echo ''
                 fi
             """,
             returnStdout: true
@@ -133,7 +177,9 @@ List<String> getOpenPullRequests() {
         def trimmedResult = result?.toString()?.trim() ?: ''
         echo "PR fetch result: '${trimmedResult}'"
         
-        def prList = trimmedResult ? trimmedResult.split('\n').findAll { it.trim() } : []
+        def prList = trimmedResult ? trimmedResult.split('\n').findAll { 
+            it?.toString()?.trim()  // Extra safety for each item
+        } : []
         echo "Found ${prList.size()} PR branch(es): ${prList}"
         
         return prList
