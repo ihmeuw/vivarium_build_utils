@@ -320,11 +320,27 @@ def runPipelinesForPRs(String rootFolderPath, Map<String, List<String>> prPipeli
                 echo "Triggering PR pipeline: ${pipelineName} (branch: ${branchName})"
                 
                 try {
-                    // Wait for pipeline to be available
+                    // Wait for pipeline to be available, with diagnostics
                     timeout(time: 5, unit: 'MINUTES') {
                         waitUntil {
                             def pipeline = Jenkins.instance.getItemByFullName(pipelineName)
-                            return pipeline && !pipeline.isDisabled()
+                            if (pipeline && !pipeline.isDisabled()) {
+                                echo "Pipeline ${pipelineName} is ready"
+                                return true
+                            } else {
+                                // Diagnostics: list all pipelines under the parent folder
+                                def parentPath = pipelineName.contains('/') ? pipelineName.substring(0, pipelineName.lastIndexOf('/')) : pipelineName
+                                def parent = Jenkins.instance.getItemByFullName(parentPath)
+                                if (parent) {
+                                    def children = parent.getItems()*.getName()
+                                    echo "[Diagnostics] Pipelines under ${parentPath}: ${children}"
+                                } else {
+                                    echo "[Diagnostics] Parent folder ${parentPath} not found in Jenkins."
+                                }
+                                echo "[Diagnostics] Pipeline ${pipelineName} not yet available or is disabled. Waiting..."
+                                sleep 5 // avoid spamming logs
+                                return false
+                            }
                         }
                     }
                     
