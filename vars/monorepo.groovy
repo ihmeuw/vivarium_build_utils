@@ -96,9 +96,15 @@ List<String> findRelevantMultibranchPipelines(List<String> changedFilesPathStr, 
 List<String> getOpenPullRequests() {
     try {
         // Extract repository info from GIT_URL
-        def matcher = env.GIT_URL =~ /.+[\/:](?<owner>[^\/]+)\/(?<repository>[^\/]+)(?:\.git)?$/
+        def gitUrlStr = env.GIT_URL?.toString()
+        if (!gitUrlStr) {
+            echo "GIT_URL not available, cannot fetch PRs"
+            return []
+        }
+        
+        def matcher = gitUrlStr =~ /.+[\/:](?<owner>[^\/]+)\/(?<repository>[^\/]+)(?:\.git)?$/
         if (!matcher.matches()) {
-            echo "Could not parse repository URL: ${env.GIT_URL}"
+            echo "Could not parse repository URL: ${gitUrlStr}"
             return []
         }
         String repoOwner = matcher.group('owner')
@@ -109,16 +115,19 @@ List<String> getOpenPullRequests() {
             script: """
                 # Try using GitHub CLI first (if available)
                 if command -v gh &> /dev/null; then
-                    gh pr list --repo ${repoOwner}/${repoName} --state open --json headRefName --jq '.[].headRefName'
+                    gh pr list --repo ${repoOwner}/${repoName} --state open --json headRefName --jq '.[].headRefName' || echo ''
                 else
                     # Fallback: use git to list remote PR branches
                     git ls-remote --heads origin | grep -E 'refs/heads/(pr-|feature/|fix/)' | sed 's|.*refs/heads/||' || echo ''
                 fi
             """,
             returnStdout: true
-        ).trim()
+        )
         
-        return result ? result.split('\n').toList() : []
+        // Ensure we have a string and trim it safely
+        def trimmedResult = result?.toString()?.trim() ?: ''
+        
+        return trimmedResult ? trimmedResult.split('\n').toList() : []
     } catch (Exception e) {
         echo "Warning: Could not fetch open PRs: ${e.message}"
         return []
@@ -142,9 +151,12 @@ List<String> getChangedDirectoriesInBranch(String branchName, String targetBranc
                 git diff --name-only origin/${targetBranch}...origin/${branchName} | xargs -L1 dirname | uniq || echo ''
             """,
             returnStdout: true
-        ).trim()
+        )
         
-        return result ? result.split('\n').toList() : []
+        // Ensure we have a string and trim it safely
+        def trimmedResult = result?.toString()?.trim() ?: ''
+        
+        return trimmedResult ? trimmedResult.split('\n').toList() : []
     } catch (Exception e) {
         echo "Warning: Could not get changes for branch ${branchName}: ${e.message}"
         return []
@@ -255,7 +267,7 @@ def runPipelinesForPRs(String rootFolderPath, Map<String, List<String>> prPipeli
                 try {
                     // Wait for pipeline to be available
                     timeout(time: 5, unit: 'MINUTES') {
-                        waitUntil(initialRecurrencePeriod: 1e3) {
+                        waitUntil {
                             def pipeline = Jenkins.instance.getItemByFullName(pipelineName)
                             return pipeline && !pipeline.isDisabled()
                         }
@@ -301,7 +313,7 @@ def runPipelines(String rootFolderPath, List<String> multibranchPipelinesToRun) 
             // event so a build can be triggered.
             echo "Waiting for pipeline to become available..."
             timeout(time: 5, unit: 'MINUTES') {
-                waitUntil(initialRecurrencePeriod: 1e3) {
+                waitUntil {
                     def pipeline = Jenkins.instance.getItemByFullName(pipelineName)
                     if (pipeline && !pipeline.isDisabled()) {
                         echo "Pipeline ${pipelineName} is ready"
@@ -327,7 +339,9 @@ def runPipelines(String rootFolderPath, List<String> multibranchPipelinesToRun) 
 def call(Map config = [:]){
     println "Step 1: Provisioning Jenkins Items"
     
-    String repositoryName = env.JOB_NAME.split('/')[0]
+    // Safely handle JOB_NAME which might be null or not a string
+    def jobNameStr = env.JOB_NAME?.toString() ?: 'unknown'
+    String repositoryName = jobNameStr.contains('/') ? jobNameStr.split('/')[0] : jobNameStr
     String rootFolderPath = "Generated/$repositoryName"
     List<String> jenkinsfilePaths = config.jenkinsfiles ?: []
 
