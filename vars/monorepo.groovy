@@ -332,8 +332,12 @@ def runPipelinesForPRs(String rootFolderPath, Map<String, List<String>> prPipeli
                                 def parentPath = pipelineName.contains('/') ? pipelineName.substring(0, pipelineName.lastIndexOf('/')) : pipelineName
                                 def parent = Jenkins.instance.getItemByFullName(parentPath)
                                 if (parent) {
-                                    def children = parent.getItems()*.getName()
-                                    echo "[Diagnostics] Pipelines under ${parentPath}: ${children}"
+                                    def childrenNames = []
+                                    def items = parent.getItems()
+                                    for (def item : items) {
+                                        childrenNames.add(item.getName())
+                                    }
+                                    echo "[Diagnostics] Pipelines under ${parentPath}: ${childrenNames}"
                                 } else {
                                     echo "[Diagnostics] Parent folder ${parentPath} not found in Jenkins."
                                 }
