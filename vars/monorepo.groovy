@@ -320,7 +320,19 @@ def runPipelinesForPRs(String rootFolderPath, Map<String, List<String>> prPipeli
                 echo "Triggering PR pipeline: ${pipelineName} (branch: ${branchName})"
                 
                 try {
-                    // Wait for pipeline to be available, with diagnostics
+                    // First, trigger branch indexing on the multibranch project to ensure PR branch is discovered
+                    def multibranchPath = "${rootFolderPath}/${pipelinePath}"
+                    def multibranchProject = Jenkins.instance.getItemByFullName(multibranchPath)
+                    
+                    if (multibranchProject) {
+                        echo "Triggering branch indexing for multibranch project: ${multibranchPath}"
+                        multibranchProject.scheduleBuild()
+                        
+                        // Give it a moment to start indexing
+                        sleep 10
+                    }
+                    
+                    // Wait for specific branch pipeline to be available, with diagnostics
                     timeout(time: 5, unit: 'MINUTES') {
                         waitUntil {
                             def pipeline = Jenkins.instance.getItemByFullName(pipelineName)
@@ -338,11 +350,12 @@ def runPipelinesForPRs(String rootFolderPath, Map<String, List<String>> prPipeli
                                         childrenNames.add(item.getName())
                                     }
                                     echo "[Diagnostics] Pipelines under ${parentPath}: ${childrenNames}"
+                                    echo "[Diagnostics] Looking for branch: ${URLEncoder.encode(branchName, 'UTF-8')}"
                                 } else {
                                     echo "[Diagnostics] Parent folder ${parentPath} not found in Jenkins."
                                 }
                                 echo "[Diagnostics] Pipeline ${pipelineName} not yet available or is disabled. Waiting..."
-                                sleep 5 // avoid spamming logs
+                                sleep 10 // Give more time for branch indexing
                                 return false
                             }
                         }
@@ -353,6 +366,7 @@ def runPipelinesForPRs(String rootFolderPath, Map<String, List<String>> prPipeli
                     echo "Triggered build for PR pipeline: ${pipelineName}"
                 } catch (Exception e) {
                     echo "Warning: Could not trigger ${pipelineName}: ${e.message}"
+                    echo "This may be because the PR branch '${branchName}' hasn't been indexed yet in the multibranch pipeline."
                 }
             }
         }
