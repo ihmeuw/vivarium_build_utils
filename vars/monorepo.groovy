@@ -9,7 +9,7 @@ import hudson.model.*
 List<String> provisionItems(String rootFolderPath, String repositoryURL, List<String> jenkinsfilePaths) {
     echo "Executing Job DSL to provision Jenkins items..."
     // Provision folder and Multibranch Pipelines.
-    jobDsl(
+    def jobDslResult = jobDsl(
             scriptText: libraryResource('multiPipelines.groovy'),
             additionalParameters: [
                     jenkinsfilePathsStr: jenkinsfilePaths,
@@ -20,7 +20,16 @@ List<String> provisionItems(String rootFolderPath, String repositoryURL, List<St
             // unless you only provision items from the default branch.
             removedJobAction: 'IGNORE'
     )
+    
     echo "Job DSL execution completed"
+    if (jobDslResult) {
+        echo "Job DSL created/updated ${jobDslResult.size()} item(s):"
+        jobDslResult.each { item ->
+            echo "  - ${item.fullName}"
+        }
+    }
+    
+    return jenkinsfilePaths
 }
 
 /**
@@ -146,21 +155,24 @@ def runPipelines(String rootFolderPath, List<String> multibranchPipelinesToRun) 
             
             echo "Triggering pipeline: ${pipelineName}"
             
-            // First, trigger a scan of the multibranch pipeline to ensure it discovers the current branch
+            // The multibranch pipeline should already exist (verified in main flow)
             def multibranchPipelinePath = "${rootFolderPath}/${multibranchPipelineToRun}"
+            
+            // Trigger a scan of the multibranch pipeline to ensure it discovers the current branch
             echo "Triggering scan for multibranch pipeline: ${multibranchPipelinePath}"
             
             try {
                 build(job: multibranchPipelinePath + '/branch-indexing', wait: true, propagate: false)
                 echo "Branch indexing completed for ${multibranchPipelinePath}"
             } catch (Exception e) {
-                echo "Branch indexing failed or not needed: ${e.message}"
+                echo "Branch indexing failed or not available: ${e.message}"
+                // Continue anyway - the pipeline might already have the branch indexed
             }
             
             // For new branches, Jenkins will receive an event from the version control system to provision the
             // corresponding Pipeline under the Multibranch Pipeline item. We have to wait for Jenkins to process the
             // event so a build can be triggered.
-            echo "Waiting for pipeline to become available..."
+            echo "Waiting for specific branch pipeline to become available: ${pipelineName}"
             timeout(time: 3, unit: 'MINUTES') {
                 waitUntil(initialRecurrencePeriod: 2000) {
                     def pipeline = Jenkins.instance.getItemByFullName(pipelineName)
@@ -201,6 +213,29 @@ def call(Map config = [:]){
     provisionItems(rootFolderPath, env.GIT_URL, jenkinsfilePaths)
     jenkinsfilePaths.each { path ->
         echo "  - ${path}"
+    }
+
+    echo "Verifying that Job DSL items were created successfully..."
+    // Wait for all expected multibranch pipelines to be created
+    def expectedPipelines = jenkinsfilePaths.collect { path ->
+        def jenkinsfileDir = path.replaceAll('/Jenkinsfile$', '')
+        return "${rootFolderPath}/${jenkinsfileDir}"
+    }
+    
+    expectedPipelines.each { expectedPipeline ->
+        echo "Waiting for multibranch pipeline: ${expectedPipeline}"
+        timeout(time: 2, unit: 'MINUTES') {
+            waitUntil(initialRecurrencePeriod: 1000) {
+                def pipeline = Jenkins.instance.getItemByFullName(expectedPipeline)
+                if (pipeline) {
+                    echo "✓ Multibranch pipeline created: ${expectedPipeline}"
+                    return true
+                } else {
+                    echo "⏳ Still waiting for: ${expectedPipeline}"
+                    return false
+                }
+            }
+        }
     }
 
     echo "Step 2: Detecting Changes"
