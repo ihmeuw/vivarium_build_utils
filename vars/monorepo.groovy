@@ -58,12 +58,9 @@ List<String> getChangedDirectories(String baselineRevision) {
             label: 'List changed directories',
             script: "git diff --name-only ${baselineRevision} | xargs -L1 dirname | uniq || echo ''",
             returnStdout: true,
-    )
+    ).trim()
     
-    // Safely handle the result
-    def trimmedResult = result?.toString()?.trim() ?: ''
-    
-    return trimmedResult ? trimmedResult.split().toList() : []
+    return result ? result.split().toList() : []
 }
 
 /**
@@ -90,164 +87,6 @@ List<String> findRelevantMultibranchPipelines(List<String> changedFilesPathStr, 
     }
     
     return result
-}
-
-/**
- * Get all open pull requests from GitHub API.
- * @return List of open PR branch names.
- */
-List<String> getOpenPullRequests() {
-    try {
-        // Extract repository info from GIT_URL
-        def gitUrlStr = env.GIT_URL?.toString()
-        if (!gitUrlStr) {
-            echo "GIT_URL not available, cannot fetch PRs"
-            return []
-        }
-        
-        echo "Parsing GIT_URL: ${gitUrlStr}"
-        
-        // Use a simpler approach to extract owner and repo
-        def repoOwner = ''
-        def repoName = ''
-        
-        try {
-            if (gitUrlStr.contains('github.com')) {
-                // Handle both HTTPS and SSH formats
-                def urlPart = gitUrlStr.toString()
-                if (urlPart.contains('github.com/')) {
-                    urlPart = urlPart.substring(urlPart.indexOf('github.com/') + 11)
-                } else if (urlPart.contains('github.com:')) {
-                    urlPart = urlPart.substring(urlPart.indexOf('github.com:') + 11)
-                }
-                
-                // Remove .git suffix if present
-                if (urlPart.endsWith('.git')) {
-                    urlPart = urlPart.substring(0, urlPart.length() - 4)
-                }
-                
-                // Split on / to get owner and repo
-                def parts = urlPart.split('/')
-                if (parts && parts.size() >= 2) {
-                    repoOwner = parts[0].toString()
-                    repoName = parts[1].toString()
-                }
-            }
-        } catch (Exception parseError) {
-            echo "Error parsing URL: ${parseError.message}"
-            return []
-        }
-        
-        if (!repoOwner || !repoName) {
-            echo "Could not parse repository URL: ${gitUrlStr} - using fallback branch detection"
-            // Fallback: just look for branch patterns that might be PRs
-            def result = sh(
-                script: """
-                    echo "Using branch pattern fallback..."
-                    git ls-remote --heads origin 2>/dev/null | grep -E 'refs/heads/(pr-|feature/|fix/|bugfix/)' | sed 's|.*refs/heads/||' || echo ''
-                """,
-                returnStdout: true
-            )
-            
-            def trimmedResult = result?.toString()?.trim() ?: ''
-            def prList = trimmedResult ? trimmedResult.split('\n').findAll { it?.toString()?.trim() } : []
-            echo "Found ${prList.size()} potential PR branch(es) via fallback: ${prList}"
-            return prList
-        }
-        
-        echo "Parsed repo: ${repoOwner}/${repoName}"
-        
-        // Use GitHub CLI or API to get open PRs
-        echo "Attempting to fetch PRs for ${repoOwner}/${repoName}..."
-        def result = sh(
-            script: """
-                echo "Checking for GitHub CLI..."
-                if command -v gh &> /dev/null; then
-                    echo "GitHub CLI found, fetching PRs..."
-                    gh pr list --repo ${repoOwner}/${repoName} --state open --json headRefName --jq '.[].headRefName' 2>/dev/null || echo ''
-                else
-                    echo "GitHub CLI not found, using git fallback..."
-                    git ls-remote --heads origin 2>/dev/null | grep -E 'refs/heads/(pr-|feature/|fix/|bugfix/)' | sed 's|.*refs/heads/||' || echo ''
-                fi
-            """,
-            returnStdout: true
-        )
-        
-        // Ensure we have a string and trim it safely
-        def trimmedResult = result?.toString()?.trim() ?: ''
-        echo "PR fetch result: '${trimmedResult}'"
-        
-        def prList = trimmedResult ? trimmedResult.split('\n').findAll { 
-            it?.toString()?.trim()  // Extra safety for each item
-        } : []
-        echo "Found ${prList.size()} PR branch(es): ${prList}"
-        
-        return prList
-    } catch (Exception e) {
-        echo "Warning: Could not fetch open PRs: ${e.message}"
-        return []
-    }
-}
-
-/**
- * Get changes in a specific branch compared to main.
- * @param branchName The branch to compare.
- * @param targetBranch The target branch (default: main).
- * @return List of changed directories in the branch.
- */
-List<String> getChangedDirectoriesInBranch(String branchName, String targetBranch = 'main') {
-    try {
-        def result = sh(
-            script: """
-                # Fetch the target branch to ensure we have latest
-                git fetch origin ${targetBranch}:${targetBranch} 2>/dev/null || true
-                
-                # Get changes between target branch and the specified branch
-                git diff --name-only origin/${targetBranch}...origin/${branchName} | xargs -L1 dirname | uniq || echo ''
-            """,
-            returnStdout: true
-        )
-        
-        // Ensure we have a string and trim it safely
-        def trimmedResult = result?.toString()?.trim() ?: ''
-        
-        return trimmedResult ? trimmedResult.split('\n').toList() : []
-    } catch (Exception e) {
-        echo "Warning: Could not get changes for branch ${branchName}: ${e.message}"
-        return []
-    }
-}
-
-/**
- * Get all pipelines that should run for open PRs with changes.
- * @param jenkinsfilePaths The list of Jenkinsfiles paths.
- * @return Map of [branchName: List<pipelinePaths>] for PRs with relevant changes.
- */
-Map<String, List<String>> findPipelinesToRunForOpenPRs(List<String> jenkinsfilePaths) {
-    echo "=== Detecting Open PRs with Changes ==="
-    
-    List<String> openPRs = getOpenPullRequests()
-    echo "Found ${openPRs.size()} open PR(s): ${openPRs}"
-    
-    Map<String, List<String>> prPipelines = [:]
-    
-    for (String prBranch : openPRs) {
-        echo "Checking changes in PR branch: ${prBranch}"
-        // todo this only find differences between the PR branch and main
-        //   we also want to look for differences between the current state of the
-        //   branch and its state on the most recent build
-        List<String> changedDirs = getChangedDirectoriesInBranch(prBranch)
-        List<String> relevantPipelines = findRelevantMultibranchPipelines(changedDirs, jenkinsfilePaths)
-        
-        if (!relevantPipelines.isEmpty()) {
-            prPipelines[prBranch] = relevantPipelines
-            echo "  → PR ${prBranch} affects: ${relevantPipelines}"
-        } else {
-            echo "  → PR ${prBranch} has no relevant changes"
-        }
-    }
-    
-    return prPipelines
 }
 
 /**
@@ -285,100 +124,6 @@ def getPipelineName(String rootFolderPath, String multibranchPipelineToRun) {
 }
 
 /**
- * Get the full pipeline name for a specific branch (used for PR builds).
- * @param rootFolderPath The root folder path for generated pipelines.
- * @param multibranchPipelineToRun The multibranch pipeline path.
- * @param branchName The specific branch name to build.
- * @return The full pipeline name including encoded branch.
- */
-def getPipelineNameForBranch(String rootFolderPath, String multibranchPipelineToRun, String branchName) {
-    def encodedBranch = URLEncoder.encode(branchName, 'UTF-8')
-    return "${rootFolderPath}/${multibranchPipelineToRun}/${encodedBranch}"
-}
-
-/**
- * Run pipelines for specific PR branches that have changes.
- * @param rootFolderPath The common root folder of Multibranch Pipelines.
- * @param prPipelinesMap Map of [branchName: List<pipelinePaths>] from findPipelinesToRunForOpenPRs.
- */
-def runPipelinesForPRs(String rootFolderPath, Map<String, List<String>> prPipelinesMap) {
-    if (prPipelinesMap.isEmpty()) {
-        echo "No PR pipelines to run - exiting"
-        return
-    }
-    
-    echo "Preparing to run pipelines for ${prPipelinesMap.size()} PR(s)"
-    
-    Map<String, Closure> parallelStages = [:]
-    
-    prPipelinesMap.each { branchName, pipelinePaths ->
-        pipelinePaths.each { pipelinePath ->
-            def stageKey = "PR ${branchName} - ${pipelinePath}"
-            parallelStages[stageKey] = {
-                def pipelineName = getPipelineNameForBranch(rootFolderPath, pipelinePath, branchName)
-                
-                echo "Triggering PR pipeline: ${pipelineName} (branch: ${branchName})"
-                
-                // try {
-                // First, trigger branch indexing on the multibranch project to ensure PR branch is discovered
-                def multibranchPath = "${rootFolderPath}/${pipelinePath}"
-                def multibranchProject = Jenkins.instance.getItemByFullName(multibranchPath)
-                
-                if (multibranchProject) {
-                    echo "Triggering branch indexing for multibranch project: ${multibranchPath}"
-                    multibranchProject.scheduleBuild()
-                    
-                    // Give it a moment to start indexing
-                    sleep 10
-                }
-                
-                // Wait for specific branch pipeline to be available, with diagnostics
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitUntil {
-                        def pipeline = Jenkins.instance.getItemByFullName(pipelineName)
-                        if (pipeline && !pipeline.isDisabled()) {
-                            echo "Pipeline ${pipelineName} is ready"
-                            return true
-                        } else {
-                            // Diagnostics: list all pipelines under the parent folder
-                            def parentPath = pipelineName.contains('/') ? pipelineName.substring(0, pipelineName.lastIndexOf('/')) : pipelineName
-                            def parent = Jenkins.instance.getItemByFullName(parentPath)
-                            if (parent) {
-                                def childrenNames = []
-                                def items = parent.getItems()
-                                for (def item : items) {
-                                    childrenNames.add(item.getName())
-                                }
-                                echo "[Diagnostics] Pipelines under ${parentPath}: ${childrenNames}"
-                                echo "[Diagnostics] Looking for branch: ${URLEncoder.encode(branchName, 'UTF-8')}"
-                            } else {
-                                echo "[Diagnostics] Parent folder ${parentPath} not found in Jenkins."
-                            }
-                            echo "[Diagnostics] Pipeline ${pipelineName} not yet available or is disabled. Waiting..."
-                            sleep 10 // Give more time for branch indexing
-                            return false
-                        }
-                    }
-                }
-                
-                echo "Starting build for PR pipeline: ${pipelineName}"
-                build(job: pipelineName, propagate: false, wait: false) // Non-blocking for PR builds
-                echo "Triggered build for PR pipeline: ${pipelineName}"
-                // } catch (Exception e) {
-                //     echo "Warning: Could not trigger ${pipelineName}: ${e.message}"
-                //     echo "This may be because the PR branch '${branchName}' hasn't been indexed yet in the multibranch pipeline."
-                // }
-            }
-        }
-    }
-    
-    if (!parallelStages.isEmpty()) {
-        parallel(parallelStages)
-        echo "All PR pipeline triggers completed"
-    }
-}
-
-/**
  * Run pipelines.
  * @param rootFolderPath The common root folder of Multibranch Pipelines.
  * @param multibranchPipelinesToRun The list of Multibranch Pipelines for which a Pipeline is run.
@@ -402,7 +147,7 @@ def runPipelines(String rootFolderPath, List<String> multibranchPipelinesToRun) 
             // event so a build can be triggered.
             echo "Waiting for pipeline to become available..."
             timeout(time: 5, unit: 'MINUTES') {
-                waitUntil {
+                waitUntil(initialRecurrencePeriod: 1e3) {
                     def pipeline = Jenkins.instance.getItemByFullName(pipelineName)
                     if (pipeline && !pipeline.isDisabled()) {
                         echo "Pipeline ${pipelineName} is ready"
@@ -428,9 +173,7 @@ def runPipelines(String rootFolderPath, List<String> multibranchPipelinesToRun) 
 def call(Map config = [:]){
     println "Step 1: Provisioning Jenkins Items"
     
-    // Safely handle JOB_NAME which might be null or not a string
-    def jobNameStr = env.JOB_NAME?.toString() ?: 'unknown'
-    String repositoryName = jobNameStr.contains('/') ? jobNameStr.split('/')[0] : jobNameStr
+    String repositoryName = env.JOB_NAME.split('/')[0]
     String rootFolderPath = "Generated/$repositoryName"
     List<String> jenkinsfilePaths = config.jenkinsfiles ?: []
 
@@ -443,30 +186,7 @@ def call(Map config = [:]){
         echo "  - ${path}"
     }
 
-    
-    // Check if we should scan all open PRs (useful for nightly builds or manual triggers)
-    boolean scanAllPRs = config.scanAllOpenPRs ?: true
-    
-    if (scanAllPRs) {
-        echo "Enhanced mode: Scanning all open PRs for changes"
-        
-        // Get PR-specific pipeline mappings
-        Map<String, List<String>> prPipelinesMap = findPipelinesToRunForOpenPRs(jenkinsfilePaths)
-        
-        echo "Step 3: Triggering PR-Specific Builds"
-        if (!prPipelinesMap.isEmpty()) {
-            echo "Found ${prPipelinesMap.size()} PR(s) with changes:"
-            prPipelinesMap.each { branchName, pipelines ->
-                echo "  - PR ${branchName}: ${pipelines}"
-            }
-            runPipelinesForPRs(rootFolderPath, prPipelinesMap)
-        } else {
-            echo "No open PRs with relevant changes"
-        }
-        
-    }
-    echo "Step 2: Detecting Changes on main"
-    
+    echo "Step 2: Detecting Changes"
     List<String> multibranchPipelinesToRun = findMultibranchPipelinesToRun(jenkinsfilePaths)
     
     if (multibranchPipelinesToRun.isEmpty()) {
