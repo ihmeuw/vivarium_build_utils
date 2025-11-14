@@ -86,11 +86,10 @@ def generateMultibranchPipelines(List<Path> jenkinsfilePaths, Path rootFolder, S
                                 // identifies the check. We want each individual build result to have its own context so
                                 // they do not conflict. Requires the github-scm-trait-notification-context-plugin to be
                                 // installed on the Jenkins instance.
-                                // Comment out for now to avoid permission errors
-                                // notificationContextTrait {
-                                //     contextLabel("continuous-integration/jenkins/$pipelineName")
-                                //     typeSuffix(false)
-                                // }
+                                notificationContextTrait {
+                                    contextLabel("continuous-integration/jenkins/$pipelineName")
+                                    typeSuffix(false)
+                                }
                             }
                         }
                     }

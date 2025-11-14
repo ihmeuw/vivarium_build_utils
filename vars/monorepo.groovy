@@ -9,7 +9,7 @@ import hudson.model.*
 List<String> provisionItems(String rootFolderPath, String repositoryURL, List<String> jenkinsfilePaths) {
     echo "Executing Job DSL to provision Jenkins items..."
     // Provision folder and Multibranch Pipelines.
-    def jobDslResult = jobDsl(
+    jobDsl(
             scriptText: libraryResource('multiPipelines.groovy'),
             additionalParameters: [
                     jenkinsfilePathsStr: jenkinsfilePaths,
@@ -20,16 +20,7 @@ List<String> provisionItems(String rootFolderPath, String repositoryURL, List<St
             // unless you only provision items from the default branch.
             removedJobAction: 'IGNORE'
     )
-    
     echo "Job DSL execution completed"
-    if (jobDslResult) {
-        echo "Job DSL created/updated ${jobDslResult.size()} item(s):"
-        jobDslResult.each { item ->
-            echo "  - ${item.fullName}"
-        }
-    }
-    
-    return jenkinsfilePaths
 }
 
 /**
@@ -39,19 +30,15 @@ List<String> provisionItems(String rootFolderPath, String repositoryURL, List<St
 String getBaselineRevision() {
     echo "Determining baseline revision for change detection..."
     
-    def baseline
-    
-    // For PR builds, compare against the target branch
-    if (env.CHANGE_TARGET) {
-        echo "This is a PR build, comparing against target: ${env.CHANGE_TARGET}"
-        baseline = "origin/${env.CHANGE_TARGET}"
-    } else {
-        // For regular branch builds, use previous commits
-        baseline = [env.GIT_PREVIOUS_SUCCESSFUL_COMMIT, env.GIT_PREVIOUS_COMMIT]
-                .find { revision ->
-                    revision != null && sh(script: "git rev-parse --quiet --verify $revision", returnStatus: true) == 0
-                } ?: 'HEAD^'
-    }
+    // Depending on your seed pipeline configuration and preferences, you can set the baseline revision to a target
+    // branch, e.g. the repository's default branch or even `env.CHANGE_TARGET` if Jenkins is configured to discover
+    // pull requests.
+    def baseline = [env.GIT_PREVIOUS_SUCCESSFUL_COMMIT, env.GIT_PREVIOUS_COMMIT]
+    // Look for the first existing existing revision. Commits can be removed (e.g. with a `git push --force`), so a
+    // previous build revision may not exist anymore.
+            .find { revision ->
+                revision != null && sh(script: "git rev-parse --quiet --verify $revision", returnStatus: true) == 0
+            } ?: 'HEAD^'
     
     echo "Using baseline revision: ${baseline}"
     return baseline
@@ -155,34 +142,18 @@ def runPipelines(String rootFolderPath, List<String> multibranchPipelinesToRun) 
             
             echo "Triggering pipeline: ${pipelineName}"
             
-            // The multibranch pipeline should already exist (verified in main flow)
-            def multibranchPipelinePath = "${rootFolderPath}/${multibranchPipelineToRun}"
-            
-            // Trigger a scan of the multibranch pipeline to ensure it discovers the current branch
-            echo "Triggering scan for multibranch pipeline: ${multibranchPipelinePath}"
-            
-            try {
-                build(job: multibranchPipelinePath + '/branch-indexing', wait: true, propagate: false)
-                echo "Branch indexing completed for ${multibranchPipelinePath}"
-            } catch (Exception e) {
-                echo "Branch indexing failed or not available: ${e.message}"
-                // Continue anyway - the pipeline might already have the branch indexed
-            }
-            
             // For new branches, Jenkins will receive an event from the version control system to provision the
             // corresponding Pipeline under the Multibranch Pipeline item. We have to wait for Jenkins to process the
             // event so a build can be triggered.
-            echo "Waiting for specific branch pipeline to become available: ${pipelineName}"
-            timeout(time: 3, unit: 'MINUTES') {
-                waitUntil(initialRecurrencePeriod: 2000) {
+            echo "Waiting for pipeline to become available..."
+            timeout(time: 5, unit: 'MINUTES') {
+                waitUntil(initialRecurrencePeriod: 1e3) {
                     def pipeline = Jenkins.instance.getItemByFullName(pipelineName)
                     if (pipeline && !pipeline.isDisabled()) {
                         echo "Pipeline ${pipelineName} is ready"
                         return true
-                    } else {
-                        echo "Pipeline ${pipelineName} not ready yet, waiting..."
-                        return false
                     }
+                    return false
                 }
             }
 
@@ -213,29 +184,6 @@ def call(Map config = [:]){
     provisionItems(rootFolderPath, env.GIT_URL, jenkinsfilePaths)
     jenkinsfilePaths.each { path ->
         echo "  - ${path}"
-    }
-
-    echo "Verifying that Job DSL items were created successfully..."
-    // Wait for all expected multibranch pipelines to be created
-    def expectedPipelines = jenkinsfilePaths.collect { path ->
-        def jenkinsfileDir = path.replaceAll('/Jenkinsfile$', '')
-        return "${rootFolderPath}/${jenkinsfileDir}"
-    }
-    
-    expectedPipelines.each { expectedPipeline ->
-        echo "Waiting for multibranch pipeline: ${expectedPipeline}"
-        timeout(time: 2, unit: 'MINUTES') {
-            waitUntil(initialRecurrencePeriod: 1000) {
-                def pipeline = Jenkins.instance.getItemByFullName(expectedPipeline)
-                if (pipeline) {
-                    echo "✓ Multibranch pipeline created: ${expectedPipeline}"
-                    return true
-                } else {
-                    echo "⏳ Still waiting for: ${expectedPipeline}"
-                    return false
-                }
-            }
-        }
     }
 
     echo "Step 2: Detecting Changes"
