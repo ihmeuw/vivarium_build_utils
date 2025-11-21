@@ -163,7 +163,9 @@ def call(Map config = [:]){
             //   environment name: 'IS_CHANGELOG_ONLY_COMMIT', value: 'true'
             // }
             // FIXME: PUT BACK TO ABOVE LOGIC AFTER TESTING
-            environment name: 'IS_CRON', value: 'true'
+            not {
+              environment name: 'IS_CRON', value: 'true'
+            }
             environment name: 'IS_CHANGELOG_ONLY_COMMIT', value: 'true'
           }
         }
