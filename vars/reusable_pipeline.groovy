@@ -158,15 +158,10 @@ def call(Map config = [:]){
         // Skip builds if this commit only contains changelog changes
         when {
           anyOf {
-            // environment name: 'IS_CRON', value: 'true'
-            // not {
-            //   environment name: 'IS_CHANGELOG_ONLY_COMMIT', value: 'true'
-            // }
-            // FIXME: PUT BACK TO ABOVE LOGIC AFTER TESTING
+            environment name: 'IS_CRON', value: 'true'
             not {
-              environment name: 'IS_CRON', value: 'true'
+              environment name: 'IS_CHANGELOG_ONLY_COMMIT', value: 'true'
             }
-            environment name: 'IS_CHANGELOG_ONLY_COMMIT', value: 'true'
           }
         }
         steps {
