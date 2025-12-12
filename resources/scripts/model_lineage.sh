@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# model-lineage.sh
+# Model Lineage Analysis Tool
 # A tool for analyzing lineage relationships between model iteration tags
 #
 # Usage:
-#   ./model-lineage.sh [command] [args]
+#   model [command] [args]
 #
 # Commands:
 #   list                    List all model tags
@@ -375,9 +375,9 @@ cmd_info() {
 
 cmd_help() {
     cat << EOF
-model_lineage.sh - Analyze model iteration tag relationships
+Model Lineage Analysis Tool - Analyze model iteration tag relationships; Assumed invoked using 'make'.
 
-Usage: $0 <command> [args]
+Usage: make model <command> [args]
 
 Commands:
   list                    List all model tags with dates and subjects
@@ -394,12 +394,12 @@ Configuration:
   Set MODEL_TAG_PATTERN environment variable to customize tag matching.
   Default: "[v0-9]*"
   
-  Example: MODEL_TAG_PATTERN="v*" $0 list
+  Example: make MODEL_TAG_PATTERN="v*" model list
 
 Examples:
-  $0 check model-22 model-21    # Does model-22 include model-21?
-  $0 base feature/new-risk      # What model tag is this branch based on?
-  $0 tree                       # Visualize all model tag relationships
+  make model check model-22 model-21    # Does model-22 include model-21?
+  make model base feature/new-risk      # What model tag is this branch based on?
+  make model tree                       # Visualize all model tag relationships
 EOF
 }
 
