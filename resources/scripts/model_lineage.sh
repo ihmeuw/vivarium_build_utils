@@ -12,7 +12,6 @@
 #   contains <tag>          List all tags that contain (descend from) a tag
 #   ancestors <tag>         List all tags that are ancestors of a tag
 #   check <new> <old>       Check if <old> is an ancestor of <new>
-#   matrix                  Show full ancestry matrix of all model tags
 #   tree                    Show a visual tree of model tag relationships
 #   info <tag>              Show detailed info about a tag
 
@@ -185,53 +184,6 @@ cmd_check() {
     fi
 }
 
-cmd_matrix() {
-    local tags=($(get_model_tags))
-    local count=${#tags[@]}
-    
-    if [[ $count -eq 0 ]]; then
-        echo "No model tags found matching pattern: $MODEL_TAG_PATTERN"
-        exit 1
-    fi
-    
-    # Calculate the maximum tag length for proper column sizing
-    local max_len=0
-    for tag in "${tags[@]}"; do
-        [[ ${#tag} -gt $max_len ]] && max_len=${#tag}
-    done
-    # Add 2 for padding
-    local col_width=$((max_len + 2))
-    local row_width=$((max_len + 4))
-    
-    echo "Ancestry Matrix (row contains column):"
-    echo "======================================="
-    
-    # Header row
-    printf "%${row_width}s" ""
-    for tag in "${tags[@]}"; do
-        printf "%${col_width}s" "$tag"
-    done
-    echo
-    
-    # Matrix rows
-    for row_tag in "${tags[@]}"; do
-        printf "%-${row_width}s" "$row_tag"
-        for col_tag in "${tags[@]}"; do
-            if [[ "$row_tag" == "$col_tag" ]]; then
-                printf "%${col_width}s" "·"
-            elif is_ancestor "$col_tag" "$row_tag"; then
-                printf "${GREEN}%${col_width}s${NC}" "✓"
-            else
-                printf "%${col_width}s" ""
-            fi
-        done
-        echo
-    done
-    
-    echo
-    echo "Legend: ✓ = row contains column, · = same tag"
-}
-
 cmd_tree() {
     echo "Model Tag Lineage Tree:"
     echo "======================="
@@ -277,21 +229,28 @@ cmd_tree() {
             fi
         fi
         
-        # Find direct children (descendants with no intermediate model tags)
+        # Find direct children (tags whose closest ancestor is current)
         local children=()
         for tag in "${_tree_tags[@]}"; do
             [[ "$tag" == "$current" ]] && continue
             if is_ancestor "$current" "$tag"; then
-                # Check if there's an intermediate model tag
-                local is_direct=true
+                # Check if current is the closest ancestor model tag for this tag
+                local closest_ancestor="$current"
+                local closest_depth=$(git rev-list --count "$current".."$tag" 2>/dev/null || echo 999999)
+                
                 for other in "${_tree_tags[@]}"; do
                     [[ "$other" == "$current" || "$other" == "$tag" ]] && continue
-                    if is_ancestor "$current" "$other" && is_ancestor "$other" "$tag"; then
-                        is_direct=false
-                        break
+                    if is_ancestor "$other" "$tag"; then
+                        local depth=$(git rev-list --count "$other".."$tag" 2>/dev/null || echo 999999)
+                        if [[ $depth -lt $closest_depth ]]; then
+                            closest_depth=$depth
+                            closest_ancestor="$other"
+                        fi
                     fi
                 done
-                if $is_direct; then
+                
+                # Only add as child if current is the closest ancestor
+                if [[ "$closest_ancestor" == "$current" ]]; then
                     children+=("$tag")
                 fi
             fi
@@ -385,7 +344,6 @@ Commands:
   contains <tag>          List all tags that descend from this tag
   ancestors <tag>         List all model tags that are ancestors
   check <old> <new>       Check if <new> contains <old>
-  matrix                  Show full ancestry matrix of all model tags
   tree                    Show a visual tree of tag relationships
   info <tag>              Show detailed info about a tag
   help                    Show this help message
