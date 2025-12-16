@@ -17,8 +17,7 @@
 
 set -e
 
-# Configuration: adjust this pattern to match your tag naming convention
-MODEL_TAG_PATTERN="${MODEL_TAG_PATTERN:-[v0-9]*}"
+MODEL_TAG_PATTERN="${MODEL_TAG_PATTERN:-v[0-9]*}"
 
 # Colors for output
 RED='\033[0;31m'
