@@ -229,6 +229,7 @@ manual-deploy-artifactory: # Deploy package; only use if Jenkins deploy fails
 	make build-package
 	make tag-version
 	make deploy-package-artifactory
+	
 # Model lineage tool - analyze git tag relationships
 # Usage: make model <command> [args]
 # Commands: list, base, contains, ancestors, check, matrix, tree, info, help
