@@ -11,7 +11,8 @@ def call(Map config = [:]){
   deployable: Whether the package can be deployed by Jenkins.
   skip_doc_build: Only skips the doc build.
   upstream_repos: A list of repos to check for upstream changes.
-  run_mypy: Whether to run mypy on the package
+  run_mypy: Whether to run mypy on the package.
+  run_formatting: Whether to run code formatting checks (black, isort).
   */
   
   // Handle config arguments
@@ -23,7 +24,8 @@ def call(Map config = [:]){
     'deployable',
     'skip_doc_build',
     'upstream_repos',
-    'run_mypy'
+    'run_mypy',
+    'run_formatting',
   ]
   
   def scheduled_branches = config.scheduled_branches ?: [] 
@@ -34,6 +36,7 @@ def call(Map config = [:]){
   def skip_doc_build = (config?.skip_doc_build == true)
   def upstream_repos = config.upstream_repos ?: []
   def run_mypy = (config.run_mypy != null) ? config.run_mypy : true
+  def run_formatting = (config.run_formatting != null) ? config.run_formatting : true
 
   echo "Configuration constants:"
   echo "  scheduled_branches: ${scheduled_branches}"
@@ -44,6 +47,7 @@ def call(Map config = [:]){
   echo "  skip_doc_build: ${skip_doc_build}"
   echo "  upstream_repos: ${upstream_repos}"
   echo "  run_mypy: ${run_mypy}"
+  echo "  run_formatting: ${run_formatting}"
 
   if (stagger_scheduled_builds && scheduled_branches.size() > 1) {
     startHour = 20
@@ -195,7 +199,8 @@ def call(Map config = [:]){
                       } else {
                         buildStages.installPackage()
                         buildStages.installDependencies(upstream_repos)
-                        buildStages.checkFormatting(run_mypy)
+                        buildStages.checkTyping(run_mypy)
+                        buildStages.checkFormatting(run_formatting)
                         // Transform test type inputs to actual make test target names
                         tests = test_types.collect { "test-${it}" }
                         buildStages.runTests(tests)

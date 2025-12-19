@@ -5,6 +5,7 @@ def call() {
         buildEnvironment: this.&buildEnvironment,
         installPackage: this.&installPackage,
         installDependencies: this.&installDependencies,
+        checkTyping: this.&checkTyping,
         checkFormatting: this.&checkFormatting,
         runTests: this.&runTests,
         buildDocs: this.&buildDocs,
@@ -75,12 +76,21 @@ def installDependencies(List upstream_repos) {
     }
 }
 
+def checkTyping(Boolean run_mypy) {
+    stage("Check Typing - Python ${PYTHON_VERSION}") {
+        script {
+            if (run_mypy == true) {
+                sh "${ACTIVATE} && make mypy"
+            }
+        }
+    }
+}
+
 def checkFormatting(Boolean run_mypy) {
     stage("Check Formatting - Python ${PYTHON_VERSION}") {
         script {
-            sh "${ACTIVATE} && make lint"
-            if (run_mypy == true) {
-                sh "${ACTIVATE} && make mypy"
+            if (run_formatting == true) {
+                sh "${ACTIVATE} && make lint"
             }
         }
     }
