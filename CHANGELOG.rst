@@ -1,3 +1,7 @@
+**2.1.1 - 12/19/2025**
+
+  - Separate mypy and formatting into different Jenkins stages
+
 **2.1.0 - 12/16/2025**
 
   - Feature: Add model lineage analysis utility
