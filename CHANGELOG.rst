@@ -1,6 +1,7 @@
 **2.1.1 - 01/06/26**
 
-  - Fail deployment if changelog date does not match current date
+  - Fail deployment if CHANGELOG date does not match current date
+  - Add CHANGELOG date validation for Jenkins pipeline
 
 **2.1.0 - 12/16/2025**
 
