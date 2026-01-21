@@ -10,11 +10,6 @@
 pipeline {
     agent { node 'simsci-ci-coordinator-01' }
     
-    triggers {
-        // Nightly build at 2 AM
-        cron('0 2 * * *')
-    }
-    
     parameters {
         string(
             name: 'ACTIVE_MODELS',
