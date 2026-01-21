@@ -40,7 +40,7 @@ pipeline {
         CONDARC = "${SHARED_PATH}/miniconda3/.condarc"
         CONDA_BIN_PATH = "${SHARED_PATH}/miniconda3/bin"
         XDG_CACHE_HOME = "${SHARED_PATH}/pip-cache"
-        ACTIVATE_BASE = "source ${CONDA_BIN_PATH}/activate"
+        ACTIVATE_BASE = "source ${CONDA_BIN_PATH}/activate &> /dev/null"
         
         // GitHub organization for model repos
         GITHUB_ORG = 'ihmeuw'
@@ -161,9 +161,6 @@ def buildAndCompareEnvironment(String model, String envType) {
             // Build the environment with path argument
             sh """
                 ${env.ACTIVATE_BASE}
-            """
-            echo "activate worked"
-            sh """
                 make build-env type=${envType} name=${timestampedName} path=${timestampedPath}
             """
         }
