@@ -160,6 +160,10 @@ def buildAndCompareEnvironment(String model, String envType) {
             
             // Build the environment with path argument
             sh """
+                ${env.ACTIVATE_BASE}
+            """
+            echo "activate worked"
+            sh """
                 make build-env type=${envType} name=${timestampedName} path=${timestampedPath}
             """
         }
