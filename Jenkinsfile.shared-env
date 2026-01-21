@@ -150,7 +150,7 @@ def buildAndCompareEnvironment(String model, String envType) {
                 branches: [[name: "*/${env.GITHUB_BRANCH}"]],
                 userRemoteConfigs: [[
                     url: "https://github.com/${env.GITHUB_ORG}/${model}.git",
-                    credentialsId: 'github'
+                    credentialsId: 'fad62062-b1f4-447b-997f-005d6b1ea41e'
                 ]]
             ])
             
