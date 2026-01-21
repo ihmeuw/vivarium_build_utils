@@ -166,6 +166,8 @@ def buildAndCompareEnvironment(String model, String envType) {
             sh """
                 ${env.ACTIVATE_BASE}
                 make build-env type=${envType} name=${timestampedName} path=${timestampedPath}
+                conda activate ${timestampedPath}
+                pip install cowsay
             """
         }
     }
