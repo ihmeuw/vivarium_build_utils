@@ -36,7 +36,7 @@ help: # Curated help message
 	echo "Helper targets"; \
 	echo "=============="; \
 	echo; \
-	echo "build-env                    Create a new environment with installed packages"; \
+	echo "build-conda-env                    Create a new environment with installed packages"; \
 	echo "check                        Run development checks"; \
 	echo "                             (isort, black, mypy, tests, docs)"; \
 	echo "install-upstream-deps        Install upstream dependencies"; \
