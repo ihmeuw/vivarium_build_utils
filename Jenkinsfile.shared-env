@@ -111,7 +111,7 @@ pipeline {
         }
         failure {
             script {
-                def channelName = "simsci-ci-status"
+                def channelName = "simsci-ci-status-test"
                 def slackMessage = """
                     Job: *${env.JOB_NAME}*
                     Build number: #${env.BUILD_NUMBER}
