@@ -159,8 +159,8 @@ def buildAndCompareEnvironment(String model, String envType) {
                 ]]
             ])
             
-            // Load shared makefiles from vivarium_build_utils
-            loadSharedMakefiles()
+            // Load shared makefiles from Jenkins shared library
+            load_shared_files()
             
             // Build the environment with path argument
             sh """
@@ -194,24 +194,6 @@ def buildAndCompareEnvironment(String model, String envType) {
             }
         }
     }
-}
-
-/**
- * Load shared makefiles from vivarium_build_utils into the workspace.
- */
-def loadSharedMakefiles() {
-    // Copy makefiles from vivarium_build_utils resources
-    sh """
-        # Get the makefiles path from vivarium_build_utils
-        MAKEFILES_PATH=\$(python -c "from vivarium_build_utils.resources import get_makefiles_path; print(get_makefiles_path())" 2>/dev/null || echo "")
-        
-        if [ -n "\${MAKEFILES_PATH}" ] && [ -d "\${MAKEFILES_PATH}" ]; then
-            cp -r \${MAKEFILES_PATH}/* .
-            echo "Loaded makefiles from vivarium_build_utils"
-        else
-            echo "Warning: Could not load makefiles from vivarium_build_utils"
-        fi
-    """
 }
 
 /**
