@@ -40,7 +40,7 @@ pipeline {
         CONDARC = "${SHARED_PATH}/miniconda3/.condarc"
         CONDA_BIN_PATH = "${SHARED_PATH}/miniconda3/bin"
         XDG_CACHE_HOME = "${SHARED_PATH}/pip-cache"
-        ACTIVATE_BASE = "source ${CONDA_BIN_PATH}/activate &> /dev/null"
+        ACTIVATE_BASE = "source ${CONDA_BIN_PATH}/activate"
         
         // GitHub organization for model repos
         GITHUB_ORG = 'ihmeuw'
