@@ -91,7 +91,9 @@ pipeline {
                     def models = params.ACTIVE_MODELS.split(',').collect { it.trim() }
                     def types = params.ENV_TYPES.split(',').collect { it.trim() }
                     
-                    // Build environments sequentially (conda doesn't parallelize well)
+                    // Build environments sequentially to avoid conda package cache contention.
+                    // Parallel conda operations sharing the same cache can cause lock conflicts,
+                    // partial writes, and solver resource exhaustion.
                     for (model in models) {
                         for (envType in types) {
                             buildAndCompareEnvironment(model, envType)
