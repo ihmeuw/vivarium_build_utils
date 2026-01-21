@@ -9,7 +9,7 @@
 @Library('vivarium_build_utils@pnast/feature/mic-6722-jenkins-env') _
 
 pipeline {
-    agent { node 'simsci-ci-coordinator-01' }
+    agent { node 'simsci-jenkinsagent-ci-p01' }
     
     parameters {
         string(
