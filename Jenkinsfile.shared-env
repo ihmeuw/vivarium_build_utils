@@ -31,7 +31,7 @@ pipeline {
             name: 'FORCE_REBUILD',
             defaultValue: false,
             description: 'Force rebuild and update of all environments, even if no changes detected'
-        ),
+        )
         string(
             name: 'RETENTION_DAYS',
             defaultValue: '30',
