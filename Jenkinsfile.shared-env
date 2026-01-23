@@ -6,7 +6,7 @@
  * 
  * Environments are stored in a read-only (except by Jenkins) directory accessible to all users.
  */
-@Library('vivarium_build_utils@pnast/feature/mic-6722-jenkins-env') _
+@Library('vivarium_build_utils@epic/shared_model_envs') _
 
 pipeline {
     agent { node 'simsci-jenkinsagent-ci-p01' }
