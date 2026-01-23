@@ -8,6 +8,9 @@
  */
 @Library('vivarium_build_utils@epic/shared_model_envs') _
 
+// Track updated environments (must be at script level, not in env)
+def UPDATED_ENVIRONMENTS = []
+
 pipeline {
     agent { node 'simsci-jenkinsagent-ci-p01' }
     
@@ -70,9 +73,6 @@ pipeline {
                     env.MODEL_LIST = params.ACTIVE_MODELS.split(',').collect { it.trim() }
                     env.TYPE_LIST = params.ENV_TYPES.split(',').collect { it.trim() }
                     
-                    // Initialize list to track updated environments
-                    env.UPDATED_ENVIRONMENTS = []
-                    
                     echo "=== Shared Environment Builder ==="
                     echo "Models: ${env.MODEL_LIST}"
                     echo "Environment Types: ${env.TYPE_LIST}"
@@ -104,6 +104,7 @@ pipeline {
                             buildAndCompareEnvironment(model, envType)
                         }
                     }
+                    // throw an error to test failure handling
                 }
             }
         }
@@ -129,9 +130,9 @@ pipeline {
                 echo "All shared environments processed successfully"
                 
                 // Send Slack notification if any environments were updated
-                if (env.UPDATED_ENVIRONMENTS && env.UPDATED_ENVIRONMENTS.size() > 0) {
+                if (UPDATED_ENVIRONMENTS && UPDATED_ENVIRONMENTS.size() > 0) {
                     def channelName = "simsci-shared-env-updates"
-                    def envList = env.UPDATED_ENVIRONMENTS.collect { "  • ${it}" }.join('\n')
+                    def envList = UPDATED_ENVIRONMENTS.collect { "  • ${it}" }.join('\n')
                     def slackMessage = """
                         *Shared Environment Update*
                         
@@ -148,7 +149,7 @@ pipeline {
                             teamDomain: "ihme",
                             tokenCredentialId: "slack"
                     
-                    echo "Sent Slack notification for ${env.UPDATED_ENVIRONMENTS.size()} updated environment(s)"
+                    echo "Sent Slack notification for ${UPDATED_ENVIRONMENTS.size()} updated environment(s)"
                 } else {
                     echo "No environments were updated - no Slack notification sent"
                 }
@@ -229,7 +230,7 @@ def buildAndCompareEnvironment(String model, String envType) {
             if (shouldUpdate) {
                 promoteEnvironment(timestampedPath, currentPath, envName)
                 // Track this update for the slack notification
-                env.UPDATED_ENVIRONMENTS.add(envName)
+                UPDATED_ENVIRONMENTS.add(envName)
             } else {
                 echo "No changes detected - keeping current environment"
                 cleanupTimestampedEnvironment(timestampedPath)
