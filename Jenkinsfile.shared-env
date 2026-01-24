@@ -8,8 +8,10 @@
  */
 @Library('vivarium_build_utils@epic/shared_model_envs') _
 
+import groovy.transform.Field
+
 // Track updated environments (must be at script level, not in env)
-def UPDATED_ENVIRONMENTS = []
+@Field def UPDATED_ENVIRONMENTS = []
 
 pipeline {
     agent { node 'simsci-jenkinsagent-ci-p01' }
