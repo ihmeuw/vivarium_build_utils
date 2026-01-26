@@ -107,7 +107,6 @@ pipeline {
                             buildAndCompareEnvironment(model, envType)
                         }
                     }
-                    // throw an error to test failure handling
                 }
             }
         }
