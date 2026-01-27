@@ -85,8 +85,7 @@ def call(Map config = [:]){
         // time we run pip, poetry, etc.
         ACTIVATE_BASE = "source ${CONDA_BIN_PATH}/activate &> /dev/null"
         IS_DOC_ONLY_CHANGE = "${is_doc_only_change()}"
-        // FIXME [MIC-6729]. Commenting out temporarily
-        // IS_CHANGELOG_ONLY_COMMIT = "${is_changelog_only_commit()}"
+        IS_CHANGELOG_ONLY_COMMIT = "${is_changelog_only_commit()}"
     }
 
     agent { label "coordinator" }
