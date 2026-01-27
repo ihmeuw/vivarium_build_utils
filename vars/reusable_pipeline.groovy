@@ -85,7 +85,8 @@ def call(Map config = [:]){
         // time we run pip, poetry, etc.
         ACTIVATE_BASE = "source ${CONDA_BIN_PATH}/activate &> /dev/null"
         IS_DOC_ONLY_CHANGE = "${is_doc_only_change()}"
-        IS_CHANGELOG_ONLY_COMMIT = "${is_changelog_only_commit()}"
+        // FIXME [MIC-XXXX]. Commenting out temporarily
+        // IS_CHANGELOG_ONLY_COMMIT = "${is_changelog_only_commit()}"
     }
 
     agent { label "coordinator" }
@@ -159,9 +160,10 @@ def call(Map config = [:]){
         when {
           anyOf {
             environment name: 'IS_CRON', value: 'true'
-            not {
-              environment name: 'IS_CHANGELOG_ONLY_COMMIT', value: 'true'
-            }
+            // FIXME [MIC-XXXX]. Commenting out temporarily
+            // not {
+            //   environment name: 'IS_CHANGELOG_ONLY_COMMIT', value: 'true'
+            // }
           }
         }
         steps {
