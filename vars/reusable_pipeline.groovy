@@ -86,6 +86,7 @@ def call(Map config = [:]){
         ACTIVATE_BASE = "source ${CONDA_BIN_PATH}/activate &> /dev/null"
         IS_DOC_ONLY_CHANGE = "${is_doc_only_change()}"
         IS_CHANGELOG_ONLY_COMMIT = "${is_changelog_only_commit()}"
+        PREVIOUS_BUILD_PASSED = "${previous_build_passed()}"
     }
 
     agent { label "coordinator" }
@@ -155,16 +156,19 @@ def call(Map config = [:]){
       }
 
       stage("Python Versions") {
-        // Skip builds if this commit only contains changelog changes
-        // FIXME [MIC-6729]. Commenting out temporarily
-        // when {
-        //   anyOf {
-        //     environment name: 'IS_CRON', value: 'true'
-        //     not {
-        //       environment name: 'IS_CHANGELOG_ONLY_COMMIT', value: 'true'
-        //     }
-        //   }
-        // }
+        // Skip builds if this commit only contains changelog changes AND the previous build passed.
+        // If the previous build failed, we must run the full build to catch any regressions.
+        when {
+          anyOf {
+            environment name: 'IS_CRON', value: 'true'
+            not {
+              environment name: 'IS_CHANGELOG_ONLY_COMMIT', value: 'true'
+            }
+            not {
+              environment name: 'PREVIOUS_BUILD_PASSED', value: 'true'
+            }
+          }
+        }
         steps {
           script {
             
@@ -188,8 +192,8 @@ def call(Map config = [:]){
                       load_shared_files()
                       buildStages.runDebugInfo()
                       buildStages.buildEnvironment()
-                      if (IS_DOC_ONLY_CHANGE.toBoolean() == true) {
-                        echo "This is a doc-only change. Skipping everything except doc build and doc tests."
+                      if (IS_DOC_ONLY_CHANGE.toBoolean() == true && PREVIOUS_BUILD_PASSED.toBoolean() == true) {
+                        echo "This is a doc-only change and previous build passed. Skipping everything except doc build and doc tests."
                         buildStages.installPackage("docs")
                         buildStages.buildDocs()
                         buildStages.testDocs()
