@@ -192,7 +192,7 @@ def call(Map config = [:]){
                       load_shared_files()
                       buildStages.runDebugInfo()
                       buildStages.buildEnvironment()
-                      if (IS_DOC_ONLY_CHANGE.toBoolean() == true && PREVIOUS_BUILD_PASSED.toBoolean() == true) {
+                      if (IS_DOC_ONLY_CHANGE.toBoolean() == true && PREVIOUS_BUILD_PASSED.toBoolean() == true && IS_CRON.toBoolean() == false) {
                         echo "This is a doc-only change and previous build passed. Skipping everything except doc build and doc tests."
                         buildStages.installPackage("docs")
                         buildStages.buildDocs()
