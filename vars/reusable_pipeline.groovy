@@ -155,6 +155,23 @@ def call(Map config = [:]){
         }
       }
 
+      stage("Skipping build (changelog-only commit)") {
+        // This stage runs when we skip the build due to changelog-only changes
+        when {
+          allOf {
+            not {
+              environment name: 'IS_CRON', value: 'true'
+            }
+            environment name: 'IS_CHANGELOG_ONLY_COMMIT', value: 'true'
+            environment name: 'PREVIOUS_BUILD_PASSED', value: 'true'
+          }
+        }
+        steps {
+          echo "Skipping build: This is a changelog-only commit and the previous build passed."
+          echo "If you need to run the full build, push an empty commit or re-run the previous build."
+        }
+      }
+
       stage("Python Versions") {
         // Skip builds if this commit only contains changelog changes AND the previous build passed.
         // If the previous build failed, we must run the full build to catch any regressions.
