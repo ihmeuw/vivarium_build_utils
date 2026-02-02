@@ -44,7 +44,11 @@ def runDebugInfo() {
         WORKSPACE:      '${WORKSPACE}'
         XDG_CACHE_HOME: '${XDG_CACHE_HOME}'
         IS_CRON:        '${IS_CRON}'
-        CRON_SCHEDULE:  '${env.CRON_SCHEDULE}'"""
+        CRON_SCHEDULE:  '${env.CRON_SCHEDULE}'
+        IS_DOC_ONLY_CHANGE: '${IS_DOC_ONLY_CHANGE}'
+        IS_CHANGELOG_ONLY_COMMIT: '${IS_CHANGELOG_ONLY_COMMIT}'
+        PREVIOUS_BUILD_PASSED: '${PREVIOUS_BUILD_PASSED}'
+        """
     }
 }
 
