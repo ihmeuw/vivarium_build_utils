@@ -1,18 +1,18 @@
 /**
- * Check if all changes since the last Jenkins build are docs-only.
+ * Check if all changes since the last Jenkins build are changelog-only.
  * 
  * This function compares the current commit against the commit from the
- * previous Jenkins build to determine if only files within the docs/
- * directory have been modified.
+ * previous Jenkins build (not just HEAD~1) to determine if only CHANGELOG
+ * files have been modified.
  * 
  * Returns false (run full build) if:
  * - No previous build exists (first build)
  * - The previous build's commit cannot be determined
  * - There are no changed files (empty commit)
- * - Any files outside the docs/ directory have been modified
+ * - Any non-CHANGELOG files have been modified
  * 
  * Returns true (can skip non-essential steps) if:
- * - All changed files since the last build are within the docs/ directory
+ * - All changed files since the last build are CHANGELOG files
  */
 def call() {
     def changedFiles = git_utils.getChangedFilesSinceLastBuild()
@@ -26,20 +26,20 @@ def call() {
 
     echo "Files changed since last build:\n${changedFiles}"
 
-    // Check if all changed files are within the docs/ directory
-    def hasNonDocChanges = sh(
+    // Check if all changed files are CHANGELOG files
+    def hasNonChangelogChanges = sh(
         script: """
             echo '${changedFiles}' |
-            grep -v '^docs/' |
+            grep -v '^CHANGELOG' |
             wc -l || echo '0'
         """,
         returnStdout: true
     ).trim().toInteger() > 0
     
-    if (!hasNonDocChanges) {
-        echo "All changes are docs-only."
+    if (!hasNonChangelogChanges) {
+        echo "All changes are changelog-only."
     }
     
-    // Return true if there are no non-doc changes
-    return !hasNonDocChanges
+    // Return true if there are only changes to the changelog
+    return !hasNonChangelogChanges
 }

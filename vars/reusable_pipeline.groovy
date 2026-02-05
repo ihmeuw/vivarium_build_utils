@@ -84,9 +84,6 @@ def call(Map config = [:]){
         // Jenkins commands run in separate processes, so need to activate the environment every
         // time we run pip, poetry, etc.
         ACTIVATE_BASE = "source ${CONDA_BIN_PATH}/activate &> /dev/null"
-        IS_DOC_ONLY_CHANGE = "${is_doc_only_change()}"
-        IS_CHANGELOG_ONLY_COMMIT = "${is_changelog_only_commit()}"
-        PREVIOUS_BUILD_PASSED = "${previous_build_passed()}"
     }
 
     agent { label "coordinator" }
@@ -109,6 +106,11 @@ def call(Map config = [:]){
         name: "RUN_SLOW",
         defaultValue: false,
         description: "Whether to run slow tests as part of pytest suite."
+      )
+      booleanParam(
+        name: "FORCE_FULL_BUILD",
+        defaultValue: false,
+        description: "Force a complete build regardless of change type (overrides doc-only and changelog-only skip logic)."
       )
       string(
         name: "SLACK_TO",
@@ -155,19 +157,6 @@ def call(Map config = [:]){
         }
       }
       stage("Python Versions") {
-        // Skip builds if this commit only contains changelog changes AND the previous build passed.
-        // If the previous build failed, we must run the full build to catch any regressions.
-        when {
-          anyOf {
-            environment name: 'IS_CRON', value: 'true'
-            not {
-              environment name: 'IS_CHANGELOG_ONLY_COMMIT', value: 'true'
-            }
-            not {
-              environment name: 'PREVIOUS_BUILD_PASSED', value: 'true'
-            }
-          }
-        }
         steps {
           script {
             
@@ -189,10 +178,31 @@ def call(Map config = [:]){
                     try {
                       checkout scm
                       load_shared_files()
+                      
+                      // Evaluate skip conditions after checkout (GIT_PREVIOUS_COMMIT is now available)
+                      def previousBuildPassed = previous_build_passed()
+                      def isDocOnlyChange = is_doc_only_change()
+                      def isChangelogOnlyChange = is_changelog_only_change()
+                      def isCron = env.IS_CRON.toBoolean()
+                      def forceFullBuild = params.FORCE_FULL_BUILD
+                      
+                      echo "Skip evaluation: previousBuildPassed=${previousBuildPassed}, isDocOnlyChange=${isDocOnlyChange}, isChangelogOnlyChange=${isChangelogOnlyChange}, isCron=${isCron}, forceFullBuild=${forceFullBuild}"
+                      
+                      // Determine if we should skip the full build
+                      def canSkipFullBuild = previousBuildPassed && !isCron && !forceFullBuild
+                      def skipForChangelogOnly = canSkipFullBuild && isChangelogOnlyChange
+                      def skipForDocOnly = canSkipFullBuild && isDocOnlyChange
+                      
+                      if (skipForChangelogOnly) {
+                        echo "This is a changelog-only change since last build and previous build passed. Skipping entire build."
+                        // Skip the entire build for changelog-only changes
+                        return
+                      }
+                      
                       buildStages.runDebugInfo()
                       buildStages.buildEnvironment()
-                      if (IS_DOC_ONLY_CHANGE.toBoolean() == true && PREVIOUS_BUILD_PASSED.toBoolean() == true && IS_CRON.toBoolean() == false) {
-                        echo "This is a doc-only change and previous build passed. Skipping everything except doc build and doc tests."
+                      if (skipForDocOnly) {
+                        echo "This is a doc-only change since last build and previous build passed. Skipping everything except doc build and doc tests."
                         buildStages.installPackage("docs")
                         buildStages.buildDocs()
                         buildStages.testDocs()
