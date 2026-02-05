@@ -193,13 +193,23 @@ def call(Map config = [:]){
                       def skipForChangelogOnly = canSkipFullBuild && isChangelogOnlyChange
                       def skipForDocOnly = canSkipFullBuild && isDocOnlyChange
                       
+                      // Prepare skip evaluation info for debug output
+                      def skipEval = [
+                        previousBuildPassed: previousBuildPassed,
+                        isDocOnlyChange: isDocOnlyChange,
+                        isChangelogOnlyChange: isChangelogOnlyChange,
+                        canSkipFullBuild: canSkipFullBuild,
+                        skipForDocOnly: skipForDocOnly,
+                        skipForChangelogOnly: skipForChangelogOnly
+                      ]
+                      
                       if (skipForChangelogOnly) {
                         echo "This is a changelog-only change since last build and previous build passed. Skipping entire build."
                         // Skip the entire build for changelog-only changes
                         return
                       }
                       
-                      buildStages.runDebugInfo()
+                      buildStages.runDebugInfo(skipEval)
                       buildStages.buildEnvironment()
                       if (skipForDocOnly) {
                         echo "This is a doc-only change since last build and previous build passed. Skipping everything except doc build and doc tests."
