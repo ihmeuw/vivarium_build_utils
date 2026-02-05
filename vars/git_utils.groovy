@@ -103,3 +103,52 @@ def getChangedFilesSinceLastBuild() {
     
     return changedFiles
 }
+
+/**
+ * Check if all changes since the last Jenkins build match a specific pattern.
+ * 
+ * This function compares the current commit against the commit from the
+ * previous Jenkins build to determine if all changed files match the
+ * given grep pattern.
+ * 
+ * @param pattern The grep pattern to match (e.g., '^docs/' or '^CHANGELOG')
+ * @param description Human-readable description for logging (e.g., "docs-only" or "changelog-only")
+ * 
+ * Returns false (run full build) if:
+ * - No previous build exists (first build)
+ * - The previous build's commit cannot be determined
+ * - There are no changed files (empty commit)
+ * - Any files do NOT match the pattern
+ * 
+ * Returns true (can skip non-essential steps) if:
+ * - All changed files since the last build match the pattern
+ */
+def isChangeOnlyMatching(String pattern, String description) {
+    def changedFiles = getChangedFilesSinceLastBuild()
+    
+    // If no files are found (first build, shallow clone, or empty commit),
+    // return false to trigger a full build
+    if (changedFiles == '') {
+        echo "No changed files found since last build. Running full build."
+        return false
+    }
+
+    echo "Files changed since last build:\n${changedFiles}"
+
+    // Check if all changed files match the pattern
+    def hasNonMatchingChanges = sh(
+        script: """
+            echo '${changedFiles}' |
+            grep -v '${pattern}' |
+            wc -l || echo '0'
+        """,
+        returnStdout: true
+    ).trim().toInteger() > 0
+    
+    if (!hasNonMatchingChanges) {
+        echo "All changes are ${description}."
+    }
+    
+    // Return true if all changes match the pattern
+    return !hasNonMatchingChanges
+}

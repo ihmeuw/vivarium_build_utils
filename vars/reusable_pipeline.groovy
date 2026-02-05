@@ -181,8 +181,8 @@ def call(Map config = [:]){
                       
                       // Evaluate skip conditions after checkout (GIT_PREVIOUS_COMMIT is now available)
                       def previousBuildPassed = previous_build_passed()
-                      def isDocOnlyChange = is_doc_only_change()
-                      def isChangelogOnlyChange = is_changelog_only_change()
+                      def isDocOnlyChange = git_utils.isChangeOnlyMatching('^docs/', 'docs-only')
+                      def isChangelogOnlyChange = git_utils.isChangeOnlyMatching('^CHANGELOG', 'changelog-only')
                       def isCron = env.IS_CRON.toBoolean()
                       def forceFullBuild = params.FORCE_FULL_BUILD
                       
