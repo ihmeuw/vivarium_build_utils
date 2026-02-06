@@ -205,19 +205,17 @@ def call(Map config = [:]){
                       
                       if (skipForChangelogOnly) {
                         echo "This is a changelog-only change since last build and previous build passed. Skipping entire build."
-                        // Skip the entire build for changelog-only changes
-                        currentBuild.result = 'SUCCESS'
-                        return
-                      }
-                      
-                      buildStages.runDebugInfo(skipEval)
-                      buildStages.buildEnvironment()
-                      if (skipForDocOnly) {
+                        // No build steps needed - just let it fall through to cleanup
+                      } else if (skipForDocOnly) {
                         echo "This is a doc-only change since last build and previous build passed. Skipping everything except doc build and doc tests."
+                        buildStages.runDebugInfo(skipEval)
+                        buildStages.buildEnvironment()
                         buildStages.installPackage("docs")
                         buildStages.buildDocs()
                         buildStages.testDocs()
                       } else {
+                        buildStages.runDebugInfo(skipEval)
+                        buildStages.buildEnvironment()
                         buildStages.installPackage()
                         buildStages.installDependencies(upstream_repos)
                         buildStages.checkFormatting(run_mypy)
