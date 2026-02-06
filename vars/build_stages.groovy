@@ -174,7 +174,7 @@ def deployDocs() {
 }
 
 def cleanup() {
-    sh "${ACTIVATE} && make clean"
+    sh "make clean"
     cleanWs()
     dir("${WORKSPACE}@tmp") {
         deleteDir()
