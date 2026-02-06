@@ -117,7 +117,7 @@ def getChangedFilesSinceLastBuild() {
  * Returns false (run full build) if:
  * - No previous build exists (first build)
  * - The previous build's commit cannot be determined
- * - There are no changed files (empty commit)
+ * - There are no changed files
  * - Any files do NOT match the pattern
  * 
  * Returns true (can skip non-essential steps) if:
@@ -126,7 +126,7 @@ def getChangedFilesSinceLastBuild() {
 def isChangeOnlyMatching(String pattern, String description) {
     def changedFiles = getChangedFilesSinceLastBuild()
     
-    // If no files are found (first build, shallow clone, or empty commit),
+    // If no files are found (first build, shallow clone, empty commit, manual rerun),
     // return false to trigger a full build
     if (changedFiles == '') {
         echo "No changed files found since last build. Running full build."
