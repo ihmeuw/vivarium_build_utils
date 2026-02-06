@@ -206,6 +206,7 @@ def call(Map config = [:]){
                       if (skipForChangelogOnly) {
                         echo "This is a changelog-only change since last build and previous build passed. Skipping entire build."
                         // Skip the entire build for changelog-only changes
+                        currentBuild.result = 'SUCCESS'
                         return
                       }
                       
