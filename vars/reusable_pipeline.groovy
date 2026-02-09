@@ -206,6 +206,7 @@ def call(Map config = [:]){
                       if (skipForChangelogOnly) {
                         echo "This is a changelog-only change since last build and previous build passed. Skipping entire build."
                         // No build steps needed - just let it fall through to cleanup
+                        currentBuild.result = 'SUCCESS'  // Mark build as successful since we're intentionally skipping
                       } else if (skipForDocOnly) {
                         echo "This is a doc-only change since last build and previous build passed. Skipping everything except doc build and doc tests."
                         buildStages.runDebugInfo(skipEval)
