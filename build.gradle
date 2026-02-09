@@ -1,0 +1,38 @@
+plugins {
+    id 'groovy'
+}
+
+repositories {
+    mavenCentral()
+    // jenkins-pipeline-unit 1.2+ is published here, not Maven Central
+    maven { url 'https://repo.jenkins-ci.org/releases/' }
+}
+
+sourceSets {
+    main {
+        groovy {
+            srcDirs = ['vars']
+        }
+    }
+    test {
+        groovy {
+            srcDirs = ['test/groovy']
+        }
+    }
+}
+
+dependencies {
+    // Groovy runtime
+    implementation 'org.codehaus.groovy:groovy-all:3.0.21'
+    // Jenkins Pipeline Unit for testing shared libraries
+    testImplementation 'com.lesfurets:jenkins-pipeline-unit:1.9'
+    testImplementation 'junit:junit:4.13.2'
+}
+
+test {
+    testLogging {
+        events "passed", "failed", "skipped", "standardOut", "standardError"
+        showStandardStreams = true
+        exceptionFormat = 'full'
+    }
+}
