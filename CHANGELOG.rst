@@ -1,6 +1,7 @@
 **2.2.4 - 02/10/26**
 
   - Bugfix: fix timeout env variable in jenkinsfile
+  - Bugfix: fix the cleanup depth for the shared directory
 
 **2.2.3 - 02/09/26**
 
