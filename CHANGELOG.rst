@@ -2,6 +2,7 @@
 
   - Bugfix: fix timeout env variable in jenkinsfile
   - Bugfix: fix the cleanup depth for the shared directory
+  - Bugfix: fix doc-only / changelog-only skipping behavior
 
 **2.2.3 - 02/09/26**
 
