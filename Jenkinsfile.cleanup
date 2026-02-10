@@ -5,12 +5,11 @@ pipeline {
         DIRS_TO_CLEAN_PER_NODE = '/tmp,/opt/jenkins/workspace'
         DIRS_TO_CLEAN_SHARED = '/mnt/team/simulation_science/priv/engineering/jenkins/envs'
         DAYS_OLD = '3'
-        TIMEOUT = '120'  // minutes
     }
     
     options {
         skipDefaultCheckout()
-        timeout(time: env.TIMEOUT.toInteger(), unit: 'MINUTES')
+        timeout(time: 120, unit: 'MINUTES')
         timestamps()
         buildDiscarder(logRotator(numToKeepStr: '30'))
     }
@@ -115,7 +114,7 @@ pipeline {
                 def channelName = "simsci-ci-status"
                 def slackID = "channel"
                 def slackMessage = """
-                    Cleanup was aborted (likely due to the ${env.TIMEOUT}-minute timeout).
+                    Cleanup was aborted (likely due to timeout).
                     
                     Job: *${env.JOB_NAME}*
                     Build number: #${env.BUILD_NUMBER}
