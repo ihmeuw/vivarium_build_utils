@@ -1,4 +1,4 @@
-**2.2.4 - 02/20/26**
+**2.2.4 - 02/10/26**
 
   - Fix doc only / changelog only skipping behavior
 
