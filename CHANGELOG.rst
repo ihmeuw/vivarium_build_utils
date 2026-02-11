@@ -1,3 +1,7 @@
+**2.3.0 - TBD/TBD/TBD**
+
+  - Feature: Support python 3.13
+
 **2.2.4 - 02/10/26**
 
   - Bugfix: fix timeout env variable in jenkinsfile
