@@ -1,6 +1,7 @@
 **2.3.0 - TBD/TBD/TBD**
 
   - Feature: Support python 3.13
+  - make build-env command now defaults to python 3.13
 
 **2.2.4 - 02/10/26**
 
