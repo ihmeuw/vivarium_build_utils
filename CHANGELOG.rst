@@ -1,4 +1,4 @@
-**2.3.2 - 02/24/26**
+**2.3.2 - 02/25/26**
 
   - Slack CI channel for failing builds for all scheduled branches
 
