@@ -4,7 +4,7 @@ pipeline {
     environment {
         DIRS_TO_CLEAN_PER_NODE = '/tmp,/opt/jenkins/workspace'
         DIRS_TO_CLEAN_SHARED = '/mnt/team/simulation_science/priv/engineering/jenkins/envs'
-        DAYS_OLD = '2'
+        DAYS_OLD = '1'
     }
     
     options {

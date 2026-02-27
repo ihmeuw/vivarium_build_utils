@@ -328,10 +328,10 @@ def call(Map config = [:]){
         }
       }
       cleanup { // cleanup for outer workspace
-        // NOTE: We always clean up this outer workspace regardless of DEBUG
-        // deleteDirs: true ensures both WORKSPACE and WORKSPACE@tmp are cleaned
-        // disableDeferredWipeout: true forces immediate deletion instead of background cleanup
-        cleanWs(deleteDirs: true, disableDeferredWipeout: true)
+        // NOTE: We always clean up @tmp for outer workspace regardless of DEBUG
+        // Preserve main workspace for Jenkins reports/artifacts
+        // Full workspace cleanup handled by scheduled Jenkinsfile.cleanup job
+        sh "rm -rf '${WORKSPACE}@tmp'"
       }
     }  // End of post
   }  // End of pipeline

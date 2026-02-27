@@ -176,9 +176,9 @@ def deployDocs() {
 
 def cleanup() {
     sh "make clean"
-    // deleteDirs: true ensures both WORKSPACE and WORKSPACE@tmp are cleaned
-    // disableDeferredWipeout: true forces immediate deletion instead of background cleanup
-    cleanWs(deleteDirs: true, disableDeferredWipeout: true)
+    // Only clean @tmp directory to preserve workspace for Jenkins reports/artifacts
+    // Full workspace cleanup handled by scheduled Jenkinsfile.cleanup job
+    sh "rm -rf '${WORKSPACE}@tmp'"
 }
 
 def cleanupDebug() {
