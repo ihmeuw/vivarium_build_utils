@@ -11,7 +11,8 @@ def call() {
         testDocs: this.&testDocs,
         deployPackage: this.&deployPackage,
         deployDocs: this.&deployDocs,
-        cleanup: this.&cleanup
+        cleanup: this.&cleanup,
+        cleanupDebug: this.&cleanupDebug
     ]
 }
 
@@ -175,8 +176,13 @@ def deployDocs() {
 
 def cleanup() {
     sh "make clean"
-    cleanWs()
-    dir("${WORKSPACE}@tmp") {
-        deleteDir()
-    }
+    // deleteDirs: true ensures both WORKSPACE and WORKSPACE@tmp are cleaned
+    cleanWs(deleteDirs: true)
+}
+
+def cleanupDebug() {
+    // When DEBUG is enabled, only clean @tmp to preserve workspace for inspection
+    sh "make clean"
+    // Clean only @tmp directory, preserve main workspace
+    sh "rm -rf '${WORKSPACE}@tmp'"
 }

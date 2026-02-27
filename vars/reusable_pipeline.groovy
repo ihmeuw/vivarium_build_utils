@@ -252,7 +252,8 @@ def call(Map config = [:]){
                       // Cleanup
                       script {
                         if (params.DEBUG) {
-                          echo 'Debug was enabled - MANUALLY CLEAN UP WHEN FINISHED.'
+                          echo 'Debug is enabled - keeping workspace but cleaning @tmp directory.'
+                          buildStages.cleanupDebug()
                         } else {
                           buildStages.cleanup()
                         }
@@ -328,11 +329,8 @@ def call(Map config = [:]){
       }
       cleanup { // cleanup for outer workspace
         // NOTE: We always clean up this outer workspace regardless of DEBUG
-        cleanWs()
-        // manually remove @tmp dirs
-        dir("${WORKSPACE}@tmp"){
-          deleteDir()
-        }
+        // deleteDirs: true ensures both WORKSPACE and WORKSPACE@tmp are cleaned
+        cleanWs(deleteDirs: true)
       }
     }  // End of post
   }  // End of pipeline

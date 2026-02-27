@@ -1,3 +1,7 @@
+**2.3.3 - 02/27/26**
+
+  - Bugfix: Fix cleanup of environments from Jenkins builds
+
 **2.3.2 - 02/25/26**
 
   - Slack CI channel for failing builds for all scheduled branches

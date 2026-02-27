@@ -4,7 +4,7 @@ pipeline {
     environment {
         DIRS_TO_CLEAN_PER_NODE = '/tmp,/opt/jenkins/workspace'
         DIRS_TO_CLEAN_SHARED = '/mnt/team/simulation_science/priv/engineering/jenkins/envs'
-        DAYS_OLD = '3'
+        DAYS_OLD = '2'
     }
     
     options {
@@ -25,10 +25,8 @@ pipeline {
             }
             post {
                 always {
-                    cleanWs()
-                    dir("${env.WORKSPACE}@tmp") {
-                        deleteDir()
-                    }
+                    // deleteDirs: true ensures both WORKSPACE and WORKSPACE@tmp are cleaned
+                    cleanWs(deleteDirs: true)
                 }
             }
         }
@@ -43,10 +41,8 @@ pipeline {
             }
             post {
                 always {
-                    cleanWs()
-                    dir("${env.WORKSPACE}@tmp") {
-                        deleteDir()
-                    }
+                    // deleteDirs: true ensures both WORKSPACE and WORKSPACE@tmp are cleaned
+                    cleanWs(deleteDirs: true)
                 }
             }
         }
@@ -60,10 +56,8 @@ pipeline {
             }
             post {
                 always {
-                    cleanWs()
-                    dir("${env.WORKSPACE}@tmp") {
-                        deleteDir()
-                    }
+                    // deleteDirs: true ensures both WORKSPACE and WORKSPACE@tmp are cleaned
+                    cleanWs(deleteDirs: true)
                 }
             }
         }
@@ -77,10 +71,8 @@ pipeline {
             }
             post {
                 always {
-                    cleanWs()
-                    dir("${env.WORKSPACE}@tmp") {
-                        deleteDir()
-                    }
+                    // deleteDirs: true ensures both WORKSPACE and WORKSPACE@tmp are cleaned
+                    cleanWs(deleteDirs: true)
                 }
             }
         }
@@ -94,10 +86,8 @@ pipeline {
             }
             post {
                 always {
-                    cleanWs()
-                    dir("${env.WORKSPACE}@tmp") {
-                        deleteDir()
-                    }
+                    // deleteDirs: true ensures both WORKSPACE and WORKSPACE@tmp are cleaned
+                    cleanWs(deleteDirs: true)
                 }
             }
         }
