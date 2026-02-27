@@ -330,7 +330,8 @@ def call(Map config = [:]){
       cleanup { // cleanup for outer workspace
         // NOTE: We always clean up this outer workspace regardless of DEBUG
         // deleteDirs: true ensures both WORKSPACE and WORKSPACE@tmp are cleaned
-        cleanWs(deleteDirs: true)
+        // disableDeferredWipeout: true forces immediate deletion instead of background cleanup
+        cleanWs(deleteDirs: true, disableDeferredWipeout: true)
       }
     }  // End of post
   }  // End of pipeline

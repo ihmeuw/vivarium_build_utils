@@ -177,7 +177,8 @@ def deployDocs() {
 def cleanup() {
     sh "make clean"
     // deleteDirs: true ensures both WORKSPACE and WORKSPACE@tmp are cleaned
-    cleanWs(deleteDirs: true)
+    // disableDeferredWipeout: true forces immediate deletion instead of background cleanup
+    cleanWs(deleteDirs: true, disableDeferredWipeout: true)
 }
 
 def cleanupDebug() {
