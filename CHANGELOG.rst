@@ -1,4 +1,4 @@
-**2.3.4 - TBD/TBD/TBD**
+**2.3.4 - 03/02/26**
 
   - Bugfix: Fix cleanup of environments from Jenkins builds
 
