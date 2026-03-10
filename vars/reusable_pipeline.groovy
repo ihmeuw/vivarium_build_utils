@@ -155,7 +155,13 @@ def call(Map config = [:]){
             PYTHON_DEPLOY_VERSION = python_versions.max { a, b ->
               def aParts = a.tokenize('.').collect { it.toInteger() }
               def bParts = b.tokenize('.').collect { it.toInteger() }
-              aParts <=> bParts
+              // Compare element-by-element; ArrayList <=> ArrayList is not
+              // supported in the Jenkins Groovy sandbox.
+              for (int i = 0; i < Math.min(aParts.size(), bParts.size()); i++) {
+                def cmp = aParts[i] <=> bParts[i]
+                if (cmp != 0) return cmp
+              }
+              return aParts.size() <=> bParts.size()
             }
             echo "Python deploy version (inferred): ${PYTHON_DEPLOY_VERSION}"
           }
