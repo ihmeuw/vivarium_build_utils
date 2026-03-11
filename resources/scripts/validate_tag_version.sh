@@ -4,22 +4,9 @@
 # This script is used to prevent accidental releases with incorrect version numbers.
 # It's particularly important for GitHub repos where tags are created manually.
 #
-# Usage: validate_tag_version.sh [tag]
-#
-# Arguments:
-#   tag (optional) - Explicit git tag to validate. If not provided, uses $GITHUB_REF_NAME.
-#
-# The script gets the tag from an explicit argument or GitHub environment.
-# If no tag is found, validation is skipped gracefully.
-#
-# The script will:
-# 1. Extract the version from the current git tag (e.g., v1.2.3 -> 1.2.3)
-# 2. Extract the version from CHANGELOG.rst
-# 3. Compare them and exit with error if they don't match
-#
 # Returns:
-#   0 if versions match (or no tag found)
-#   1 if versions don't match or tag is invalid
+#   0 if versions match and are valid semver
+#   1 otherwise
 
 set -e
 
