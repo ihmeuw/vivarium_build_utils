@@ -1,4 +1,4 @@
-**2.4.1 - 03/12/26**
+**2.3.7 - 03/12/26**
 
    - Validate github repo version prior to deploying
 
