@@ -153,7 +153,7 @@ test-docs: # Test documentation examples
 	fi
 
 .PHONY: validate-tag
-validate-tag: # Validate that the current git tag matches the CHANGELOG version
+validate-tag: # Validate that current git tag matches CHANGELOG and is valid semver
     # This is intended to be used only by github deploy workflows
 	@bash $(UTILS_DIR)resources/scripts/validate_tag_version.sh
 
