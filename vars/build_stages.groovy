@@ -85,9 +85,11 @@ def installPackage(String env_reqs = "") {
 
 def installDependencies(List upstream_repos) {
     stage("Install Upstream Dependency Branches - Python ${PYTHON_VERSION}") {
-        sh "chmod +x install_dependency_branch.sh"
-        upstream_repos.each { repo ->
-            sh "${ACTIVATE} && ./install_dependency_branch.sh ${repo} ${GIT_BRANCH} jenkins"
+        if (upstream_repos) {
+            sh "chmod +x install_dependency_branch.sh"
+            sh "${ACTIVATE} && ./install_dependency_branch.sh ${upstream_repos.join(' ')} --workflow jenkins"
+        } else {
+            echo "No upstream repos configured – skipping."
         }
     }
 }

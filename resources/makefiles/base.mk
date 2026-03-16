@@ -218,7 +218,7 @@ install-upstream-deps: # Install upstream dependencies
 	@cat $(UTILS_DIR)/resources/scripts/install_dependency_branch.sh
 	@echo
 	@echo "----------------------------------------"
-	@sh $(UTILS_DIR)/resources/scripts/install_dependency_branch.sh $(DEPENDENCY_NAME) $(BRANCH_NAME) $(WORKFLOW)
+	@bash $(UTILS_DIR)/resources/scripts/install_dependency_branch.sh $(DEPENDENCY_NAME) $(BRANCH_NAME) $(WORKFLOW)
 	@echo
 
 .PHONY: format
