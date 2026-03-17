@@ -1,6 +1,10 @@
-**2.3.8 - 03/17/26**
+**2.3.9 - 03/17/26**
 
    - Check upstream dependencies recursively
+
+**2.3.8 - 03/16/26**
+
+   - Create a make target for version validation
 
 **2.3.7 - 03/12/26**
 
