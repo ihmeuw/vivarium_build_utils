@@ -1,3 +1,7 @@
+**2.3.8 - 03/17/26**
+
+   - Check upstream dependencies recursively
+
 **2.3.7 - 03/12/26**
 
    - Validate github repo version prior to deploying
