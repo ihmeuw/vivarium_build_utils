@@ -1,4 +1,4 @@
-**2.3.9 - 03/17/26**
+**2.4.0 - 03/19/26**
 
    - Check upstream dependencies recursively
 

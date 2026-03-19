@@ -76,7 +76,7 @@ determine_branch_to_check() {
 # Walks up the current repo's branch lineage until a matching remote branch is
 # found in the dependency, or falls back to "main".
 # NOTE: All logging goes to stderr so the caller can capture stdout cleanly.
-resolve_branch_for_dep() {
+resolve_branch_for_dependency() {
   local dep=$1
   local branch_to_check=$2
   local depth=${3:-0}
@@ -143,7 +143,7 @@ resolve_branch_for_dep() {
 # ---- Fetch upstream_repos from a repo's Jenkinsfile on GitHub ----
 # Does a minimal no-checkout clone to read just the Jenkinsfile, then parses
 # the upstream_repos list from it.
-get_transitive_deps() {
+get_transitive_dependencies() {
   local repo=$1
   local branch=$2
   local tmpdir
@@ -185,7 +185,7 @@ resolve_recursive() {
 
   # Determine which branch (if any) this dependency has
   local resolved_branch
-  resolved_branch=$(resolve_branch_for_dep "$dep" "$branch_to_check" "$depth")
+  resolved_branch=$(resolve_branch_for_dependency "$dep" "$branch_to_check" "$depth")
   REPO_BRANCH_MAP["$dep"]="$resolved_branch"
 
   if [ "$resolved_branch" != "main" ]; then
@@ -194,7 +194,7 @@ resolve_recursive() {
     # Discover transitive dependencies from the dependency's Jenkinsfile
     log_indent "$depth" "Checking ${dep}'s Jenkinsfile for transitive dependencies..."
     local transitive_deps
-    transitive_deps=$(get_transitive_deps "$dep" "$resolved_branch")
+    transitive_deps=$(get_transitive_dependencies "$dep" "$resolved_branch")
 
     if [ -n "$transitive_deps" ]; then
       log_indent "$depth" "Transitive deps for ${dep}: ${transitive_deps}"
@@ -213,7 +213,7 @@ resolve_recursive() {
 }
 
 # ---- Install all resolved non-main dependencies ----
-install_resolved_deps() {
+install_resolved_dependencies() {
   echo ""
   echo "========================================="
   echo "Dependency Resolution Complete"
@@ -311,7 +311,7 @@ main() {
     resolve_recursive "$repo" "$branch_to_check" 0
   done
 
-  install_resolved_deps
+  install_resolved_dependencies
   export_branch_info
 }
 
