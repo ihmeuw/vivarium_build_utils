@@ -21,7 +21,6 @@ def call(Map config = [:]){
     'requires_slurm',
     'deployable',
     'skip_doc_build',
-    'upstream_repos',
     'run_mypy'
   ]
   
