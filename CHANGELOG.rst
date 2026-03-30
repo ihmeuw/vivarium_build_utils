@@ -1,4 +1,4 @@
-**2.3.9 - 03/25/26**
+**2.4.0 - 03/25/26**
 
    - Remove installDependencies stage and upstream_repos config option
 
