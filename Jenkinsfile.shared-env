@@ -334,9 +334,12 @@ def promoteEnvironment(String timestampedPath, String currentPath, String envNam
         # pip/setuptools embed the absolute Python path at install time, which still references
         # the old timestamped directory after the mv. Replace all occurrences with the stable
         # _current path so the scripts can find Python.
+        # IMPORTANT: Only rewrite text files — running sed on binary executables (e.g. python3.11)
+        # corrupts their ELF headers and causes segfaults.
         echo "Rewriting timestamped paths in bin/ scripts..."
-        find "${currentPath}/bin" -maxdepth 1 -type f -exec \
-            sed -i "s|${timestampedPath}|${currentPath}|g" {} +
+        grep -rIl "${timestampedPath}" "${currentPath}/bin" 2>/dev/null | while read -r f; do
+            sed -i "s|${timestampedPath}|${currentPath}|g" "\$f"
+        done
         echo "Path rewriting complete"
         
         # Set permissions - readable by all, writable only by Jenkins
