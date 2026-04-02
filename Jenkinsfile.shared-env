@@ -38,7 +38,7 @@ pipeline {
         )
         string(
             name: 'RETENTION_DAYS',
-            defaultValue: '30',
+            defaultValue: '7',
             description: 'Number of days to retain conda-pack archives before cleanup'
         )
     }
@@ -276,7 +276,7 @@ def snapshotLockFiles(String envPath, String envName) {
         # Pip freeze (filter out local/editable installs — these are irrelevant
         # in the shared env since the venv overlay replaces them)
         '${envPath}/bin/pip' freeze 2>/dev/null \
-            | grep -v 'file:///' | grep -v '^-e ' | sort \
+            | grep -v 'file:///' | grep -v '^-e ' | grep -v '^# Editable install' | sort \
             > '${WORKSPACE}/${envName}_old_pip_lock.txt' || true
     """
 }
@@ -339,7 +339,7 @@ def detectChanges(String envPath, String envName) {
             > '${WORKSPACE}/${envName}_new_conda_lock.txt' 2>/dev/null || true
 
         '${envPath}/bin/pip' freeze 2>/dev/null \
-            | grep -v 'file:///' | grep -v '^-e ' | sort \
+            | grep -v 'file:///' | grep -v '^-e ' | grep -v '^# Editable install' | sort \
             > '${WORKSPACE}/${envName}_new_pip_lock.txt' || true
     """
 
