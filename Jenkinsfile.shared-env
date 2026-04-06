@@ -293,7 +293,14 @@ def snapshotLockFiles(String envPath, String envName) {
  * continues — the environment was going to be replaced anyway.
  */
 def archiveEnvironment(String currentPath, String archiveDir, String envName) {
-    def archiveFile = "${archiveDir}/${envName}_${env.BUILD_TIMESTAMP}.tar.gz"
+    // Use the environment's original creation timestamp from .build_info (if available)
+    // so the archive filename reflects when the env was built, not when it was archived.
+    def createdTimestamp = sh(
+        script: "grep '^Built:' '${currentPath}/.build_info' 2>/dev/null | awk '{print \$2}'",
+        returnStdout: true
+    ).trim() ?: env.BUILD_TIMESTAMP
+
+    def archiveFile = "${archiveDir}/${envName}_${createdTimestamp}.tar.gz"
 
     echo "Archiving current environment to ${archiveFile}"
 
