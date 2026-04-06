@@ -1,3 +1,9 @@
+**3.1.0 - 04/06/26**
+
+   - Refactor shared environment pipeline: archive current env with conda-pack before
+     rebuild, rebuild in-place, diff packages, and notify Slack with package diffs.
+     Add archive retention cleanup (default 7 days).
+
 **3.0.0 - 03/30/26**
 
    - Remove installDependencies stage and upstream_repos config option

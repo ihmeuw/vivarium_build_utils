@@ -17,6 +17,9 @@ import groovy.transform.Field
 // Each entry is a map with 'name' and 'diff' keys.
 @Field def UPDATED_ENVIRONMENTS = []
 
+// Slack channel for environment update notifications
+@Field final String SLACK_CHANNEL = 'simsci-shared-env-updates'
+
 pipeline {
     agent { node 'simsci-jenkinsagent-ci-p01' }
 
@@ -70,21 +73,17 @@ pipeline {
         stage('Initialize') {
             steps {
                 script {
-                    // Parse parameters
-                    env.MODEL_LIST = params.ACTIVE_MODELS.split(',').collect { it.trim() }
-                    env.TYPE_LIST = params.ENV_TYPES.split(',').collect { it.trim() }
-
                     echo "=== Shared Environment Builder ==="
-                    echo "Models: ${env.MODEL_LIST}"
-                    echo "Environment Types: ${env.TYPE_LIST}"
+                    echo "Models: ${params.ACTIVE_MODELS}"
+                    echo "Environment Types: ${params.ENV_TYPES}"
                     echo "Shared Directory: ${params.SHARED_ENV_DIR}"
                     echo "Build Timestamp: ${env.BUILD_TIMESTAMP}"
                     echo "Retention Days: ${params.RETENTION_DAYS}"
 
                     // Ensure shared directory exists with proper permissions
                     sh """
-                        mkdir -p ${params.SHARED_ENV_DIR}
-                        chmod 755 ${params.SHARED_ENV_DIR}
+                        mkdir -p '${params.SHARED_ENV_DIR}'
+                        chmod 755 '${params.SHARED_ENV_DIR}'
                     """
                 }
             }
@@ -129,7 +128,6 @@ pipeline {
 
                 // Send Slack notification if any environments had package changes
                 if (UPDATED_ENVIRONMENTS && UPDATED_ENVIRONMENTS.size() > 0) {
-                    def channelName = "simsci-shared-env-updates"
                     def envSections = UPDATED_ENVIRONMENTS.collect { entry ->
                         def diffBlock = entry.diff ? "\n```\n${entry.diff}\n```" : ""
                         "  • *${entry.name}*${diffBlock}"
@@ -145,7 +143,7 @@ pipeline {
                         Build details: <${env.BUILD_URL}/console|See in web console>
                         """.stripIndent()
 
-                    slackSend channel: "#${channelName}",
+                    slackSend channel: "#${SLACK_CHANNEL}",
                             message: slackMessage,
                             teamDomain: "ihme",
                             tokenCredentialId: "slack"
@@ -158,7 +156,6 @@ pipeline {
         }
         failure {
             script {
-                def channelName = "simsci-shared-env-updates"
                 def archiveHint = "Check ${params.SHARED_ENV_DIR}/archive/ for conda-pack archives to restore a previous environment."
                 def slackMessage = """
                     *Shared Environment Build Failed*
@@ -171,7 +168,7 @@ pipeline {
                     ${archiveHint}
                     """.stripIndent()
 
-                slackSend channel: "#${channelName}",
+                slackSend channel: "#${SLACK_CHANNEL}",
                         message: slackMessage,
                         teamDomain: "ihme",
                         tokenCredentialId: "slack"
@@ -187,7 +184,7 @@ pipeline {
  *   1. Snapshot current lock files (conda list --explicit, pip freeze)
  *   2. Archive current env with conda-pack
  *   3. Remove current env
- *   4. Rebuild fresh at the _current path (no sed path rewriting needed)
+ *   4. Rebuild fresh at the _current path
  *   5. Generate new lock files and diff against step 1
  *   6. If packages changed, track for Slack notification
  */
@@ -260,34 +257,45 @@ EOF
 }
 
 /**
- * Snapshot conda and pip lock files for the current environment.
- * These are used later to diff against the newly built environment.
+ * Generate conda and pip lock files for an environment.
+ *
+ * @param envPath  Absolute path to the conda environment
+ * @param envName  Logical name used in filenames (e.g. vivarium_gates_mncnh_simulation)
+ * @param tag      Filename tag — 'old' for pre-rebuild snapshot, 'new' for post-rebuild
  */
-def snapshotLockFiles(String envPath, String envName) {
-    echo "Snapshotting lock files for ${envName}"
-
+def generateLockFiles(String envPath, String envName, String tag) {
     sh """
         ${env.ACTIVATE_BASE}
 
         # Conda explicit list
         conda list --prefix '${envPath}' --explicit \
-            > '${WORKSPACE}/${envName}_old_conda_lock.txt' 2>/dev/null || true
+            > '${WORKSPACE}/${envName}_${tag}_conda_lock.txt' 2>/dev/null || true
 
         # Pip freeze (filter out local/editable installs — these are irrelevant
         # in the shared env since the venv overlay replaces them)
         '${envPath}/bin/pip' freeze 2>/dev/null \
             | grep -v 'file:///' | grep -v '^-e ' | grep -v '^# Editable install' | sort \
-            > '${WORKSPACE}/${envName}_old_pip_lock.txt' || true
+            > '${WORKSPACE}/${envName}_${tag}_pip_lock.txt' || true
     """
+}
+
+/**
+ * Snapshot conda and pip lock files for the current environment.
+ * These are used later to diff against the newly built environment.
+ */
+def snapshotLockFiles(String envPath, String envName) {
+    echo "Snapshotting lock files for ${envName}"
+    generateLockFiles(envPath, envName, 'old')
 }
 
 /**
  * Archive the current environment using conda-pack, then remove it.
  *
- * conda-pack is installed into the environment before packing so that everything
- * is self-contained. The --ignore-editable-packages flag handles the editable
- * install of the model package, which is irrelevant in the shared env (the venv
- * overlay re-installs from the user's checkout).
+ * conda-pack is installed into the base conda environment and invoked with --prefix
+ * so that the archive is a faithful snapshot of the environment as it was running.
+ * The --ignore-editable-packages flag handles the editable install of the model
+ * package, which is irrelevant in the shared env (the venv overlay re-installs
+ * from the user's checkout).
  *
  * If conda-pack fails (e.g. corrupted env), the error is logged but the build
  * continues — the environment was going to be replaced anyway.
@@ -308,11 +316,13 @@ def archiveEnvironment(String currentPath, String archiveDir, String envName) {
 
     try {
         sh """
-            # Install conda-pack into the environment (idempotent, fast if present)
-            '${currentPath}/bin/pip' install conda-pack
+            ${env.ACTIVATE_BASE}
+
+            # Install conda-pack into the base env (not the target) to avoid polluting the archive
+            pip install conda-pack
 
             # Pack the environment
-            '${currentPath}/bin/conda-pack' \
+            conda-pack \
                 --prefix '${currentPath}' \
                 --ignore-editable-packages \
                 --output '${archiveFile}' \
@@ -338,29 +348,21 @@ def archiveEnvironment(String currentPath, String archiveDir, String envName) {
 def detectChanges(String envPath, String envName) {
     echo "Generating lock files and checking for changes"
 
-    // Generate new lock files
-    sh """
-        ${env.ACTIVATE_BASE}
-
-        conda list --prefix '${envPath}' --explicit \
-            > '${WORKSPACE}/${envName}_new_conda_lock.txt' 2>/dev/null || true
-
-        '${envPath}/bin/pip' freeze 2>/dev/null \
-            | grep -v 'file:///' | grep -v '^-e ' | grep -v '^# Editable install' | sort \
-            > '${WORKSPACE}/${envName}_new_pip_lock.txt' || true
-    """
+    // Generate new lock files (same format as snapshotLockFiles)
+    generateLockFiles(envPath, envName, 'new')
 
     // Archive lock files for this build
     sh """
         mkdir -p '${WORKSPACE}/lock_files'
         cp '${WORKSPACE}/${envName}_new_conda_lock.txt' \
-           '${WORKSPACE}/lock_files/${envName}_conda_lock.txt' || true
+           '${WORKSPACE}/lock_files/${envName}_conda_lock.txt'
         cp '${WORKSPACE}/${envName}_new_pip_lock.txt' \
-           '${WORKSPACE}/lock_files/${envName}_pip_lock.txt' || true
+           '${WORKSPACE}/lock_files/${envName}_pip_lock.txt'
     """
     archiveArtifacts artifacts: "lock_files/${envName}_*.txt", allowEmptyArchive: true
 
-    // Diff against old snapshot (if it exists — won't exist on first build)
+    // Diff against old snapshot (if it exists — won't exist on first build).
+    // Both old lock files are always created by snapshotLockFiles (possibly empty).
     def oldCondaLock = "${WORKSPACE}/${envName}_old_conda_lock.txt"
     def oldPipLock = "${WORKSPACE}/${envName}_old_pip_lock.txt"
 
@@ -443,31 +445,22 @@ def cleanupArchivesForType(String model, String envType) {
     echo "Cleaning up old archives in: ${archiveDir}"
 
     try {
-        def oldFiles = sh(
+        def deletedFiles = sh(
             script: """
                 find '${archiveDir}' -maxdepth 1 -type f \
                     -name '${envName}_*.tar.gz' \
                     -mtime +${params.RETENTION_DAYS} \
-                    2>/dev/null || true
+                    -print -delete 2>/dev/null || true
             """,
             returnStdout: true
         ).trim()
 
-        if (oldFiles) {
-            def fileList = oldFiles.split('\n')
-            echo "Found ${fileList.size()} old archive(s) to remove:"
+        if (deletedFiles) {
+            def fileList = deletedFiles.split('\n')
+            echo "Removed ${fileList.size()} old archive(s) for ${envName}:"
             fileList.each { f ->
                 echo "  - ${f}"
             }
-
-            sh """
-                find '${archiveDir}' -maxdepth 1 -type f \
-                    -name '${envName}_*.tar.gz' \
-                    -mtime +${params.RETENTION_DAYS} \
-                    -delete 2>/dev/null || true
-            """
-
-            echo "Removed ${fileList.size()} old archive(s) for ${envName}"
         } else {
             echo "No old archives found for ${envName}"
         }
