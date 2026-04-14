@@ -1,4 +1,4 @@
-**3.1.0 - 04/06/26**
+**3.1.0 - 04/14/26**
 
    - Refactor shared environment pipeline: archive current env with conda-pack before
      rebuild, rebuild in-place, diff packages, and notify Slack with package diffs.
