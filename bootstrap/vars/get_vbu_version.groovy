@@ -1,4 +1,4 @@
-def call(String nodeLabel = 'matrix-tasks') {
+def call(String nodeLabel = 'svc-simsci') {
     /* Gets the vivarium_build_utils version using the centralized script.
 
     The intent is that the Jenkinsfile in other repos that use vivarium_build_utils
