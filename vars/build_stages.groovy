@@ -69,8 +69,6 @@ def buildEnvironment() {
         // The env should have been cleaned out after the last build, but delete it again
         // here just to be safe.
         sh "rm -rf ${CONDA_ENV_PATH}"
-        // Ensure the local envs directory exists on this node
-        sh "mkdir -p \$(dirname ${CONDA_ENV_PATH})"
         sh "${env.ACTIVATE_BASE} && make create-env PYTHON_VERSION=${PYTHON_VERSION}"
         // open permissions for test users to create file in workspace
         sh "chmod 777 ${WORKSPACE}"
@@ -174,7 +172,7 @@ def cleanup() {
     // Remove the conda environment immediately to conserve local disk space.
     // Envs are built on local node storage, not shared NFS, so they must be
     // cleaned up by the build that created them.
-    sh "rm -rf ${CONDA_ENV_PATH}"
+    sh "${env.ACTIVATE_BASE} && conda env remove -p ${CONDA_ENV_PATH} --yes || rm -rf ${CONDA_ENV_PATH}"
     // deleteDirs: true ensures both WORKSPACE and WORKSPACE@tmp are cleaned
     // disableDeferredWipeout: true forces immediate deletion instead of background cleanup
     // Console logs are preserved in Jenkins home, not workspace
