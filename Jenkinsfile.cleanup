@@ -178,7 +178,7 @@ def cleanDirs(cleanupType) {
     }
     // Special case: jenkins-agent node also has a /svc-simsci/envs dir that needs cleaning
     if (env.NODE_NAME == "simsci-jenkinsagent-ci-p01" && cleanupType == "per-node") {
-        dirList = dirList + ",/svc-simsci/envs"
+        dirList = dirList + "/svc-simsci/envs"
     }
     
     for (dir in dirList) {
