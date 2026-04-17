@@ -176,10 +176,10 @@ def cleanDirs(cleanupType) {
     if (env.NODE_NAME == "built-in" && cleanupType == "per-node") {
         dirList = dirList.findAll { it != "/opt/jenkins/workspace" }
     }
-    // Special case: coordinator node doesn't have /svc-simsci/envs
-    if (env.NODE_NAME == "simsci-ci-coordinator-01" && cleanupType == "per-node") {
-        dirList = dirList.findAll { it != "/svc-simsci/envs" }
-    }
+    // // Special case: coordinator node doesn't have /svc-simsci/envs
+    // if (env.NODE_NAME == "simsci-ci-coordinator-01" && cleanupType == "per-node") {
+    //     dirList = dirList.findAll { it != "/svc-simsci/envs" }
+    // }
     
     for (dir in dirList) {
         sh """
