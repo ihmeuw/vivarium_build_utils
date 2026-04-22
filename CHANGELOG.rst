@@ -1,8 +1,25 @@
-**3.1.0 - 04/14/26**
+**3.1.0 - 04/22/26**
 
    - Refactor shared environment pipeline: archive current env with conda-pack before
      rebuild, rebuild in-place, diff packages, and notify Slack with package diffs.
      Add archive retention cleanup (default 7 days).
+     
+**3.0.4 - 04/17/26**
+
+   - Bugfix: Only clean up /svc-simsci/envs on the node that actually has it
+   - Feature: Catch errors so that we run through all stages rather than aborting on first failure
+
+**3.0.3 - 04/16/26**
+
+   - Use --no-cache when running pip install dryrun for getting vbu version
+
+**3.0.2 - 04/15/26**
+
+   - Change the vbu-version bootstrapping to use Jenkins coordinator node
+
+**3.0.1 - 04/14/26**
+
+   - Move environment building back to /svc-simsci scratch spaces on jenkins nodes.
 
 **3.0.0 - 03/30/26**
 

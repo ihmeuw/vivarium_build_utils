@@ -55,16 +55,14 @@ def call(Map config = [:]){
   }
 
   conda_env_name_base = "${env.JOB_NAME}-${BUILD_NUMBER}"
-  conda_env_dir = "/mnt/team/simulation_science/priv/engineering/jenkins/envs"
+  conda_env_dir = "/svc-simsci/envs"
 
   pipeline {
-    // This agent runs as svc-simsci on node simsci-ci-coordinator-01.
-    // It has access to standard IHME filesystems and singularity
     environment {
         IS_CRON = "${currentBuild.buildCauses.toString().contains('TimerTrigger')}"
         CRON_SCHEDULE = "${cron_schedule}"
-        // defaults for conda and pip are a local directory /svc-simsci for improved speed.
-        // In the past, we used /ihme/code/* on the NFS (which is slower)
+        // defaults for conda and pip are a local scratch directory /svc-simsci for improved speed.
+        // In the past, we used the cluster filesystem which is much slower.
         shared_path="/svc-simsci"
         // Get the branch being built and strip everything but the text after the last "/"
         BRANCH = sh(script: "echo ${GIT_BRANCH} | rev | cut -d '/' -f1 | rev", returnStdout: true).trim()
@@ -80,6 +78,8 @@ def call(Map config = [:]){
         ACTIVATE_BASE = "source ${CONDA_BIN_PATH}/activate &> /dev/null"
     }
 
+    // This agent runs as svc-simsci on node simsci-ci-coordinator-01.
+    // It has access to standard IHME filesystems and singularity
     agent { label "coordinator" }
 
     options {
@@ -297,7 +297,7 @@ def call(Map config = [:]){
             slackMessage += """
               
               Debug was enabled - MANUALLY CLEAN UP WHEN FINISHED.
-              1. Env path: ${conda_env_dir}/${conda_env_name_base}
+              1. Env path: ${conda_env_dir}/${conda_env_name_base} (on ${task_node} node)
               2. Workspace: ${env.WORKSPACE}
               """.stripIndent()
           }
