@@ -160,8 +160,6 @@ def runTests(List test_types) {
                         }
                     }]
                 }
-                    }
-                }
                 def parallelTests = test_types.collectEntries {
                     ["${full_name(it)} Tests" : {
                         stage("Run ${full_name(it)} Tests - Python ${PYTHON_VERSION}") {
