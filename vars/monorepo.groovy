@@ -25,12 +25,15 @@ List<String> provisionItems(String rootFolderPath, String repositoryURL, List<St
 
 /**
  * The step entry point.
+ * @param config.jenkinsfiles  List of Jenkinsfile paths to provision (e.g. ["libs/core/Jenkinsfile"])
+ * @param config.folderPrefix  Jenkins folder prefix for provisioned pipelines (default: "Public")
  */
 def call(Map config = [:]){
     println "Provisioning Multibranch Pipelines for Libraries..."
-    
+
     String repositoryName = env.JOB_NAME.split('/')[0]
-    String rootFolderPath = "Generated/$repositoryName"
+    String folderPrefix = config.folderPrefix ?: 'Public'
+    String rootFolderPath = "${folderPrefix}/${repositoryName}"
     List<String> jenkinsfilePaths = config.jenkinsfiles ?: []
 
     echo "Found ${jenkinsfilePaths.size()} Jenkinsfile(s)"

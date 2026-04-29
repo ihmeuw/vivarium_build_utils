@@ -66,12 +66,14 @@ def runDebugInfo(Map skipEval = [:]) {
 }
 
 def withWorkingDirectory(Closure body) {
-    // JOB_NAME is like "Generated/{{REPO-NAME}}/libs/{PACKAGE_NAME}/{BRANCH-NAME}"
+    // JOB_NAME for a provisioned per-package pipeline:
+    //   "<prefix>/<repo>/libs/<pkg>/<branch>"  e.g. "Public/vivarium-suite/libs/core/main"
+    // Falls back to "." for single-repo pipelines.
     echo "Original working directory: ${pwd()}"
     echo "JOB_NAME: ${env.JOB_NAME}"
     def pathParts = env.JOB_NAME.split('/')
     def workingDirectory = "."
-    if (pathParts.length >= 4 && pathParts[0] == 'Generated') {
+    if (pathParts.length >= 5 && pathParts[2] == 'libs') {
         workingDirectory = "${pathParts[2]}/${pathParts[3]}"
     }
     echo "Set working directory to: ${workingDirectory}"
