@@ -32,19 +32,18 @@ def call(Map config = [:]){
   def skip_doc_build = (config?.skip_doc_build == true)
   def run_mypy = (config.run_mypy != null) ? config.run_mypy : true
 
-  // For requires_slurm: "weekly", the actual node/env decision is deferred
-  // until the Initialization stage where params.FORCE_SLOW_DAY is available.
-  // For true/false, we can resolve immediately.
-  def task_node
+  // Resolve task_node and conda_env_dir based on requires_slurm.
+  // "weekly" means only use SLURM + shared env on the slow-test day (Sunday).
+  def use_slurm
   if (requires_slurm == "weekly") {
-    // Deferred — will be resolved in Initialization stage
-    task_node = null
+    def dayOfWeek = new Date().format('EEEE')
+    use_slurm = (dayOfWeek == 'Sunday')
   } else {
-    task_node = requires_slurm ? 'slurm' : 'matrix-tasks'
+    use_slurm = requires_slurm ? true : false
   }
+  def task_node = use_slurm ? 'slurm' : 'matrix-tasks'
   conda_env_name_base = "${env.JOB_NAME}-${BUILD_NUMBER}"
-  // conda_env_dir is also deferred for "weekly" mode
-  conda_env_dir = (requires_slurm == true) ? "/mnt/team/simulation_science/priv/engineering/jenkins/envs" : "/svc-simsci/envs"
+  conda_env_dir = use_slurm ? "/mnt/team/simulation_science/priv/engineering/jenkins/envs" : "/svc-simsci/envs"
 
   echo "Configuration constants:"
   echo "  scheduled_branches: ${scheduled_branches}"
@@ -162,16 +161,7 @@ def call(Map config = [:]){
             PYTHON_DEPLOY_VERSION = python_versions[-1]
             echo "Python deploy version (inferred): ${PYTHON_DEPLOY_VERSION}"
 
-            // Resolve deferred node/env for requires_slurm: "weekly"
-            if (requires_slurm == "weekly") {
-              def dayOfWeek = new Date().format('EEEE')
-              def is_slow_day = (dayOfWeek == 'Sunday')
-              echo "Weekly SLURM mode: dayOfWeek=${dayOfWeek}, is_slow_day=${is_slow_day}"
-              task_node = is_slow_day ? 'slurm' : 'matrix-tasks'
-              conda_env_dir = is_slow_day ? "/mnt/team/simulation_science/priv/engineering/jenkins/envs" : "/svc-simsci/envs"
-            }
-            echo "Resolved task_node: ${task_node}"
-            echo "Resolved conda_env_dir: ${conda_env_dir}"
+            echo "Resolved: task_node=${task_node}, conda_env_dir=${conda_env_dir}, use_slurm=${use_slurm}"
           }
         }
       }
