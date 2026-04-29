@@ -160,8 +160,6 @@ def call(Map config = [:]){
             // Derive the deploy/docs version as the last entry in the list
             PYTHON_DEPLOY_VERSION = python_versions[-1]
             echo "Python deploy version (inferred): ${PYTHON_DEPLOY_VERSION}"
-
-            echo "Resolved: task_node=${task_node}, conda_env_dir=${conda_env_dir}, use_slurm=${use_slurm}"
           }
         }
       }
