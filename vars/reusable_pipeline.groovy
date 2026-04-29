@@ -27,16 +27,30 @@ def call(Map config = [:]){
   def scheduled_branches = config.scheduled_branches ?: [] 
   def stagger_scheduled_builds = config.stagger_scheduled_builds ?: false
   def test_types = config.test_types ?: ['all']
-  def task_node = config.requires_slurm ? 'slurm' : 'matrix-tasks'
+  def requires_slurm = config.requires_slurm ?: false
   def is_deployable = (config?.deployable == true)
   def skip_doc_build = (config?.skip_doc_build == true)
   def run_mypy = (config.run_mypy != null) ? config.run_mypy : true
+
+  // For requires_slurm: "weekly", the actual node/env decision is deferred
+  // until the Initialization stage where params.FORCE_SLOW_DAY is available.
+  // For true/false, we can resolve immediately.
+  def task_node
+  if (requires_slurm == "weekly") {
+    // Deferred — will be resolved in Initialization stage
+    task_node = null
+  } else {
+    task_node = requires_slurm ? 'slurm' : 'matrix-tasks'
+  }
+  conda_env_name_base = "${env.JOB_NAME}-${BUILD_NUMBER}"
+  // conda_env_dir is also deferred for "weekly" mode
+  conda_env_dir = (requires_slurm == true) ? "/mnt/team/simulation_science/priv/engineering/jenkins/envs" : "/svc-simsci/envs"
 
   echo "Configuration constants:"
   echo "  scheduled_branches: ${scheduled_branches}"
   echo "  stagger_scheduled_builds: ${stagger_scheduled_builds}"
   echo "  test_types: ${test_types}"
-  echo "  task_node: ${task_node}"
+  echo "  requires_slurm: ${requires_slurm}"
   echo "  is_deployable: ${is_deployable}"
   echo "  skip_doc_build: ${skip_doc_build}"
   echo "  run_mypy: ${run_mypy}"
@@ -53,9 +67,6 @@ def call(Map config = [:]){
   } else {
     cron_schedule = scheduled_branches.contains(BRANCH_NAME) ? "H H(20-23) * * *" : ''
   }
-
-  conda_env_name_base = "${env.JOB_NAME}-${BUILD_NUMBER}"
-  conda_env_dir = "/svc-simsci/envs"
 
   pipeline {
     environment {
@@ -150,6 +161,17 @@ def call(Map config = [:]){
             // Derive the deploy/docs version as the last entry in the list
             PYTHON_DEPLOY_VERSION = python_versions[-1]
             echo "Python deploy version (inferred): ${PYTHON_DEPLOY_VERSION}"
+
+            // Resolve deferred node/env for requires_slurm: "weekly"
+            if (requires_slurm == "weekly") {
+              def dayOfWeek = new Date().format('EEEE')
+              def is_slow_day = (dayOfWeek == 'Sunday')
+              echo "Weekly SLURM mode: dayOfWeek=${dayOfWeek}, is_slow_day=${is_slow_day}"
+              task_node = is_slow_day ? 'slurm' : 'matrix-tasks'
+              conda_env_dir = is_slow_day ? "/mnt/team/simulation_science/priv/engineering/jenkins/envs" : "/svc-simsci/envs"
+            }
+            echo "Resolved task_node: ${task_node}"
+            echo "Resolved conda_env_dir: ${conda_env_dir}"
           }
         }
       }
