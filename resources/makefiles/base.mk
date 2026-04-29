@@ -48,6 +48,7 @@ help: # Curated help message
 	echo "manual-deploy-artifactory     Deploy package; only use if Jenkins deploy fails"; \
 	echo "model <command> [args]        Run model lineage tool (e.g., make model tree,"; \
 	echo "                              make model info v24.0)"; \
+	echo "setup-slack                   Configure Slack bot token in the active conda environment"; \
 	echo; \
 	echo "====================="; \
 	echo "Jenkins build targets"; \
@@ -120,6 +121,24 @@ install: # Install package and dependencies
 	pip install uv
 	uv pip install --upgrade pip setuptools 
 	uv pip install -e .[${ENV_REQS}] --extra-index-url ${IHME_PYPI}simple/ --index-strategy unsafe-best-match ${UV_FLAGS}
+	@$(MAKE) setup-slack
+
+# Path to shared Slack bot token on the team filesystem.
+SLACK_BOT_CONFIG := /mnt/team/simulation_science/priv/engineering/config/slack_bot_config.sh
+
+.PHONY: setup-slack
+setup-slack: # Configure Slack bot token in the active conda environment
+	@if [ -f $(SLACK_BOT_CONFIG) ]; then \
+		activate_dir="$${CONDA_PREFIX}/etc/conda/activate.d"; \
+		deactivate_dir="$${CONDA_PREFIX}/etc/conda/deactivate.d"; \
+		mkdir -p "$$activate_dir" "$$deactivate_dir"; \
+		cp $(SLACK_BOT_CONFIG) "$$activate_dir/psimulate_slack.sh"; \
+		echo 'unset PSIMULATE_SLACK_BOT_TOKEN' > "$$deactivate_dir/psimulate_slack.sh"; \
+		echo "Slack bot token configured for this environment."; \
+	else \
+		echo "NOTE: Slack bot config not found at $(SLACK_BOT_CONFIG)."; \
+		echo "  Slack notifications will be disabled. See vivarium_cluster_tools docs for setup."; \
+	fi
 
 .PHONY: lint
 lint: # Check for formatting errors
