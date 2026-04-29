@@ -1,6 +1,6 @@
 **3.1.1 - 04/30/26**
 
-   - Feature: Add slack-setup make target to support sending Slack notifications from Slurm
+   - Feature: Add setup-slack make target to support sending Slack notifications from Slurm
 
 **3.1.0 - 04/22/26**
 

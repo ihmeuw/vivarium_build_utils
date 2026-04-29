@@ -48,6 +48,7 @@ help: # Curated help message
 	echo "manual-deploy-artifactory     Deploy package; only use if Jenkins deploy fails"; \
 	echo "model <command> [args]        Run model lineage tool (e.g., make model tree,"; \
 	echo "                              make model info v24.0)"; \
+	echo "setup-slack                   Configure Slack bot token in the active conda environment"; \
 	echo; \
 	echo "====================="; \
 	echo "Jenkins build targets"; \
