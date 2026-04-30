@@ -1,5 +1,3 @@
-import hudson.model.*
-
 /**
  * Provision items on Jenkins.
  * @param rootFolderPath A root folder path.
@@ -10,15 +8,16 @@ List<String> provisionItems(String rootFolderPath, String repositoryURL, List<St
     echo "Executing Job DSL to provision Jenkins items..."
     // Provision folder and Multibranch Pipelines.
     jobDsl(
-            scriptText: libraryResource('multiPipelines.groovy'),
-            additionalParameters: [
-                    jenkinsfilePathsStr: jenkinsfilePaths,
-                    rootFolderStr      : rootFolderPath,
-                    repositoryURL      : repositoryURL
-            ],
-            // The following may be set to 'DELETE'. Note that branches will compete to delete and recreate items
-            // unless you only provision items from the default branch.
-            removedJobAction: 'IGNORE'
+        scriptText: libraryResource('multiPipelines.groovy'),
+        additionalParameters: [
+            jenkinsfilePathsStr: jenkinsfilePaths,
+            rootFolderStr      : rootFolderPath,
+            repositoryURL      : repositoryURL
+        ],
+        // The following may be set to 'IGNORE'.
+        // Note that because we only provision from the default branch (main),
+        // branches will not compete to delete and recreate items
+        removedJobAction: 'DELETE'
     )
     echo "Job DSL execution completed"
 }

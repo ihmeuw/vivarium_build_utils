@@ -37,8 +37,8 @@ def generateFolders(List<Path> jenkinsfilePaths, Path rootFolder) {
  * @param jenkinsfilePaths A list of Jenkinsfiles paths.
  */
 def generateMultibranchPipelines(List<Path> jenkinsfilePaths, Path rootFolder, String repositoryURL) {
-    // The following variables are needed to configure the branch source for GitHub. Configuration for other version
-    // control providers vary.
+    // The following variables are needed to configure the branch source for GitHub.
+    // Configuration for other version control providers vary.
     def matcher = repositoryURL =~ /.+[\/:](?<owner>[^\/]+)\/(?<repository>[^\/]+)(?:\.git)?$/
     if (!matcher.matches()) {
         throw new Exception("Could not parse repository URL: ${repositoryURL}")
@@ -69,7 +69,6 @@ def generateMultibranchPipelines(List<Path> jenkinsfilePaths, Path rootFolder, S
                             repositoryUrl(repositoryURL)
                             configuredByUrl(false)
 
-                            // Make sure to properly set this.
                             credentialsId('fad62062-b1f4-447b-997f-005d6b1ea41e')
 
                             traits {
@@ -96,12 +95,6 @@ def generateMultibranchPipelines(List<Path> jenkinsfilePaths, Path rootFolder, S
 
                     // By default, Jenkins will trigger builds as it detects changes on the source repository. We want
                     // to avoid that since we will trigger child pipelines on our own only when relevant.
-                    
-                    // todo is this needed?
-                    // buildStrategies {
-                    //     skipInitialBuildOnFirstBranchIndexing()
-                    // }
-
                     strategy {
                         defaultBranchPropertyStrategy {
                             props {
@@ -133,8 +126,8 @@ def generateMultibranchPipelines(List<Path> jenkinsfilePaths, Path rootFolder, S
     }
 }
 
-// `jenkinsfilePathsStr` and `rootFolderStr` are global variables that are set through `jobDsl`'s `additionalParameters`
-// options.
+// `jenkinsfilePathsStr` and `rootFolderStr` are global variables that are set through
+//`jobDsl`'s `additionalParameters` options.
 List<Path> jenkinsfilePaths = jenkinsfilePathsStr.collect { Paths.get(it) }
 Path rootFolder = Paths.get(rootFolderStr)
 
