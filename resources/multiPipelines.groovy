@@ -72,6 +72,7 @@ def generateMultibranchPipelines(List<Path> jenkinsfilePaths, Path rootFolder, S
                             configuredByUrl(false)
 
                             // GitHub App credential for ihmeuw organization (Jenkins credential ID)
+                            // Note that this is just a pointer to a secret stored in Jenkins and not the credential itself
                             credentialsId('fad62062-b1f4-447b-997f-005d6b1ea41e')
 
                             traits {
