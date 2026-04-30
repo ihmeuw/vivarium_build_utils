@@ -146,11 +146,7 @@ def call(Map config = [:]){
           script {
             // Use the name of the branch in the build name
             currentBuild.displayName = "#${BUILD_NUMBER} ${GIT_BRANCH}"
-            // For monorepo builds JOB_NAME is "<prefix>/<repo>/libs/<pkg>/<branch>";
-            // derive the package subdirectory so python_versions.json is found correctly.
-            def pathParts = env.JOB_NAME.split('/')
-            def packageSubdir = (pathParts.length >= 5 && pathParts[2] == 'libs') ? "${pathParts[2]}/${pathParts[3]}" : ''
-            python_versions = get_python_versions(WORKSPACE, GIT_URL, packageSubdir)
+            python_versions = get_python_versions(WORKSPACE, GIT_URL, get_package_subdir())
             // Derive the deploy/docs version as the last entry in the list
             PYTHON_DEPLOY_VERSION = python_versions[-1]
             echo "Python deploy version (inferred): ${PYTHON_DEPLOY_VERSION}"

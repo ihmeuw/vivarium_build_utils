@@ -18,6 +18,7 @@ List<Path> ancestorFoldersPath(Path path) {
 /**
  * Generate folders.
  * @param jenkinsfilePaths A list of Jenkinsfile paths.
+ * @param rootFolder The root folder path under which all folders are created.
  */
 def generateFolders(List<Path> jenkinsfilePaths, Path rootFolder) {
     jenkinsfilePaths
@@ -33,8 +34,9 @@ def generateFolders(List<Path> jenkinsfilePaths, Path rootFolder) {
 
 /**
  * Generate Multibranch Pipelines.
+ * @param jenkinsfilePaths A list of Jenkinsfile paths.
+ * @param rootFolder The root folder path under which all pipelines are created.
  * @param repositoryURL The Git repository URL.
- * @param jenkinsfilePaths A list of Jenkinsfiles paths.
  */
 def generateMultibranchPipelines(List<Path> jenkinsfilePaths, Path rootFolder, String repositoryURL) {
     // The following variables are needed to configure the branch source for GitHub.
@@ -69,6 +71,7 @@ def generateMultibranchPipelines(List<Path> jenkinsfilePaths, Path rootFolder, S
                             repositoryUrl(repositoryURL)
                             configuredByUrl(false)
 
+                            // GitHub App credential for ihmeuw organization (Jenkins credential ID)
                             credentialsId('fad62062-b1f4-447b-997f-005d6b1ea41e')
 
                             traits {
@@ -126,8 +129,8 @@ def generateMultibranchPipelines(List<Path> jenkinsfilePaths, Path rootFolder, S
     }
 }
 
-// `jenkinsfilePathsStr` and `rootFolderStr` are global variables that are set through
-//`jobDsl`'s `additionalParameters` options.
+// `jenkinsfilePathsStr`, `rootFolderStr`, and `repositoryURL` are global variables injected
+// via `jobDsl`'s `additionalParameters` option in monorepo.groovy.
 List<Path> jenkinsfilePaths = jenkinsfilePathsStr.collect { Paths.get(it) }
 Path rootFolder = Paths.get(rootFolderStr)
 

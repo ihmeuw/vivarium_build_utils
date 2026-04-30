@@ -65,20 +65,13 @@ def runDebugInfo(Map skipEval = [:]) {
     }
 }
 
+/**
+ * Runs a closure in the package subdirectory for monorepo builds, or "." for single-repo builds.
+ * Derives the subdirectory from JOB_NAME via get_package_subdir().
+ */
 def withWorkingDirectory(Closure body) {
-    // JOB_NAME for a provisioned per-package pipeline:
-    //   "<prefix>/<repo>/libs/<pkg>/<branch>"  e.g. "Public/vivarium-suite/libs/core/main"
-    // Falls back to "." for single-repo pipelines.
-    echo "Original working directory: ${pwd()}"
-    echo "JOB_NAME: ${env.JOB_NAME}"
-    def pathParts = env.JOB_NAME.split('/')
-    def workingDirectory = "."
-    if (pathParts.length >= 5 && pathParts[2] == 'libs') {
-        workingDirectory = "${pathParts[2]}/${pathParts[3]}"
-    }
-    echo "Set working directory to: ${workingDirectory}"
-    dir(workingDirectory) {
-        echo "Set working directory to: ${pwd()}"
+    def subdir = get_package_subdir()
+    dir(subdir ?: '.') {
         body()
     }
 }
@@ -86,10 +79,7 @@ def withWorkingDirectory(Closure body) {
 def loadSharedFiles() {
     stage("Load Shared Files") {
         withWorkingDirectory {
-            // Load shared files from resources
-            echo "Loading shared files into working directory: ${pwd()}"
-            writeFile file: 'base.mk', text: libraryResource('makefiles/base.mk')
-            writeFile file: 'test.mk', text: libraryResource('makefiles/test.mk')
+            load_shared_files()
         }
     }
 }
@@ -97,8 +87,10 @@ def loadSharedFiles() {
 def buildEnvironment() {
     stage("Build Environment - Python ${PYTHON_VERSION}") {
         withWorkingDirectory {
-            echo "working directory: ${pwd()}"
-            echo "Available files: ${sh(script: 'ls -la', returnStdout: true)}"
+            if (params.DEBUG) {
+                echo "working directory: ${pwd()}"
+                sh 'ls -la'
+            }
             // The env should have been cleaned out after the last build, but delete it again
             // here just to be safe.
             sh "rm -rf ${CONDA_ENV_PATH}"
@@ -220,24 +212,19 @@ def deployDocs() {
 }
 
 def cleanup() {
-    withWorkingDirectory {
-        sh "make clean"
-        // Remove the conda environment immediately to conserve local disk space.
-        // Envs are built on local node storage, not shared NFS, so they must be
-        // cleaned up by the build that created them.
-        sh "${env.ACTIVATE_BASE} && conda env remove -p ${CONDA_ENV_PATH} --yes || rm -rf ${CONDA_ENV_PATH}"
-        // deleteDirs: true ensures both WORKSPACE and WORKSPACE@tmp are cleaned
-        // disableDeferredWipeout: true forces immediate deletion instead of background cleanup
-        // Console logs are preserved in Jenkins home, not workspace
-        cleanWs(deleteDirs: true, disableDeferredWipeout: true)
-    }
+    withWorkingDirectory { sh "make clean" }
+    // Remove the conda environment immediately to conserve local disk space.
+    // Envs are built on local node storage, not shared NFS, so they must be
+    // cleaned up by the build that created them.
+    sh "${env.ACTIVATE_BASE} && conda env remove -p ${CONDA_ENV_PATH} --yes || rm -rf ${CONDA_ENV_PATH}"
+    // cleanWs must run outside withWorkingDirectory: deleting the workspace while dir() is
+    // still inside it causes a FileNotFoundException when dir() tries to restore its context.
+    // deleteDirs: true ensures both WORKSPACE and WORKSPACE@tmp are cleaned.
+    cleanWs(deleteDirs: true, disableDeferredWipeout: true)
 }
 
 def cleanupDebug() {
-    withWorkingDirectory {
-        // When DEBUG is enabled, only clean @tmp to preserve workspace for inspection
-        sh "make clean"
-        // Clean only @tmp directory, preserve main workspace
-        sh "rm -rf '${WORKSPACE}@tmp'"
-    }
+    // When DEBUG is enabled, only clean @tmp to preserve workspace for inspection
+    withWorkingDirectory { sh "make clean" }
+    sh "rm -rf '${WORKSPACE}@tmp'"
 }
