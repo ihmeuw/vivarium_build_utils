@@ -48,7 +48,6 @@ help: # Curated help message
 	echo "manual-deploy-artifactory     Deploy package; only use if Jenkins deploy fails"; \
 	echo "model <command> [args]        Run model lineage tool (e.g., make model tree,"; \
 	echo "                              make model info v24.0)"; \
-	echo "setup-slack                   Configure Slack bot token in the active conda environment"; \
 	echo; \
 	echo "====================="; \
 	echo "Jenkins build targets"; \
@@ -127,7 +126,7 @@ install: # Install package and dependencies
 SLACK_BOT_CONFIG := /mnt/team/simulation_science/priv/engineering/config/slack_bot_config.sh
 
 .PHONY: setup-slack
-setup-slack: # Configure Slack bot token in the active conda environment
+setup-slack:
 	@if [ -f $(SLACK_BOT_CONFIG) ]; then \
 		activate_dir="$${CONDA_PREFIX}/etc/conda/activate.d"; \
 		deactivate_dir="$${CONDA_PREFIX}/etc/conda/deactivate.d"; \
@@ -137,7 +136,6 @@ setup-slack: # Configure Slack bot token in the active conda environment
 		echo "Slack bot token configured for this environment."; \
 	else \
 		echo "NOTE: Slack bot config not found at $(SLACK_BOT_CONFIG)."; \
-		echo "  Slack notifications will be disabled. See vivarium_cluster_tools docs for setup."; \
 	fi
 
 .PHONY: lint
