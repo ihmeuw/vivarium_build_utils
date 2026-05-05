@@ -1,3 +1,7 @@
+**3.2.0 - 05/05/26**
+
+   - Add manual override for "weekly" cluster tests.
+
 **3.1.1 - 05/04/26**
 
    - Use NFS to build conda env on jobs that require slurm
