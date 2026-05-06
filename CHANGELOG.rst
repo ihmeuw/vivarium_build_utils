@@ -1,3 +1,7 @@
+**3.1.1 - 05/06/26**
+
+   - Search recursively for py.typed markers
+
 **3.1.0 - 04/22/26**
 
    - Refactor shared environment pipeline: archive current env with conda-pack before
