@@ -27,16 +27,23 @@ def call(Map config = [:]){
   def scheduled_branches = config.scheduled_branches ?: [] 
   def stagger_scheduled_builds = config.stagger_scheduled_builds ?: false
   def test_types = config.test_types ?: ['all']
-  def task_node = config.requires_slurm ? 'slurm' : 'matrix-tasks'
+  def requires_slurm = config.requires_slurm ?: false
   def is_deployable = (config?.deployable == true)
   def skip_doc_build = (config?.skip_doc_build == true)
   def run_mypy = (config.run_mypy != null) ? config.run_mypy : true
+
+  // task_node, conda_env_dir, and run_weekly are resolved in the Initialization
+  // stage after user parameters are available (needed for RUN_WEEKLY override).
+  def task_node
+  def conda_env_dir
+  def run_weekly
+  conda_env_name_base = "${env.JOB_NAME}-${BUILD_NUMBER}"
 
   echo "Configuration constants:"
   echo "  scheduled_branches: ${scheduled_branches}"
   echo "  stagger_scheduled_builds: ${stagger_scheduled_builds}"
   echo "  test_types: ${test_types}"
-  echo "  task_node: ${task_node}"
+  echo "  requires_slurm: ${requires_slurm}"
   echo "  is_deployable: ${is_deployable}"
   echo "  skip_doc_build: ${skip_doc_build}"
   echo "  run_mypy: ${run_mypy}"
@@ -53,9 +60,6 @@ def call(Map config = [:]){
   } else {
     cron_schedule = scheduled_branches.contains(BRANCH_NAME) ? "H H(20-23) * * *" : ''
   }
-
-  conda_env_name_base = "${env.JOB_NAME}-${BUILD_NUMBER}"
-  conda_env_dir = "/svc-simsci/envs"
 
   pipeline {
     environment {
@@ -100,6 +104,11 @@ def call(Map config = [:]){
         name: "RUN_SLOW",
         defaultValue: false,
         description: "Whether to run slow tests as part of pytest suite."
+      )
+      booleanParam(
+        name: "RUN_WEEKLY",
+        defaultValue: false,
+        description: "Whether to run weekly tests (overrides slow test day check)."
       )
       booleanParam(
         name: "FORCE_FULL_BUILD",
@@ -150,6 +159,26 @@ def call(Map config = [:]){
             // Derive the deploy/docs version as the last entry in the list
             PYTHON_DEPLOY_VERSION = python_versions[-1]
             echo "Python deploy version (inferred): ${PYTHON_DEPLOY_VERSION}"
+
+            // Determine whether to run weekly tests. Weekly tests only apply
+            // when requires_slurm is "weekly" — triggered on Sundays (for cron)
+            // or when the user explicitly sets the RUN_WEEKLY parameter.
+            run_weekly = false
+            def use_slurm
+            // HACK MIC-7083: We are conflating "run weekly tests" with "use slurm weekly" here,
+            // even though you could conceivably have weekly tests that do not require slurm.
+            // This is to avoid having to propagate the runweekly flag to several repositories that
+            // do not currently inherit it from the VTU pytest plugin.
+            if (requires_slurm == "weekly") {
+              def dayOfWeek = new Date().format('EEEE')
+              run_weekly = params.RUN_WEEKLY || (env.IS_CRON.toBoolean() && dayOfWeek == 'Sunday')
+              use_slurm = run_weekly
+            } else {
+              use_slurm = requires_slurm ? true : false
+            }
+            task_node = use_slurm ? 'slurm' : 'matrix-tasks'
+            conda_env_dir = use_slurm ? "/mnt/team/simulation_science/priv/engineering/jenkins/envs" : "/svc-simsci/envs"
+            echo "Resolved task_node: ${task_node}, conda_env_dir: ${conda_env_dir}"
           }
         }
       }
@@ -218,7 +247,7 @@ def call(Map config = [:]){
                         buildStages.checkFormatting(run_mypy)
                         // Transform test type inputs to actual make test target names
                         tests = test_types.collect { "test-${it}" }
-                        buildStages.runTests(tests)
+                        buildStages.runTests(tests, run_weekly)
 
                         if (PYTHON_VERSION == PYTHON_DEPLOY_VERSION) {
                           if (!skip_doc_build) {

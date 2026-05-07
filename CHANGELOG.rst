@@ -3,6 +3,26 @@
    - Add support for monorepo
    - Search recursively for py.typed markers
 
+**3.2.2 - 05/07/26**
+
+   - Bugfix: Make "run_weekly" parameter available to all stages.
+
+**3.2.1 - 05/07/26**
+
+   - Fix bug in manual override for "weekly" cluster tests.
+
+**3.2.0 - 05/06/26**
+
+   - Add manual override for "weekly" cluster tests.
+   
+**3.1.2 - 05/05/26**
+
+   - Feature: Add setup-slack make target to support sending Slack notifications from Slurm
+
+**3.1.1 - 05/04/26**
+
+   - Use NFS to build conda env on jobs that require slurm
+
 **3.1.0 - 04/22/26**
 
    - Refactor shared environment pipeline: archive current env with conda-pack before
