@@ -159,13 +159,17 @@ def call(Map config = [:]){
             PYTHON_DEPLOY_VERSION = python_versions[-1]
             echo "Python deploy version (inferred): ${PYTHON_DEPLOY_VERSION}"
 
+            // Determine whether to run weekly tests: on Sundays (for cron) or
+            // when the user explicitly requests them via the RUN_WEEKLY parameter.
+            def dayOfWeek = new Date().format('EEEE')
+            def run_weekly = params.RUN_WEEKLY || (env.IS_CRON.toBoolean() && dayOfWeek == 'Sunday')
+
             // Resolve task_node and conda_env_dir based on requires_slurm.
             // "weekly" means only use SLURM + shared env on the slow-test day
             // (Sunday) or when the user explicitly requests weekly tests.
             def use_slurm
             if (requires_slurm == "weekly") {
-              def dayOfWeek = new Date().format('EEEE')
-              use_slurm = (dayOfWeek == 'Sunday' || params.RUN_WEEKLY)
+              use_slurm = run_weekly
             } else {
               use_slurm = requires_slurm ? true : false
             }
@@ -240,7 +244,7 @@ def call(Map config = [:]){
                         buildStages.checkFormatting(run_mypy)
                         // Transform test type inputs to actual make test target names
                         tests = test_types.collect { "test-${it}" }
-                        buildStages.runTests(tests)
+                        buildStages.runTests(tests, run_weekly)
 
                         if (PYTHON_VERSION == PYTHON_DEPLOY_VERSION) {
                           if (!skip_doc_build) {
