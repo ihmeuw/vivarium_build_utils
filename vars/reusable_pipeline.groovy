@@ -159,16 +159,18 @@ def call(Map config = [:]){
             PYTHON_DEPLOY_VERSION = python_versions[-1]
             echo "Python deploy version (inferred): ${PYTHON_DEPLOY_VERSION}"
 
-            // Determine whether to run weekly tests: on Sundays (for cron) or
-            // when the user explicitly requests them via the RUN_WEEKLY parameter.
-            def dayOfWeek = new Date().format('EEEE')
-            def run_weekly = params.RUN_WEEKLY || (env.IS_CRON.toBoolean() && dayOfWeek == 'Sunday')
-
-            // Resolve task_node and conda_env_dir based on requires_slurm.
-            // "weekly" means only use SLURM + shared env on the slow-test day
-            // (Sunday) or when the user explicitly requests weekly tests.
+            // Determine whether to run weekly tests. Weekly tests only apply
+            // when requires_slurm is "weekly" — triggered on Sundays (for cron)
+            // or when the user explicitly sets the RUN_WEEKLY parameter.
+            def run_weekly = false
             def use_slurm
+            // HACK MIC-7083: We are conflating "run weekly tests" with "use slurm weekly" here,
+            // even though you could conceivably have weekly tests that do not require slurm.
+            // This is to avoid having to propagate the runweekly flag to several repositories that
+            // do not currently inherit it from the VTU pytest plugin.
             if (requires_slurm == "weekly") {
+              def dayOfWeek = new Date().format('EEEE')
+              run_weekly = params.RUN_WEEKLY || (env.IS_CRON.toBoolean() && dayOfWeek == 'Sunday')
               use_slurm = run_weekly
             } else {
               use_slurm = requires_slurm ? true : false
