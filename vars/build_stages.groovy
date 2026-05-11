@@ -104,12 +104,13 @@ def buildEnvironment() {
 }
 
 def installPackage(String env_reqs = "") {
-    // env_reqs defaults to empty so base.mk's own default ("dev") applies for
-    // standalone repos. Monorepo libs pass "ci_jenkins" from reusable_pipeline.
+    // env_reqs selects which pyproject.toml extra `make install` pulls in.
+    // Callers in reusable_pipeline.groovy: "" (leaves base.mk's "dev" default for
+    // standalone repos), "ci_jenkins" (monorepo libs), or "docs" (doc-only skip path).
     env_reqs = env_reqs ? "ENV_REQS=${env_reqs}" : ""
     stage("Install Package - Python ${PYTHON_VERSION}") {
         withWorkingDirectory {
-            sh "${ACTIVATE} && make install ${env_reqs} UV_FLAGS='--no-cache'"
+            sh "${ACTIVATE} && make install ${env_reqs} UV_FLAGS='--no-cache' && uv pip install . --extra-index-url https://artifactory.ihme.washington.edu/artifactory/api/pypi/pypi-shared/simple/ --index-strategy unsafe-best-match --no-cache"
         }
     }
 }
