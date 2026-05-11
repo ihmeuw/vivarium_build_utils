@@ -181,8 +181,8 @@ validate-tag: # Validate that current git tag matches CHANGELOG and is valid sem
 
 .PHONY: tag-version
 tag-version: # Tag current version and push to git
-	# TAG_PREFIX is empty for standalone repos and "vivarium-<lib>-" for monorepo libs.
-	# Must stay consistent with validate-tag, which filters by the same prefix.
+    # TAG_PREFIX is empty for standalone repos and "vivarium-<lib>-" for monorepo libs.
+    # Must stay consistent with validate-tag, which filters by the same prefix.
 	git tag -a "${TAG_PREFIX}v${PACKAGE_VERSION}" -m "Tag automatically generated from Jenkins."
 	git push --tags
 
