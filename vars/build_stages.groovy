@@ -72,6 +72,7 @@ def runDebugInfo(Map skipEval = [:]) {
  */
 def withWorkingDirectory(Closure body) {
     def subdir = get_package_subdir()
+    echo "Working directory: ${subdir ?: 'repo root'}"
     dir(subdir ?: '.') {
         body()
     }

@@ -6,8 +6,10 @@
  * The provisioner pipeline's JOB_NAME format is "<something>/<repo>/<branch>"; the
  * per-package pipelines it creates use "<prefix>/<repo>/libs/<pkg>/<branch>".
  *
- * @param config.jenkinsfiles  List of Jenkinsfile paths to provision (e.g. ["libs/core/Jenkinsfile"])
- * @param config.folderPrefix  Jenkins folder prefix for provisioned pipelines (default: "Public")
+ * @param config.jenkinsfiles          List of Jenkinsfile paths to provision (e.g. ["libs/core/Jenkinsfile"])
+ * @param config.folderPrefix          Jenkins folder prefix for provisioned pipelines (default: "Public")
+ * @param config.githubCredentialsId   Jenkins credential ID for the GitHub App used by the
+ *                                     branch source. Defaults to the ihmeuw org credential.
  */
 def call(Map config = [:]) {
     echo "Provisioning Multibranch Pipelines for Libraries..."
@@ -24,20 +26,24 @@ def call(Map config = [:]) {
     String repositoryName = env.GIT_URL.tokenize('/').last().replace('.git', '')
     String folderPrefix = config.folderPrefix ?: 'Public'
     String rootFolderPath = "${folderPrefix}/${repositoryName}"
+    // Jenkins credential ID for the GitHub App on ihmeuw. Override if/when vbu
+    // is reused across orgs or Jenkins instances with different credentials.
+    String githubCredentialsId = config.githubCredentialsId ?: 'fad62062-b1f4-447b-997f-005d6b1ea41e'
 
     echo "Found ${jenkinsfilePaths.size()} Jenkinsfile(s)"
     echo "Repository Name: ${repositoryName}"
     echo "Root Folder Path: ${rootFolderPath}"
     jenkinsfilePaths.each { path -> echo "  - ${path}" }
 
-    def provisionItems = { String rootPath, String repoURL, List<String> paths ->
+    def provisionItems = { String rootPath, String repoURL, List<String> paths, String credId ->
         echo "Executing Job DSL to provision Jenkins items..."
         jobDsl(
             scriptText: libraryResource('multiPipelines.groovy'),
             additionalParameters: [
-                jenkinsfilePathsStr: paths,
-                rootFolderStr      : rootPath,
-                repositoryURL      : repoURL
+                jenkinsfilePathStrings: paths,
+                rootFolderStr         : rootPath,
+                repositoryURL         : repoURL,
+                githubCredentialsId   : credId
             ],
             // The following may be set to 'IGNORE'. Using 'DELETE' is safe ONLY because
             // monorepo() is expected to run from the default branch (main) of the
@@ -49,5 +55,5 @@ def call(Map config = [:]) {
         echo "Job DSL execution completed"
     }
 
-    provisionItems(rootFolderPath, env.GIT_URL, jenkinsfilePaths)
+    provisionItems(rootFolderPath, env.GIT_URL, jenkinsfilePaths, githubCredentialsId)
 }
