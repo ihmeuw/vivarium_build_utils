@@ -41,12 +41,12 @@ def generateFolders(List<Path> jenkinsfilePaths, Path rootFolder) {
 def generateMultibranchPipelines(List<Path> jenkinsfilePaths, Path rootFolder, String repositoryURL) {
     // The following variables are needed to configure the branch source for GitHub.
     // Configuration for other version control providers vary.
-    def matcher = repositoryURL =~ /.+[\/:](?<owner>[^\/]+)\/(?<repository>[^\/]+)(?:\.git)?$/
+    def matcher = repositoryURL =~ /.+[\/:](?<owner>[^\/]+)\/(?<repository>[^\/]+)$/
     if (!matcher.matches()) {
         throw new Exception("Could not parse repository URL: ${repositoryURL}")
     }
     String repositoryOwner = matcher.group('owner')
-    String repositoryName = matcher.group('repository')
+    String repositoryName = matcher.group('repository').replaceFirst(/\.git$/, '')
 
     // Discover branches strategies
     final int EXCLUDE_PULL_REQUESTS_STRATEGY_ID = 1
