@@ -106,7 +106,7 @@ fi
 # Validate one-step bump against the previous released git tag (not changelog order).
 # When TAG_PREFIX is set, only tags matching the prefix participate.
 PREVIOUS_RELEASE_VERSION=$( (
-    git tag --list "${TAG_PREFIX}*" 2>/dev/null | sed "s|^${TAG_PREFIX}||" | sed 's/^v//'
+    git tag --list "${TAG_PREFIX}v*" 2>/dev/null | sed "s|^${TAG_PREFIX}||" | sed 's/^v//'
     echo "$RELEASE_VERSION"
 ) | while IFS= read -r version; do
     if is_strict_semver "$version"; then
