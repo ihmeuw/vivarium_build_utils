@@ -39,9 +39,11 @@ def call(Map config = [:]) {
                 rootFolderStr      : rootPath,
                 repositoryURL      : repoURL
             ],
-            // The following may be set to 'IGNORE'.
-            // Note that because we only provision from the default branch (main),
-            // branches will not compete to delete and recreate items.
+            // The following may be set to 'IGNORE'. Using 'DELETE' is safe ONLY because
+            // monorepo() is expected to run from the default branch (main) of the
+            // top-level monorepo Jenkinsfile - not enforced here; the calling Jenkinsfile
+            // must gate this step (e.g. `if (env.BRANCH_NAME == 'main')`). If 'DELETE' ran
+            // from feature branches, branches would compete to delete and recreate items.
             removedJobAction: 'DELETE'
         )
         echo "Job DSL execution completed"

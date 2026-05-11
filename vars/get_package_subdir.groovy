@@ -14,6 +14,12 @@
  * JOB_NAME format for provisioned per-package pipelines:
  *   "<prefix>/<repo>/libs/<pkg>/<branch>"  e.g. "Public/vivarium-suite/libs/core/main"
  *
+ * Why JOB_NAME (not GIT_URL): per-package pipelines run inside the structure
+ * provisioned by monorepo.groovy, so their JOB_NAME shape is guaranteed to
+ * include "libs/<pkg>". monorepo.groovy itself parses GIT_URL instead because
+ * the top-level provisioner pipeline's JOB_NAME varies (e.g. whether it sits
+ * inside a Jenkins Organization Folder) and can't be relied on.
+ *
  * Returns "libs/<pkg>" (e.g. "libs/core") for monorepo builds, "" for single-repo builds.
  */
 def call() {
