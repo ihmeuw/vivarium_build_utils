@@ -6,10 +6,13 @@
  * The provisioner pipeline's JOB_NAME format is "<something>/<repo>/<branch>"; the
  * per-package pipelines it creates use "<prefix>/<repo>/libs/<pkg>/<branch>".
  *
- * @param config.jenkinsfiles          List of Jenkinsfile paths to provision (e.g. ["libs/core/Jenkinsfile"])
- * @param config.folderPrefix          Jenkins folder prefix for provisioned pipelines (default: "Public")
- * @param config.githubCredentialsId   Jenkins credential ID for the GitHub App used by the
- *                                     branch source. Defaults to the ihmeuw org credential.
+ * @param config.jenkinsfiles          (required) List of Jenkinsfile paths to provision
+ *                                     (e.g. ["libs/core/Jenkinsfile"])
+ * @param config.githubCredentialsId   (required) Jenkins credential ID for the GitHub App
+ *                                     used by the branch source. Lives in the calling
+ *                                     monorepo's Jenkinsfile so vbu stays org-agnostic.
+ * @param config.folderPrefix          Jenkins folder prefix for provisioned pipelines
+ *                                     (default: "Public")
  */
 def call(Map config = [:]) {
     echo "Provisioning Multibranch Pipelines for Libraries..."
@@ -20,15 +23,17 @@ def call(Map config = [:]) {
         return
     }
 
+    String githubCredentialsId = config.githubCredentialsId
+    if (!githubCredentialsId) {
+        error("monorepo(): 'githubCredentialsId' is required. Pass the Jenkins credential ID for the GitHub App from the calling Jenkinsfile.")
+    }
+
     // Use GIT_URL rather than JOB_NAME to derive the repository name reliably;
     // JOB_NAME format for the provisioner pipeline varies depending on whether it
     // lives inside a Jenkins Organization Folder.
     String repositoryName = env.GIT_URL.tokenize('/').last().replace('.git', '')
     String folderPrefix = config.folderPrefix ?: 'Public'
     String rootFolderPath = "${folderPrefix}/${repositoryName}"
-    // Jenkins credential ID for the GitHub App on ihmeuw. Override if/when vbu
-    // is reused across orgs or Jenkins instances with different credentials.
-    String githubCredentialsId = config.githubCredentialsId ?: 'fad62062-b1f4-447b-997f-005d6b1ea41e'
 
     echo "Found ${jenkinsfilePaths.size()} Jenkinsfile(s)"
     echo "Repository Name: ${repositoryName}"

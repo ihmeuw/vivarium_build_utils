@@ -47,6 +47,9 @@ branch only::
           'libs/core/Jenkinsfile',
           'libs/public-health/Jenkinsfile',
       ],
+      // Jenkins credential ID for the GitHub App. Required, no default - vbu
+      // stays org-agnostic so the literal UUID lives next to the org context.
+      githubCredentialsId: 'fad62062-b1f4-447b-997f-005d6b1ea41e',
       folderPrefix: 'Public',  // optional, defaults to "Public"
   )
 
