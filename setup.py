@@ -67,6 +67,11 @@ if __name__ == "__main__":
         ],
         package_dir={"": "src"},
         packages=find_packages(where="src"),
+        install_requires=[
+            # tomllib is stdlib on 3.11+; tomli backfills it on 3.10 so the
+            # monorepo dependency-graph utility can parse pyproject.toml there.
+            "tomli; python_version < '3.11'",
+        ],
         package_data={
             "vivarium_build_utils": [
                 "resources/**/*",

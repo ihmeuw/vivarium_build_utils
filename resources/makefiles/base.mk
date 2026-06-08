@@ -128,9 +128,20 @@ create-env: # Create a new conda environment
 .PHONY: install
 install: ENV_REQS?=dev
 install: UV_FLAGS?=
+install: IN_TREE_SIBLINGS?=
 install: # Install package and dependencies
 	pip install uv
 	uv pip install --upgrade pip setuptools ${UV_FLAGS}
+	@if [ -n "${IN_TREE_SIBLINGS}" ]; then \
+		echo "Resolving in-tree sibling dependencies from source (ENV_REQS=${ENV_REQS})"; \
+		python -m vivarium_build_utils.dependencies siblings ${PACKAGE_NAME} $(foreach e,${ENV_REQS},--extra $(e)) \
+		| while IFS="$$(printf '\t')" read -r sib_dir sib_envvar sib_version; do \
+			[ -z "$$sib_dir" ] && continue; \
+			echo "  in-tree sibling: $$sib_dir (pretend version $${sib_version:-<scm>})"; \
+			env $${sib_version:+$$sib_envvar=$$sib_version} \
+				uv pip install -e "$$sib_dir" --no-deps ${UV_FLAGS} || exit 1; \
+		done; \
+	fi
 	# NOTE: editable_mode=compat: produces a classic .pth-based editable install
 	#   (sys.path entry pointing at src/) instead of the PEP 660 default
 	#   (sys.meta_path finder). The PEP 660 mode breaks mypy's discovery of
