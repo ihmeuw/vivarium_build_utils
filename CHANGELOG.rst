@@ -16,11 +16,14 @@ Support for monorepo structure:
 - Guard ``make deploy-package-artifactory`` against an empty ``IHME_PYPI``
 - Search recursively for ``py.typed`` markers so monorepo packages are detected
 - ``make install``: install in editable_mode=compat to not break py.typed marker discovery
-- Install a monorepo package's in-tree sibling dependencies from source at their
-  pending CHANGELOG versions (allows single-PR updates to multiple packages)
+- ``make install IN_TREE_SIBLINGS=1``: install a monorepo package's in-tree sibling
+  dependencies from source at their pending CHANGELOG versions, so a single PR can
+  update interdependent packages without an intermediate release. Backed by a new
+  ``vivarium_build_utils.dependencies`` graph helper/CLI (also used to order releases
+  dependencies-first); off by default and a no-op outside a ``libs/<pkg>/`` layout
 
 Miscellaneous:
-- Add GitHUb App authenticaion support for deployable packages
+- Add GitHub App authentication support for deployable packages
 
 **3.2.2 - 05/07/26**
 

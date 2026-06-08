@@ -73,6 +73,26 @@ standalone repo would, with one new argument::
 install`` pulls in. Omit it (or leave empty) on standalone repos to keep
 base.mk's default of ``dev``.
 
+In-tree sibling dependencies
+----------------------------
+
+By default ``make install`` resolves a package's dependencies - including
+sibling packages in the same monorepo - from the package index. Pass
+``IN_TREE_SIBLINGS=1`` to instead install in-tree siblings from source first, at
+the *pending* version in each sibling's ``CHANGELOG.rst``::
+
+  make install ENV_REQS=ci_github IN_TREE_SIBLINGS=1
+
+This lets a single PR update interdependent packages without an intermediate
+release: a dependent pinned as ``vivarium-engine>=<new>`` is satisfied by the
+in-tree source - the pending version is reported through setuptools_scm's
+pretend-version mechanism - rather than requiring ``<new>`` to be published
+first. Which siblings get installed depends on ``ENV_REQS`` (the extras being
+installed). It is a no-op when unset and outside a ``libs/<pkg>/`` layout, so it
+is safe to leave off for standalone repos. Set it for the test/gating CI build;
+omit it for the release build so published version pins are still validated
+against the real index.
+
 Tag prefix
 ----------
 

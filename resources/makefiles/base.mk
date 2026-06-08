@@ -132,15 +132,24 @@ install: IN_TREE_SIBLINGS?=
 install: # Install package and dependencies
 	pip install uv
 	uv pip install --upgrade pip setuptools ${UV_FLAGS}
+#	Install in-tree sibling deps editable BEFORE the package itself. The query
+#	output is captured first (not piped) so a failure in it - bad target, broken
+#	pyproject.toml - aborts the build via `|| exit 1` instead of being swallowed
+#	by the pipeline and silently installing nothing. We iterate with a here-string (<<<)
+#	so the loop runs in this shell, making `exit 1` unambiguous. For each sibling,
+#	`env $${ver:+VAR=ver}` sets the setuptools_scm pretend-version env var only when
+#	a CHANGELOG version was found (so the editable sibling reports its pending
+#	version and satisfies a `>=NEW` pin); with no version, setuptools_scm derives it
+#	from git. DIST_NAME is the authoritative package key (matches the query's index).
 	@if [ -n "${IN_TREE_SIBLINGS}" ]; then \
 		echo "Resolving in-tree sibling dependencies from source (ENV_REQS=${ENV_REQS})"; \
-		python -m vivarium_build_utils.dependencies siblings ${PACKAGE_NAME} $(foreach e,${ENV_REQS},--extra $(e)) \
-		| while IFS="$$(printf '\t')" read -r sib_dir sib_envvar sib_version; do \
+		siblings="$$(python -m vivarium_build_utils.dependencies siblings ${DIST_NAME} $(foreach e,${ENV_REQS},--extra $(e)))" || exit 1; \
+		while IFS="$$(printf '\t')" read -r sib_dir sib_envvar sib_version; do \
 			[ -z "$$sib_dir" ] && continue; \
 			echo "  in-tree sibling: $$sib_dir (pretend version $${sib_version:-<scm>})"; \
 			env $${sib_version:+$$sib_envvar=$$sib_version} \
 				uv pip install -e "$$sib_dir" --no-deps ${UV_FLAGS} || exit 1; \
-		done; \
+		done <<< "$$siblings"; \
 	fi
 	# NOTE: editable_mode=compat: produces a classic .pth-based editable install
 	#   (sys.path entry pointing at src/) instead of the PEP 660 default

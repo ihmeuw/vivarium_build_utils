@@ -151,7 +151,8 @@ def test_reachable_siblings_transitive(suite: Path) -> None:
 def test_reachable_siblings_follows_ci_extra(suite: Path) -> None:
     libs = dependencies.load_libs(suite)
     names = {
-        lib.name for lib in dependencies.reachable_siblings("engine", libs, extras=("ci_github",))
+        lib.name
+        for lib in dependencies.reachable_siblings("engine", libs, extras=("ci_github",))
     }
     # ci_github -> test -> testing-utils, in addition to runtime deps.
     assert "vivarium-testing-utils" in names
@@ -211,4 +212,135 @@ def test_topological_order_detects_cycle(suite: Path) -> None:
         ("vivarium-testing-utils", ["validation"])
     ]
     with pytest.raises(ValueError, match="cycle"):
-        dependencies.topological_order(["engine", "testing-utils"], libs, extras=("ci_github",))
+        dependencies.topological_order(
+            ["engine", "testing-utils"], libs, extras=("ci_github",)
+        )
+
+
+def test_topological_order_independent_nodes_are_alphabetical(suite: Path) -> None:
+    """Mutually-independent packages come out in a stable alphabetical order."""
+    libs = dependencies.load_libs(suite)
+    order = [
+        lib.dir_name
+        for lib in dependencies.topological_order(
+            ["gbd-mapping", "config-tree", "artifact"], libs
+        )
+    ]
+    assert order == ["artifact", "config-tree", "gbd-mapping"]
+
+
+def test_resolve_dir_name_unknown_target_raises(suite: Path) -> None:
+    libs = dependencies.load_libs(suite)
+    with pytest.raises(KeyError, match="no-such-pkg"):
+        dependencies._resolve_dir_name(libs, "no-such-pkg")
+
+
+def test_load_libs_skips_pyproject_without_project_name(suite: Path) -> None:
+    # A pyproject.toml lacking [project].name must be ignored, not crash.
+    (suite / "not-a-package").mkdir()
+    (suite / "not-a-package" / "pyproject.toml").write_text(
+        "[build-system]\nrequires = []\n", encoding="utf-8"
+    )
+    libs = dependencies.load_libs(suite)
+    assert "not-a-package" not in {lib.dir_name for lib in libs.values()}
+
+
+@pytest.mark.parametrize("spec", ["", ">=1.0", "  ", "[extras]"])
+def test_parse_requirement_unparseable_returns_empty(spec: str) -> None:
+    assert dependencies._parse_requirement(spec) == ("", [])
+
+
+def test_pretend_version_env_var_normalizes() -> None:
+    # Underscores, dots, and mixed case all normalize before upper-casing.
+    assert (
+        dependencies.pretend_version_env_var("Vivarium_Config.Tree")
+        == "SETUPTOOLS_SCM_PRETEND_VERSION_FOR_VIVARIUM_CONFIG_TREE"
+    )
+
+
+def test_find_libs_root_defaults_to_cwd(suite: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # The production path passes no argument and relies on cwd.
+    monkeypatch.chdir(suite / "engine")
+    assert dependencies.find_libs_root() == suite
+
+
+def test_changelog_version_missing_file_returns_none(suite: Path) -> None:
+    # gbd-mapping is created with a CHANGELOG; remove it to exercise the None branch.
+    (suite / "gbd-mapping" / "CHANGELOG.rst").unlink()
+    libs = dependencies.load_libs(suite)
+    assert libs["vivarium-gbd-mapping"].changelog_version() is None
+
+
+def test_changelog_version_no_version_line_returns_none(suite: Path) -> None:
+    (suite / "gbd-mapping" / "CHANGELOG.rst").write_text(
+        "Changelog\n=========\nUnreleased changes.\n", encoding="utf-8"
+    )
+    libs = dependencies.load_libs(suite)
+    assert libs["vivarium-gbd-mapping"].changelog_version() is None
+
+
+# --- CLI layer (the contract base.mk parses) -------------------------------------
+
+
+def test_cmd_siblings_output_format(
+    suite: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Pin the exact tab-separated `<dir>\\t<env var>\\t<version>` line base.mk reads."""
+    monkeypatch.chdir(suite / "engine")
+    assert dependencies.main(["siblings", "engine"]) == 0
+    lines = capsys.readouterr().out.splitlines()
+    assert {Path(line.split("\t")[0]).name for line in lines} == {"artifact", "config-tree"}
+    for line in lines:
+        directory, env_var, version = line.split("\t")  # exactly three columns
+        assert Path(directory).is_absolute()
+        assert env_var.startswith("SETUPTOOLS_SCM_PRETEND_VERSION_FOR_")
+        assert version  # these fixtures all set a CHANGELOG version
+
+
+def test_cmd_siblings_follows_extra(
+    suite: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(suite / "engine")
+    assert dependencies.main(["siblings", "engine", "--extra", "ci_github"]) == 0
+    dirs = {Path(line.split("\t")[0]).name for line in capsys.readouterr().out.splitlines()}
+    assert "testing-utils" in dirs  # ci_github -> test -> testing-utils
+
+
+def test_cmd_siblings_empty_version_column(
+    suite: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A sibling with no CHANGELOG version emits an empty third column, not a missing one."""
+    (suite / "config-tree" / "CHANGELOG.rst").unlink()
+    monkeypatch.chdir(suite / "engine")
+    assert dependencies.main(["siblings", "engine"]) == 0
+    rows = {
+        Path(line.split("\t", 2)[0]).name: line.split("\t", 2)
+        for line in capsys.readouterr().out.splitlines()
+    }
+    assert rows["config-tree"][2] == ""  # third column present and empty
+
+
+def test_cmd_topo_prints_dir_names_deps_first(
+    suite: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(suite)
+    assert dependencies.main(["topo", "cluster-tools", "engine", "artifact"]) == 0
+    order = capsys.readouterr().out.split()
+    assert order.index("artifact") < order.index("engine") < order.index("cluster-tools")
+
+
+def test_cli_no_op_outside_monorepo(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    standalone = tmp_path / "standalone"
+    standalone.mkdir()
+    standalone.joinpath("pyproject.toml").write_text(
+        '[project]\nname = "foo"\n', encoding="utf-8"
+    )
+    monkeypatch.chdir(standalone)
+    # siblings: prints nothing, succeeds.
+    assert dependencies.main(["siblings", "foo"]) == 0
+    assert capsys.readouterr().out == ""
+    # topo: echoes the targets back verbatim (the passthrough base.mk relies on).
+    assert dependencies.main(["topo", "foo", "bar"]) == 0
+    assert capsys.readouterr().out.split() == ["foo", "bar"]
