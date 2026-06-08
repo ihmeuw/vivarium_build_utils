@@ -343,6 +343,17 @@ def _add_extra_arg(parser: argparse.ArgumentParser, help_text: str) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Run the CLI: dispatch the ``siblings`` or ``topo`` subcommand.
+
+    Parameters
+    ----------
+    argv
+        Argument list to parse; defaults to ``sys.argv`` when ``None``.
+
+    Returns
+    -------
+    The process exit code (0 on success).
+    """
     parser = argparse.ArgumentParser(
         prog="python -m vivarium_build_utils.dependencies",
         description="Intra-monorepo dependency graph queries.",
