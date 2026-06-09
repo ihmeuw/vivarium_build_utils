@@ -71,6 +71,9 @@ if __name__ == "__main__":
             # tomllib is stdlib on 3.11+; tomli backfills it on 3.10 so the
             # monorepo dependency-graph utility can parse pyproject.toml there.
             "tomli; python_version < '3.11'",
+            # Used by the monorepo dependency-graph utility to parse requirement
+            # strings and test pending versions against dependents' specifiers.
+            "packaging",
         ],
         package_data={
             "vivarium_build_utils": [

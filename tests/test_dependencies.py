@@ -106,13 +106,22 @@ def test_pretend_version_env_var() -> None:
 @pytest.mark.parametrize(
     "spec, expected",
     [
-        ("vivarium-engine>=5.1.0", ("vivarium-engine", [])),
-        ("vivarium-engine[test,docs]>=5.1.0", ("vivarium-engine", ["test", "docs"])),
-        ("pkg ; python_version < '3.11'", ("pkg", [])),
-        ("vivarium_testing_utils", ("vivarium-testing-utils", [])),
+        ("vivarium-engine>=5.1.0", ("vivarium-engine", [], ">=5.1.0")),
+        # extras come back sorted; specifier preserved
+        (
+            "vivarium-engine[test,docs]>=5.1.0",
+            ("vivarium-engine", ["docs", "test"], ">=5.1.0"),
+        ),
+        ("pkg ; python_version < '3.11'", ("pkg", [], "")),
+        ("vivarium_testing_utils", ("vivarium-testing-utils", [], "")),
+        ("vivarium-engine>=5.1.0,<6.0.0", ("vivarium-engine", [], "<6.0.0,>=5.1.0")),
+        # unparseable specs yield the empty sentinel
+        ("", ("", [], "")),
+        (">=1.0", ("", [], "")),
+        ("[extras]", ("", [], "")),
     ],
 )
-def test_parse_requirement(spec: str, expected: tuple[str, list[str]]) -> None:
+def test_parse_requirement(spec: str, expected: tuple[str, list[str], str]) -> None:
     assert dependencies._parse_requirement(spec) == expected
 
 
@@ -209,7 +218,7 @@ def test_topological_order_detects_cycle(suite: Path) -> None:
     libs = dependencies.load_libs(suite)
     # Make testing-utils' ci_github pull validation (the regression we guard against).
     libs["vivarium-testing-utils"].extras["ci_github"] = [
-        ("vivarium-testing-utils", ["validation"])
+        ("vivarium-testing-utils", ["validation"], "")
     ]
     with pytest.raises(ValueError, match="cycle"):
         dependencies.topological_order(
@@ -245,11 +254,6 @@ def test_load_libs_skips_pyproject_without_project_name(suite: Path) -> None:
     assert "not-a-package" not in {lib.dir_name for lib in libs.values()}
 
 
-@pytest.mark.parametrize("spec", ["", ">=1.0", "  ", "[extras]"])
-def test_parse_requirement_unparseable_returns_empty(spec: str) -> None:
-    assert dependencies._parse_requirement(spec) == ("", [])
-
-
 def test_pretend_version_env_var_normalizes() -> None:
     # Underscores, dots, and mixed case all normalize before upper-casing.
     assert (
@@ -279,6 +283,68 @@ def test_changelog_version_no_version_line_returns_none(suite: Path) -> None:
     assert libs["vivarium-gbd-mapping"].changelog_version() is None
 
 
+# --- editable_siblings: reachable AND changed AND version-compatible -------------
+
+
+def test_editable_siblings_filters_to_changed(suite: Path) -> None:
+    libs = dependencies.load_libs(suite)
+    names = {
+        s.name for s in dependencies.editable_siblings("cluster-tools", libs, ["engine"])
+    }
+    # engine is reachable + changed; config-tree/artifact are reachable but unchanged.
+    assert names == {"vivarium-engine"}
+
+
+def test_editable_siblings_empty_when_nothing_changed(suite: Path) -> None:
+    libs = dependencies.load_libs(suite)
+    assert dependencies.editable_siblings("cluster-tools", libs, []) == []
+
+
+def test_editable_siblings_excludes_unreachable_changed(suite: Path) -> None:
+    libs = dependencies.load_libs(suite)
+    # engine does not depend on cluster-tools, so a cluster-tools change is irrelevant.
+    assert dependencies.editable_siblings("engine", libs, ["cluster-tools"]) == []
+
+
+def test_editable_siblings_accepts_dir_or_dist_changed_names(suite: Path) -> None:
+    libs = dependencies.load_libs(suite)
+    by_dir = dependencies.editable_siblings("cluster-tools", libs, ["engine"])
+    by_dist = dependencies.editable_siblings("cluster-tools", libs, ["vivarium-engine"])
+    assert {s.name for s in by_dir} == {s.name for s in by_dist} == {"vivarium-engine"}
+
+
+def test_editable_siblings_skips_upper_bound_excluded(suite: Path) -> None:
+    """A changed sibling whose pending version violates an upper-bound pin is skipped."""
+    libs = dependencies.load_libs(suite)
+    # cluster-tools caps engine below its pending 6.1.0 -> not installable from source.
+    libs["vivarium-cluster-tools"].runtime = [
+        ("vivarium-engine", [], ">=5.1.0,<6.0.0"),
+        ("vivarium-config-tree", [], ">=5.0.0"),
+    ]
+    assert dependencies.editable_siblings("cluster-tools", libs, ["engine"]) == []
+
+
+def test_editable_siblings_includes_within_upper_bound(suite: Path) -> None:
+    """Same shape, but the pending version satisfies the (now wider) cap -> included."""
+    libs = dependencies.load_libs(suite)
+    libs["vivarium-cluster-tools"].runtime = [
+        ("vivarium-engine", [], ">=5.1.0,<7.0.0"),
+        ("vivarium-config-tree", [], ">=5.0.0"),
+    ]
+    names = {
+        s.name for s in dependencies.editable_siblings("cluster-tools", libs, ["engine"])
+    }
+    assert names == {"vivarium-engine"}
+
+
+def test_editable_siblings_skips_sibling_without_pending_version(suite: Path) -> None:
+    libs = dependencies.load_libs(suite)
+    # engine depends on artifact (no version pin); drop artifact's CHANGELOG so it
+    # has no pending version to assert against the constraint.
+    libs["vivarium-artifact"].directory.joinpath("CHANGELOG.rst").unlink()
+    assert dependencies.editable_siblings("engine", libs, ["artifact"]) == []
+
+
 # --- CLI layer (the contract base.mk parses) -------------------------------------
 
 
@@ -287,7 +353,10 @@ def test_cmd_siblings_output_format(
 ) -> None:
     """Pin the exact tab-separated `<dir>\\t<env var>\\t<version>` line base.mk reads."""
     monkeypatch.chdir(suite / "engine")
-    assert dependencies.main(["siblings", "engine"]) == 0
+    rc = dependencies.main(
+        ["siblings", "engine", "--changed", "artifact", "--changed", "config-tree"]
+    )
+    assert rc == 0
     lines = capsys.readouterr().out.splitlines()
     assert {Path(line.split("\t")[0]).name for line in lines} == {"artifact", "config-tree"}
     for line in lines:
@@ -297,27 +366,35 @@ def test_cmd_siblings_output_format(
         assert version  # these fixtures all set a CHANGELOG version
 
 
+def test_cmd_siblings_no_changed_emits_nothing(
+    suite: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """With no --changed (e.g. a local make install), nothing is installed editable."""
+    monkeypatch.chdir(suite / "engine")
+    assert dependencies.main(["siblings", "engine"]) == 0
+    assert capsys.readouterr().out == ""
+
+
+def test_cmd_siblings_only_emits_changed(
+    suite: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Only changed siblings are emitted; unchanged reachable siblings are excluded."""
+    monkeypatch.chdir(suite / "cluster-tools")
+    assert dependencies.main(["siblings", "cluster-tools", "--changed", "engine"]) == 0
+    dirs = {Path(line.split("\t")[0]).name for line in capsys.readouterr().out.splitlines()}
+    assert dirs == {"engine"}  # config-tree/artifact are reachable but not changed
+
+
 def test_cmd_siblings_follows_extra(
     suite: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.chdir(suite / "engine")
-    assert dependencies.main(["siblings", "engine", "--extra", "ci_github"]) == 0
+    rc = dependencies.main(
+        ["siblings", "engine", "--changed", "testing-utils", "--extra", "ci_github"]
+    )
+    assert rc == 0
     dirs = {Path(line.split("\t")[0]).name for line in capsys.readouterr().out.splitlines()}
-    assert "testing-utils" in dirs  # ci_github -> test -> testing-utils
-
-
-def test_cmd_siblings_empty_version_column(
-    suite: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """A sibling with no CHANGELOG version emits an empty third column, not a missing one."""
-    (suite / "config-tree" / "CHANGELOG.rst").unlink()
-    monkeypatch.chdir(suite / "engine")
-    assert dependencies.main(["siblings", "engine"]) == 0
-    rows = {
-        Path(line.split("\t", 2)[0]).name: line.split("\t", 2)
-        for line in capsys.readouterr().out.splitlines()
-    }
-    assert rows["config-tree"][2] == ""  # third column present and empty
+    assert dirs == {"testing-utils"}  # ci_github -> test -> testing-utils, and it changed
 
 
 def test_cmd_topo_prints_dir_names_deps_first(

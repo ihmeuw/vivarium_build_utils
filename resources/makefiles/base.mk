@@ -128,22 +128,28 @@ create-env: # Create a new conda environment
 .PHONY: install
 install: ENV_REQS?=dev
 install: UV_FLAGS?=
+# IN_TREE_SIBLINGS: a space-separated list of the packages whose source changed in
+# this PR (CI passes the diffed set, e.g. `IN_TREE_SIBLINGS="engine config-tree"`).
+# Only those - intersected with this package's reachable, version-compatible
+# siblings - are installed from source; everything else resolves from the index.
+# Empty/unset (e.g. a plain local `make install`) installs nothing editable.
 install: IN_TREE_SIBLINGS?=
 install: # Install package and dependencies
 	pip install uv
 	uv pip install --upgrade pip setuptools ${UV_FLAGS}
-#	Install in-tree sibling deps editable BEFORE the package itself. The query
-#	output is captured first (not piped) so a failure in it - bad target, broken
-#	pyproject.toml - aborts the build via `|| exit 1` instead of being swallowed
-#	by the pipeline and silently installing nothing. We iterate with a here-string (<<<)
-#	so the loop runs in this shell, making `exit 1` unambiguous. For each sibling,
-#	`env $${ver:+VAR=ver}` sets the setuptools_scm pretend-version env var only when
-#	a CHANGELOG version was found (so the editable sibling reports its pending
-#	version and satisfies a `>=NEW` pin); with no version, setuptools_scm derives it
-#	from git. DIST_NAME is the authoritative package key (matches the query's index).
+#	Install the changed in-tree sibling deps editable BEFORE the package itself. The
+#	query output is captured first (not piped) so a failure in it - bad target, broken
+#	pyproject.toml - aborts the build via `|| exit 1` instead of being swallowed by the
+#	pipeline and silently installing nothing. We iterate with a here-string (<<<) so the
+#	loop runs in this shell, making `exit 1` unambiguous. The query already restricts to
+#	siblings that are changed (--changed), reachable, and version-compatible. For each,
+#	`env $${ver:+VAR=ver}` sets the setuptools_scm pretend-version env var only when a
+#	CHANGELOG version was found (so the editable sibling reports its pending version and
+#	satisfies a `>=NEW` pin); with no version, setuptools_scm derives it from git.
+#	DIST_NAME is the authoritative package key (matches the query's index).
 	@if [ -n "${IN_TREE_SIBLINGS}" ]; then \
-		echo "Resolving in-tree sibling dependencies from source (ENV_REQS=${ENV_REQS})"; \
-		siblings="$$(python -m vivarium_build_utils.dependencies siblings ${DIST_NAME} $(foreach e,${ENV_REQS},--extra $(e)))" || exit 1; \
+		echo "Resolving changed in-tree sibling dependencies from source (ENV_REQS=${ENV_REQS})"; \
+		siblings="$$(python -m vivarium_build_utils.dependencies siblings ${DIST_NAME} $(foreach c,${IN_TREE_SIBLINGS},--changed $(c)) $(foreach e,${ENV_REQS},--extra $(e)))" || exit 1; \
 		while IFS="$$(printf '\t')" read -r sib_dir sib_envvar sib_version; do \
 			[ -z "$$sib_dir" ] && continue; \
 			echo "  in-tree sibling: $$sib_dir (pretend version $${sib_version:-<scm>})"; \

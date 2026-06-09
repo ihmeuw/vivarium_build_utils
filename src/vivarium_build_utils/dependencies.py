@@ -30,14 +30,16 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from packaging.requirements import InvalidRequirement, Requirement
+from packaging.specifiers import SpecifierSet
+from packaging.version import InvalidVersion, Version
+
 try:
     import tomllib
 except ModuleNotFoundError:  # Python < 3.11
     import tomli as tomllib  # type: ignore[no-redef]
 
 _CANONICALIZE = re.compile(r"[-_.]+")
-# Distribution name (optionally with [extras]) at the start of a requirement string.
-_REQUIREMENT = re.compile(r"^\s*([A-Za-z0-9][A-Za-z0-9._-]*)\s*(?:\[([^\]]*)\])?")
 # CHANGELOG.rst entries open with a header like ``**X.Y.Z - MM/DD/YY**``. Anchor on
 # that shape so a date or a version mentioned in prose isn't mistaken for the
 # release version. This mirrors the intent of base.mk's PACKAGE_VERSION grep,
@@ -64,19 +66,23 @@ def pretend_version_env_var(dist_name: str) -> str:
     )
 
 
-def _parse_requirement(spec: str) -> tuple[str, list[str]]:
-    """Return the canonical base name and extras of a requirement string.
+def _parse_requirement(spec: str) -> tuple[str, list[str], str]:
+    """Return the canonical base name, extras, and version specifier of a requirement.
 
-    Strips environment markers, version specifiers, and whitespace. e.g.
-    ``"vivarium-engine[test]>=5.1.0 ; python_version>'3.10'"`` ->
-    ``("vivarium-engine", ["test"])``.
+    e.g. ``"vivarium-engine[test]>=5.1.0 ; python_version<'3.11'"`` ->
+    ``("vivarium-engine", ["docs", "test"], ">=5.1.0")``. Extras are sorted for
+    determinism; the environment marker is ignored. Returns ``("", [], "")`` for an
+    unparseable spec.
     """
-    spec = spec.split(";", 1)[0]
-    match = _REQUIREMENT.match(spec)
-    if not match:
-        return "", []
-    extras = [e.strip() for e in (match.group(2) or "").split(",") if e.strip()]
-    return canonical_name(match.group(1)), extras
+    try:
+        requirement = Requirement(spec)
+    except InvalidRequirement:
+        return "", [], ""
+    return (
+        canonical_name(requirement.name),
+        sorted(requirement.extras),
+        str(requirement.specifier),
+    )
 
 
 @dataclass
@@ -85,8 +91,9 @@ class Lib:
 
     name: str  # canonical distribution name, e.g. "vivarium-engine"
     directory: Path  # the libs/<dir> path
-    runtime: list[tuple[str, list[str]]] = field(default_factory=list)
-    extras: dict[str, list[tuple[str, list[str]]]] = field(default_factory=dict)
+    # Each requirement is (canonical name, extras, version specifier).
+    runtime: list[tuple[str, list[str], str]] = field(default_factory=list)
+    extras: dict[str, list[tuple[str, list[str], str]]] = field(default_factory=dict)
 
     @property
     def dir_name(self) -> str:
@@ -191,21 +198,23 @@ def _resolve_dir_name(
     raise KeyError(f"No in-tree package matching {target!r}")
 
 
-def _direct_in_tree_deps(lib: Lib, libs: dict[str, Lib], extras: tuple[str, ...]) -> set[str]:
-    """In-tree dist names directly required by ``lib`` under the given extras.
+def _direct_in_tree_requirements(
+    lib: Lib, libs: dict[str, Lib], extras: tuple[str, ...]
+) -> list[tuple[str, str]]:
+    """In-tree (dist name, version specifier) pairs directly required by ``lib``.
 
     Expands the lib's own ``pkg[extra]`` self-references so that a meta-extra like
     ``ci_github = ["vivarium-engine[test,docs,lint]"]`` contributes the deps of
     ``test``/``docs``/``lint``. Self edges (the package depending on itself) are
-    not returned.
+    not returned. A package may appear more than once with different specifiers.
     """
-    found: set[str] = set()
-    stack: list[tuple[str, list[str]]] = list(lib.runtime)
+    found: list[tuple[str, str]] = []
+    stack: list[tuple[str, list[str], str]] = list(lib.runtime)
     for extra in extras:
         stack.extend(lib.extras.get(extra, []))
     seen_self_extras: set[str] = set()
     while stack:
-        base, dep_extras = stack.pop()
+        base, dep_extras, specifier = stack.pop()
         if not base:
             continue
         if base == lib.name:
@@ -216,8 +225,13 @@ def _direct_in_tree_deps(lib: Lib, libs: dict[str, Lib], extras: tuple[str, ...]
                     stack.extend(lib.extras.get(extra, []))
             continue
         if base in libs:
-            found.add(base)
+            found.append((base, specifier))
     return found
+
+
+def _direct_in_tree_deps(lib: Lib, libs: dict[str, Lib], extras: tuple[str, ...]) -> set[str]:
+    """In-tree dist names directly required by ``lib`` under the given extras."""
+    return {name for name, _specifier in _direct_in_tree_requirements(lib, libs, extras)}
 
 
 def reachable_siblings(
@@ -260,6 +274,81 @@ def reachable_siblings(
         # docstring describes (e.g. engine[test] -> testing-utils[validation]).
         frontier |= _direct_in_tree_deps(libs[name], libs, extras=())
     return sorted(result.values(), key=lambda lib: lib.name)
+
+
+def _closure_specifiers(
+    root: Lib, libs: dict[str, Lib], extras: tuple[str, ...]
+) -> dict[str, SpecifierSet]:
+    """Combined version specifier placed on each in-tree package across root's closure.
+
+    Mirrors :func:`reachable_siblings`: the root's requirements are taken with
+    ``extras`` active, deeper siblings runtime-only. Multiple constraints on the
+    same package are intersected, so the result is what the package's version must
+    satisfy for the whole install to resolve.
+    """
+    specifiers: dict[str, SpecifierSet] = {}
+
+    def add(requirements: list[tuple[str, str]]) -> None:
+        for name, specifier in requirements:
+            combined = specifiers.get(name, SpecifierSet())
+            specifiers[name] = combined & SpecifierSet(specifier)
+
+    add(_direct_in_tree_requirements(root, libs, extras))
+    for sibling in reachable_siblings(root.name, libs, extras):
+        add(_direct_in_tree_requirements(sibling, libs, extras=()))
+    return specifiers
+
+
+def editable_siblings(
+    target: str,
+    libs: dict[str, Lib],
+    changed: list[str],
+    extras: tuple[str, ...] = (),
+) -> list[Lib]:
+    """Return the in-tree siblings to install from source when building ``target``.
+
+    A sibling qualifies only if it is (1) reachable from ``target``, (2) listed in
+    ``changed`` (the packages whose source changed in this PR), and (3) its pending
+    CHANGELOG version satisfies the version constraint(s) placed on it across the
+    install closure. Condition (3) skips a changed sibling whose pending version is
+    excluded by, e.g., an upper-bound pin, so it resolves from the index instead of
+    breaking the install.
+
+    Parameters
+    ----------
+    target
+        The package being built, as a canonical dist name or libs/ dir name.
+    libs
+        The in-tree package index from :func:`load_libs`.
+    changed
+        Names (dist or dir) of packages whose source changed in this PR.
+    extras
+        Optional-dependency extras the install activates for ``target``.
+
+    Returns
+    -------
+    The qualifying in-tree siblings, sorted by name.
+    """
+    by_dir = {lib.dir_name: lib.name for lib in libs.values()}
+    changed_names = {by_dir.get(name, canonical_name(name)) for name in changed} & set(libs)
+
+    root = _resolve_dir_name(libs, target)
+    specifiers = _closure_specifiers(root, libs, extras)
+
+    result: list[Lib] = []
+    for sibling in reachable_siblings(target, libs, extras):
+        if sibling.name not in changed_names:
+            continue
+        pending = sibling.changelog_version()
+        if pending is None:
+            continue  # no pending version to assert; resolve from the index
+        try:
+            satisfied = Version(pending) in specifiers.get(sibling.name, SpecifierSet())
+        except InvalidVersion:
+            continue
+        if satisfied:
+            result.append(sibling)
+    return result
 
 
 def _edges(libs: dict[str, Lib], extras: tuple[str, ...]) -> dict[str, set[str]]:
@@ -318,7 +407,10 @@ def _cmd_siblings(args: argparse.Namespace) -> int:
     if not libs:
         return 0  # not a monorepo: nothing to pre-install
     extras = tuple(args.extra)
-    for sibling in reachable_siblings(args.target, libs, extras):
+    # Only the siblings changed in this PR (and reachable + version-compatible) are
+    # installed from source. With no --changed (e.g. a local `make install`), this
+    # yields nothing, so nothing is installed editable.
+    for sibling in editable_siblings(args.target, libs, args.changed, extras):
         version = sibling.changelog_version() or ""
         # Tab-separated: <directory> <pretend-version env var> <pending version>
         print(f"{sibling.directory}\t{pretend_version_env_var(sibling.name)}\t{version}")
@@ -362,10 +454,20 @@ def main(argv: list[str] | None = None) -> int:
 
     siblings = subparsers.add_parser(
         "siblings",
-        help="Print the transitive in-tree siblings a package depends on, one per "
-        "line as '<dir>\\t<pretend-version env var>\\t<pending version>'.",
+        help="Print the in-tree siblings to install from source (those changed in "
+        "this PR, reachable, and version-compatible), one per line as "
+        "'<dir>\\t<pretend-version env var>\\t<pending version>'.",
     )
     siblings.add_argument("target", help="Target package (dist name or libs/ dir name).")
+    siblings.add_argument(
+        "--changed",
+        action="append",
+        default=[],
+        metavar="PKG",
+        help="A package (dist or dir name) whose source changed in this PR; only "
+        "these are eligible to be installed from source (repeatable). With none "
+        "given, nothing is emitted.",
+    )
     _add_extra_arg(siblings, "Optional-dependency extra the install activates (repeatable).")
     siblings.set_defaults(func=_cmd_siblings)
 

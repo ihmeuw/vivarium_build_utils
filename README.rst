@@ -77,21 +77,31 @@ In-tree sibling dependencies
 ----------------------------
 
 By default ``make install`` resolves a package's dependencies - including
-sibling packages in the same monorepo - from the package index. Pass
-``IN_TREE_SIBLINGS=1`` to instead install in-tree siblings from source first, at
-the *pending* version in each sibling's ``CHANGELOG.rst``::
+sibling packages in the same monorepo - from the package index. Set
+``IN_TREE_SIBLINGS`` to a space-separated list of the packages whose source
+changed in this PR to instead install *those* siblings from source, at the
+*pending* version in each one's ``CHANGELOG.rst``::
 
-  make install ENV_REQS=ci_github IN_TREE_SIBLINGS=1
+  make install ENV_REQS=ci_github IN_TREE_SIBLINGS="engine config-tree"
 
 This lets a single PR update interdependent packages without an intermediate
 release: a dependent pinned as ``vivarium-engine>=<new>`` is satisfied by the
 in-tree source - the pending version is reported through setuptools_scm's
 pretend-version mechanism - rather than requiring ``<new>`` to be published
-first. Which siblings get installed depends on ``ENV_REQS`` (the extras being
-installed). It is a no-op when unset and outside a ``libs/<pkg>/`` layout, so it
-is safe to leave off for standalone repos. Set it for the test/gating CI build;
-omit it for the release build so published version pins are still validated
-against the real index.
+first.
+
+Only siblings that are **all** of (1) listed in ``IN_TREE_SIBLINGS``, (2)
+reachable from the package being installed (given ``ENV_REQS``), and (3) whose
+pending version satisfies the version constraint placed on them are installed
+from source; everything else - including *unchanged* siblings - resolves from
+the index, so they are tested against their released versions. Condition (3)
+means a changed sibling whose pending version is excluded by, say, an
+upper-bound pin is left to the index rather than breaking the install.
+
+Empty/unset (e.g. a plain local ``make install``) installs nothing from source,
+and the whole mechanism is a no-op outside a ``libs/<pkg>/`` layout. CI passes
+the diffed change set on the test/gating build; the release build omits it
+entirely so published version pins are validated against the real index.
 
 Tag prefix
 ----------
