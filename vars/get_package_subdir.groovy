@@ -23,6 +23,17 @@
  * Returns "libs/<pkg>" (e.g. "libs/core") for monorepo builds, "" for single-repo builds.
  */
 def call() {
+    // Find the literal "libs" segment by name rather than by hard-coded index.
+    // Index-based parsing assumes "<prefix>/<repo>/libs/<pkg>/<branch>"; if the
+    // folder structure gets wrapped (e.g., moved under a Jenkins Organization
+    // Folder, which inserts an extra segment), index 2 would shift and the
+    // function would silently return "" — every monorepo build would then run
+    // at the repo root with the wrong pyproject.toml. Searching by name keeps
+    // routing correct under any wrapping that preserves the "libs/<pkg>" pair.
     def parts = env.JOB_NAME.split('/')
-    return (parts.length >= 5 && parts[2] == 'libs') ? "${parts[2]}/${parts[3]}" : ''
+    def i = parts.findIndexOf { it == 'libs' }
+    // Need both "libs" and the package segment that follows it; the branch
+    // segment after that is optional in some build contexts so we don't require it.
+    if (i < 0 || i + 1 >= parts.length) return ''
+    return "${parts[i]}/${parts[i + 1]}"
 }
