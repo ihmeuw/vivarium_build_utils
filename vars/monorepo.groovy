@@ -14,25 +14,18 @@
  *                                     monorepo's Jenkinsfile so vbu stays org-agnostic.
  * @param config.folderPrefix          Jenkins folder prefix for provisioned pipelines
  *                                     (default: "Public")
- * @param config.allowedBranch         Branch this step is allowed to run from. Other
- *                                     branches no-op (echo + return). Defaults to "main"
- *                                     because removedJobAction='DELETE' below is only
- *                                     safe from the default branch — feature-branch
- *                                     builds racing to delete/recreate items would
- *                                     thrash the provisioned tree. Pass an explicit
- *                                     null to disable the guard.
  */
 def call(Map config = [:]) {
     echo "Provisioning Multibranch Pipelines for Libraries..."
 
-    // Branch guard: refuse to run from anywhere other than the default branch.
-    // The reason lives next to removedJobAction='DELETE' below; in short, allowing
-    // this step to run from feature branches lets concurrent builds delete each
-    // other's sibling pipelines. Default-on is the safer behavior; the caller can
-    // explicitly pass `allowedBranch: null` to opt out.
-    String allowedBranch = config.containsKey('allowedBranch') ? config.allowedBranch : 'main'
-    if (allowedBranch && env.BRANCH_NAME != allowedBranch) {
-        echo "monorepo(): skipping provisioning (BRANCH_NAME='${env.BRANCH_NAME}', expected '${allowedBranch}')"
+    // Provisioning is main-only
+    //   Why? If not, then when a feature branch (not main) omits or renames a Jenkinsfile
+    //   that main still has, that pipeline would get deleted (because we call
+    //   ``removedJobAction: 'DELETE'`` below) and then the next main build would
+    //   re-create it; this would cycle over and over.
+    //   Restricting to main defines the source of truth for "what libs exist".
+    if (env.BRANCH_NAME != 'main') {
+        echo "monorepo(): skipping provisioning (BRANCH_NAME='${env.BRANCH_NAME}', provisioning is main-only)"
         return
     }
 
@@ -67,11 +60,8 @@ def call(Map config = [:]) {
                 repositoryURL         : repoURL,
                 githubCredentialsId   : credId
             ],
-            // The following may be set to 'IGNORE'. Using 'DELETE' is safe ONLY because
-            // monorepo() is expected to run from the default branch (main) of the
-            // top-level monorepo Jenkinsfile - not enforced here; the calling Jenkinsfile
-            // must gate this step (e.g. `if (env.BRANCH_NAME == 'main')`). If 'DELETE' ran
-            // from feature branches, branches would compete to delete and recreate items.
+            // Delete (instead of 'IGNORE') any libs/<pkg>/Jenkinsfile that's *missing*
+            // from the current checkout (relative to a previous run). 
             removedJobAction: 'DELETE'
         )
         echo "Job DSL execution completed"
