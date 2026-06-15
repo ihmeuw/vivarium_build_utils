@@ -239,10 +239,8 @@ def cleanup() {
     // Envs are built on local node storage, not shared NFS, so they must be
     // cleaned up by the build that created them.
     sh "${env.ACTIVATE_BASE} && conda env remove -p ${CONDA_ENV_PATH} --yes || rm -rf ${CONDA_ENV_PATH}"
-    // DO NOT wrap cleanWs in withWorkingDirectory. dir() saves and restores the
-    // working directory; if the workspace is deleted while dir() is still inside
-    // it, the restore step throws FileNotFoundException and the build fails with
-    // a confusing error rather than reporting the real cleanup outcome.
+    // cleanWs must run outside withWorkingDirectory: deleting the workspace while dir() is
+    // still inside it causes a FileNotFoundException when dir() tries to restore its context.
     // deleteDirs: true ensures both WORKSPACE and WORKSPACE@tmp are cleaned.
     cleanWs(deleteDirs: true, disableDeferredWipeout: true)
 }
