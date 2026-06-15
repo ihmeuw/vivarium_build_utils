@@ -12,10 +12,13 @@ SAFE_NAME = $(shell python -c "from pkg_resources import safe_name; print(safe_n
 # (e.g. "vivarium-cluster-tools" for libs/cluster-tools/). Parsed with sed/grep
 # rather than tomllib so this works on Python <3.11 too.
 DIST_NAME ?= $(shell sed -n '/^\[project\]/,/^\[/p' pyproject.toml 2>/dev/null | grep -E '^name *=' | head -1 | sed -E 's/^name *= *"([^"]+)".*$$/\1/')
-# If pyproject.toml has a [project] block but the parse came up empty, fail loudly
+# If we're inside libs/<pkg>/ (i.e. the monorepo), the package's [project] block
+# exists, and DIST_NAME came up empty, fail the build.
 ifeq ($(DIST_NAME),)
+ifneq ($(findstring /libs/$(PACKAGE_NAME),$(CURDIR)),)
 ifneq ($(shell grep -E '^\[project\]' pyproject.toml 2>/dev/null),)
 $(error DIST_NAME parse failed: pyproject.toml has a [project] block but no `name = "..."` line in the canonical double-quoted form. Check for single quotes, multi-line values, or `dynamic = ["name"]` and adjust either the pyproject or this base.mk regex.)
+endif
 endif
 endif
 # Fall back to PACKAGE_NAME for legacy repos that don't declare `[project]` in pyproject.toml.
