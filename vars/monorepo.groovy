@@ -47,11 +47,8 @@ def call(Map config = [:]) {
         error("monorepo(): 'githubCredentialsId' is required. Pass the Jenkins credential ID for the GitHub App from the calling Jenkinsfile.")
     }
 
-    // Use GIT_URL rather than JOB_NAME to derive the repository name reliably;
-    // JOB_NAME format for the provisioner pipeline varies depending on whether it
-    // lives inside a Jenkins Organization Folder.
-    def gitUrlMatch = env.GIT_URL =~ /.+[\/:][^\/]+\/(?<repository>[^\/]+?)(\.git)?$/
-    String repositoryName = gitUrlMatch ? gitUrlMatch.group('repository') : env.GIT_URL.tokenize('/').last().replace('.git', '')
+    // Use GIT_URL rather than JOB_NAME to derive the repository name reliably
+    String repositoryName = env.GIT_URL.tokenize('/').last().replace('.git', '')
     String folderPrefix = config.folderPrefix ?: 'Public'
     String rootFolderPath = "${folderPrefix}/${repositoryName}"
 
