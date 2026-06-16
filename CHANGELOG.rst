@@ -21,11 +21,13 @@
   Actions runners outside the IHME network)
 - Guard ``make deploy-package-artifactory`` against an empty ``IHME_PYPI``
 - Search recursively for ``py.typed`` markers so monorepo packages are detected
+
 - ``make install`` now uses ``editable_mode=compat`` so mypy can resolve
   namespace-package siblings in monorepo dev setups (the PEP 660 default's
   ``sys.meta_path`` finder is opaque to mypy's static path walk). Scoped via
   ``--config-settings-package`` so transitive sdist builds are unaffected.
 - Add GitHub App authentication support for deployable packages
+- Bugfix: Correctly handle capturing cron branch name to send Slack notification for schedule builds
 
 Breaking changes:
 
