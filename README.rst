@@ -2,6 +2,36 @@
 Vivarium Build Utils
 ====================
 
+**NOTE: This repository has been archived.**
+
+The ``vivarium_build_utils`` package has been migrated into the
+`vivarium-suite monorepo <https://github.com/ihmeuw/vivarium-suite>`_.
+
+What changed
+------------
+
+- **Import path:** ``vivarium_build_utils`` -> ``vivarium.build_utils``
+- **Source:** ``ihmeuw/vivarium_build_utils`` (archived) ->
+  ``ihmeuw/vivarium-suite`` (under ``libs/build-utils/``)
+
+To migrate fully to the new package
+-----------------------------------
+
+**Install:**
+
+.. code-block:: bash
+
+    pip install vivarium-build-utils  # no change here
+
+**Import:**
+
+.. code-block:: python
+
+    import vivarium.build_utils  # was: import vivarium_build_utils
+
+Original package overview
+=========================
+
 Vivarium Build Utils contains shared build utilities for Simulation Science projects.
 
 You can install ``vivarium_build_utils`` from PyPI with pip::
