@@ -1,3 +1,8 @@
+**3.3.4 - 06/18/26**
+
+- Bugfix: skip the ``--config-settings-package`` editable_mode=compat flag in
+  ``make install`` for legacy setup.py-only repos.
+
 **3.3.3 - 06/17/26**
 
 - Add notes about this repository being archived to the README. A proper shim
