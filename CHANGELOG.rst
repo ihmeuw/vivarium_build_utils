@@ -5,8 +5,8 @@
 
 **3.3.3 - 06/17/26**
 
-- Add notes about this repository being archived to the README. A proper shim
-  release will likely be added in the future.
+- Adds an archive banner to the README pointing at the ``vivarium-suite``
+  monorepo (``libs/build-utils/``, published as ``vivarium-build-utils``).
 
 **3.3.2 - 06/17/26**
 

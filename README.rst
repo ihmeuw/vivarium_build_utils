@@ -2,26 +2,33 @@
 Vivarium Build Utils
 ====================
 
-**NOTE: This repository has been archived.**
+**NOTE: This repository is archived and will receive no further updates.**
 
-The ``vivarium_build_utils`` package has been migrated into the
+The ``vivarium_build_utils`` package's development has migrated into the
 `vivarium-suite monorepo <https://github.com/ihmeuw/vivarium-suite>`_.
 
 What changed
 ------------
 
+- **PyPI distribution:** ``vivarium-build-utils`` (unchanged - same name)
 - **Import path:** ``vivarium_build_utils`` -> ``vivarium.build_utils``
 - **Source:** ``ihmeuw/vivarium_build_utils`` (archived) ->
   ``ihmeuw/vivarium-suite`` (under ``libs/build-utils/``)
 
+This repository's final release was ``v3.3.4``. The ``vivarium-build-utils``
+distribution name is now published from the monorepo starting at ``v4.0.0``, so
+``pip install vivarium-build-utils`` resolves to the monorepo release (which
+imports as ``vivarium.build_utils``). This repository is frozen and will not
+receive updates.
+
 To migrate fully to the new package
 -----------------------------------
 
-**Install:**
+**Install (unchanged):**
 
 .. code-block:: bash
 
-    pip install vivarium-build-utils  # no change here
+    pip install vivarium-build-utils
 
 **Import:**
 
